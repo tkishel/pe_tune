@@ -1,0 +1,69 @@
+Documentation of source of values for each method:
+
+optimize_monolithic_master_settings
+
+# percent_cpu_threads        based upon tuning_monolithic;                                            see also config_puppetdb
+# percent_cpu_jrubies        based upon tuning_monolithic
+# minimum_cpu_threads        based upon tuning_monolithic
+# minimum_cpu_jrubies        based upon tuning_monolithic
+# maximum_cpu_jrubies        based upon tuning_monolithic; subtracting 1 estimated by support
+# maximum_cpu_threads        based upon tuning_monolithic
+# minimum_mb_puppetserver    based upon tuning_monolithic
+# mb_per_puppetserver_jruby  based upon tuning_monolithic: changed from 512 to 512,768,1024;          see also config_puppetserver
+# mb_puppetserver_code_cache based upon puppetlabs-puppet_enterprise/.../manifests/params.pp
+# percent_mb_puppetdb        based upon tuning_monolithic
+# minimum_mb_puppetdb        based upon tuning_monolithic: changed from 256,2048 to 512,1024,2048;    see also config_java_args: 512
+# maximum_mb_puppetdb        based upon tuning_monolithic: changed from 6144 to 8192
+# percent_mb_buffers         recommended by postgresql
+# minimum_mb_buffers         based upon tuning_monolithic: changed from 2048,4096 to 2048,3072,4096
+# maximum_mb_buffers         recommended by postgresql
+# mb_console                 based upon tuning_monolithic; changed from 256,512,1024 to 512,768,1024; see also config_java_args: 512
+# mb_orchestrator            based upon tuning_monolithic: changed from 192,384,768 to 512,768,1024;  see also config_java_args: 1024
+# mb_activemq                based upon tuning_monolithic;                                            see also config_java_args: 1024
+# minimum_mb_os              estimated by support
+# minimum_mb_g1gc            estimated by support;         not yet implemented
+#
+# Note: In 2018.x, JRuby 9K uses additional RAM compared to earlier versions.
+
+optimize_master_settings
+
+# minimum_cpu_jrubies        recommended by support
+# maximum_cpu_jrubies        based upon config_puppetserver
+# minimum_mb_puppetserver    based upon tuning_monolithic;
+# mb_per_puppetserver_jruby  based upon tuning_monolithic: changed from 512 to 512,768,1024;         see also config_puppetserver
+# mb_puppetserver_code_cache based upon puppetlabs-puppet_enterprise/.../manifests/params.pp
+# mb_orchestrator            based upon tuning_monolithic: changed from 192,384,768 to 512,768,1024; see also config_java_args: 1024
+# mb_activemq                based upon tuning_monolithic;                                           see also config_java_args: 1024
+# minimum_mb_os              estimated by support
+# minimum_mb_g1gc            estimated by support;         not yet implemented
+
+optimize_console_settings
+
+# percent_mb_console recommended by support
+# minimum_mb_console based upon tuning_monolithic; changed from 256,512,1024 to 512,768,1024; see also config_java_args: 512
+# maximum_mb_console recommended by support
+# minimum_mb_os      estimated by support
+# minimum_mb_g1gc    estimated by support;                 not yet implemented
+
+optimize_puppetdb_settings
+
+# percent_cpu_threads based upon tuning_monolithic; see also config_puppetdb
+# minimum_cpu_threads recommended by support
+# maximum_cpu_threads recommended by support
+# percent_mb_puppetdb based upon tuning_monolithic
+# percent_mb_buffers  recommended by postgresql
+# minimum_mb_puppetdb based upon tuning_monolithic:        changed from 256,2048 to 512,1024,2048; see also config_java_args: 512
+# maximum_mb_puppetdb based upon tuning_monolithic:        changed from 6144 to 8192
+# minimum_mb_buffers  based upon tuning_monolithic:        changed from 2048,4096 to 2048,3072,4096
+# maximum_mb_buffers  recommended by postgresql
+# minimum_mb_os       estimated by support
+# minimum_mb_g1gc     estimated by support;                not yet implemented
+
+optimize_external_postgresql_settings
+
+# percent_mb_buffers recommended by postgresql
+# minimum_mb_buffers based upon tuning_monolithic,        changed from 2048,4096 to 2048,3072,4096
+# maximum_mb_buffers recommended by postgresql
+# minimum_mb_os      estimated by support
+# minimum_mb_g1gc    estimated by support;                not yet implemented
+
