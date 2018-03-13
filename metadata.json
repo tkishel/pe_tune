@@ -1,0 +1,42 @@
+{
+  "name": "tkishel-pe_tune",
+  "version": "1.0.0",
+  "author": "Thomas Kishel",
+  "summary": "Inspect infrastructure and suggest tuned settings for services.",
+  "description": "Collects information about your Puppet Enterprise installation. Outputs tuned Hiera YAML data for services based upon CPU and RAM.",
+  "license": "Apache-2.0",
+  "source": "https://github.com/tkishel/pe_tune.git",
+  "project_page": "https://github.com/tkishel/pe_tune",
+  "issues_url": "https://github.com/tkishel/pe_tune/issues",
+  "dependencies": [  ],
+  "data_provider": null,
+  "operatingsystem_support": [{
+      "operatingsystem": "RedHat",
+      "operatingsystemrelease": [
+        "5",
+        "6",
+        "7"
+      ]
+    },
+    {
+      "operatingsystem": "CentOS",
+      "operatingsystemrelease": [
+        "5",
+        "6",
+        "7"
+      ]
+    },
+    {
+      "operatingsystem": "Ubuntu",
+      "operatingsystemrelease": [
+        "12.04",
+        "14.04",
+        "16.04"
+      ]
+    }
+  ],
+  "requirements": [{
+    "name": "puppet",
+    "version_requirement": "> 4.0.0 < 6.0.0"
+  }]
+}

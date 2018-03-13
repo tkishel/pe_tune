@@ -1,0 +1,42 @@
+---
+AllCops:
+  DisplayCopNames: true
+Layout/AlignArray:
+  Enabled: false
+Layout/ExtraSpacing:
+  Enabled: false
+Layout/MultilineArrayBraceLayout:
+  Enabled: false
+Metrics/AbcSize:
+  Enabled: false
+Metrics/BlockLength:
+  Enabled: false
+Metrics/ClassLength:
+  Enabled: false
+Metrics/CyclomaticComplexity:
+  Enabled: false
+Metrics/LineLength:
+  Description: People have wide screens, use them.
+  Max: 255
+Metrics/MethodLength:
+  Enabled: false
+Metrics/PerceivedComplexity:
+  Enabled: false
+Style/ConditionalAssignment:
+  Enabled: false
+Style/ColonMethodCall:
+  Enabled: false
+Style/FormatStringToken:
+  Enabled: false
+Style/HashSyntax:
+  Enabled: false
+Style/GuardClause:
+  Enabled: false
+Style/IfUnlessModifier:
+  Enabled: false
+Style/NumericLiterals:
+  Enabled: false
+Style/TernaryParentheses:
+  EnforcedStyle: require_parentheses_when_complex
+Style/WordArray:
+  Enabled: false
