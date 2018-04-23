@@ -26,6 +26,10 @@ describe PuppetX::Puppetlabs::Tune do
         'puppet_enterprise::profile::orchestrator::java_args'     => { 'Xms' => '512m',  'Xmx' => '512m' },
         'puppet_enterprise::profile::database::shared_buffers'    => '2048MB'
       }
+      settings['puppet_enterprise::profile::master::java_args']['XX:+UseG1GC'] = ''
+      # settings['puppet_enterprise::profile::puppetdb::java_args']['XX:+UseG1GC']     = ''
+      # settings['puppet_enterprise::profile::console::java_args']['XX:+UseG1GC']      = ''
+      # settings['puppet_enterprise::profile::orchestrator::java_args']['XX:+UseG1GC'] = ''
       totals = {
         'CPU'          => { 'total' => 4,    'used' => 4 },
         'RAM'          => { 'total' => 8192, 'used' => 6451 },
@@ -51,6 +55,10 @@ describe PuppetX::Puppetlabs::Tune do
         'puppet_enterprise::profile::orchestrator::java_args'     => { 'Xms' => '512m',  'Xmx' => '512m' },
         'puppet_enterprise::profile::database::shared_buffers'    => '2048MB'
       }
+      # settings['puppet_enterprise::profile::master::java_args']['XX:+UseG1GC']       = ''
+      # settings['puppet_enterprise::profile::puppetdb::java_args']['XX:+UseG1GC']     = ''
+      # settings['puppet_enterprise::profile::console::java_args']['XX:+UseG1GC']      = ''
+      # settings['puppet_enterprise::profile::orchestrator::java_args']['XX:+UseG1GC'] = ''
       totals = {
         'CPU'          => { 'total' => 4,    'used' => 4 },
         'RAM'          => { 'total' => 8192, 'used' => 6246 },
@@ -75,6 +83,10 @@ describe PuppetX::Puppetlabs::Tune do
         'puppet_enterprise::profile::amq::broker::heap_mb'        => 512,
         'puppet_enterprise::profile::orchestrator::java_args'     => { 'Xms' => '512m',  'Xmx' => '512m' }
       }
+      settings['puppet_enterprise::profile::master::java_args']['XX:+UseG1GC'] = ''
+      # settings['puppet_enterprise::profile::puppetdb::java_args']['XX:+UseG1GC']     = ''
+      # settings['puppet_enterprise::profile::console::java_args']['XX:+UseG1GC']      = ''
+      # settings['puppet_enterprise::profile::orchestrator::java_args']['XX:+UseG1GC'] = ''
       totals = {
         'CPU'          => { 'total' => 4,    'used' => 4 },
         'RAM'          => { 'total' => 8192, 'used' => 4403 },
@@ -102,6 +114,10 @@ describe PuppetX::Puppetlabs::Tune do
         'puppet_enterprise::profile::orchestrator::java_args'     => { 'Xms' => '768m',  'Xmx' => '768m' },
         'puppet_enterprise::profile::database::shared_buffers'    => '4096MB'
       }
+      settings['puppet_enterprise::profile::master::java_args']['XX:+UseG1GC'] = ''
+      # settings['puppet_enterprise::profile::puppetdb::java_args']['XX:+UseG1GC']     = ''
+      # settings['puppet_enterprise::profile::console::java_args']['XX:+UseG1GC']      = ''
+      # settings['puppet_enterprise::profile::orchestrator::java_args']['XX:+UseG1GC'] = ''
       totals = {
         'CPU'          => { 'total' => 8,     'used' => 8 },
         'RAM'          => { 'total' => 16384, 'used' => 12902 },
@@ -129,6 +145,10 @@ describe PuppetX::Puppetlabs::Tune do
         'puppet_enterprise::profile::orchestrator::java_args'     => { 'Xms' => '1024m',  'Xmx' => '1024m' },
         'puppet_enterprise::profile::database::shared_buffers'    => '8192MB'
       }
+      settings['puppet_enterprise::profile::master::java_args']['XX:+UseG1GC']   = ''
+      settings['puppet_enterprise::profile::puppetdb::java_args']['XX:+UseG1GC'] = ''
+      # settings['puppet_enterprise::profile::console::java_args']['XX:+UseG1GC']      = ''
+      # settings['puppet_enterprise::profile::orchestrator::java_args']['XX:+UseG1GC'] = ''
       totals = {
         'CPU'          => { 'total' => 16,    'used' => 14 },
         'RAM'          => { 'total' => 32768, 'used' => 25804 },
@@ -150,6 +170,7 @@ describe PuppetX::Puppetlabs::Tune do
         'puppet_enterprise::master::jruby_max_active_instances' => 3,
         'puppet_enterprise::profile::master::java_args'         => { 'Xms' => '1536m', 'Xmx' => '1536m' }
       }
+      # settings['puppet_enterprise::profile::master::java_args']['XX:+UseG1GC'] = ''
       totals = {
         'CPU'          => { 'total' => 4,    'used' => 3 },
         'RAM'          => { 'total' => 8192, 'used' => 1536 },
@@ -168,6 +189,7 @@ describe PuppetX::Puppetlabs::Tune do
       settings = {
         'puppet_enterprise::profile::console::java_args' => { 'Xms' => '4096m', 'Xmx' => '4096m' }
       }
+      settings['puppet_enterprise::profile::console::java_args']['XX:+UseG1GC'] = ''
       totals = { 'RAM' => { 'total' => 8192, 'used' => 4096 } }
       expect(tune::calculate_console_settings(resources)).to eq([settings, totals])
     end
@@ -179,9 +201,10 @@ describe PuppetX::Puppetlabs::Tune do
       }
       settings = {
         'puppet_enterprise::puppetdb::command_processing_threads' => 3,
-        'puppet_enterprise::profile::puppetdb::java_args'         => { 'Xms' => '2048m',  'Xmx' => '2048m' },
+        'puppet_enterprise::profile::puppetdb::java_args'         => { 'Xms' => '2048m', 'Xmx' => '2048m' },
         'puppet_enterprise::profile::database::shared_buffers'    => '2048MB'
       }
+      settings['puppet_enterprise::profile::puppetdb::java_args']['XX:+UseG1GC'] = ''
       totals = {
         'CPU' => { 'total' => 4,    'used' => 3 },
         'RAM' => { 'total' => 8192, 'used' => 4096 }
@@ -197,8 +220,9 @@ describe PuppetX::Puppetlabs::Tune do
       }
       settings = {
         'puppet_enterprise::puppetdb::command_processing_threads' => 3,
-        'puppet_enterprise::profile::puppetdb::java_args'         => { 'Xms' => '4096m',  'Xmx' => '4096m' }
+        'puppet_enterprise::profile::puppetdb::java_args'         => { 'Xms' => '4096m', 'Xmx' => '4096m' }
       }
+      settings['puppet_enterprise::profile::puppetdb::java_args']['XX:+UseG1GC'] = ''
       totals = {
         'CPU' => { 'total' => 4, 'used' => 3 },
         'RAM' => { 'total' => 8192, 'used' => 4096 }

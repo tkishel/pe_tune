@@ -328,8 +328,9 @@ module PuppetX
       # mb_orchestrator            based upon tuning_monolithic: changed from 192,384,768 to 512,768,1024;  see also config_java_args: 1024
       # mb_activemq                based upon tuning_monolithic;                                            see also config_java_args: 1024
       # reserve_mb_os              estimated by support
+      # minimum_mb_g1gc            estimated by support
       #
-      # Note: In 2018.x, JRuby 9K uses an extra 128MB of RAM.
+      # Note: In 2018.x, JRuby 9K uses an additional 128MB of RAM compared to earlier versions.
 
       def calculate_monolithic_master_settings(resources, with_compile_masters, with_external_postgresql)
         return [{}, {}] unless node_meets_minimum_system_requirements?(resources)
@@ -352,6 +353,7 @@ module PuppetX
         mb_orchestrator            = fit_to_memory(resources['ram'], 512, 768, 1024)
         mb_activemq                = fit_to_memory(resources['ram'], 512, 1024, 2048)
         reserve_mb_os              = 1024
+        minimum_mb_g1gc            = 2048
 
         minimum_mb_buffers         = 0 if with_external_postgresql
         mb_puppetserver_code_cache = 0 unless jruby_9k_enabled?
@@ -379,6 +381,7 @@ module PuppetX
 
         mb_puppetdb = percent_of_resource(resources['ram'], percent_mb_puppetdb, minimum_mb_puppetdb, maximum_mb_puppetdb)
         java_args_for_puppetdb = { 'Xms' => "#{mb_puppetdb}m", 'Xmx' => "#{mb_puppetdb}m" }
+        java_args_for_puppetdb['XX:+UseG1GC'] = '' if (jruby_9k_enabled? == false) && (mb_puppetdb >= minimum_mb_g1gc)
 
         available_mb_for_puppetserver = resources['ram'] - reserve_mb_os - mb_buffers - mb_puppetdb - mb_console - mb_orchestrator - mb_activemq - mb_puppetserver_code_cache
         if available_mb_for_puppetserver < minimum_mb_puppetserver
@@ -391,9 +394,13 @@ module PuppetX
         mb_jrubies = (jruby_max_active_instances * mb_per_puppetserver_jruby)
         mb_puppetserver = [mb_jrubies, minimum_mb_puppetserver].max
         java_args_for_puppetserver = { 'Xms' => "#{mb_puppetserver}m", 'Xmx' => "#{mb_puppetserver}m" }
+        java_args_for_puppetserver['XX:+UseG1GC'] = '' if (jruby_9k_enabled? == false) && (mb_puppetserver >= minimum_mb_g1gc)
 
         java_args_for_console = { 'Xms' => "#{mb_console}m", 'Xmx' => "#{mb_console}m" }
-        java_args_orchestrator = { 'Xms' => "#{mb_orchestrator}m", 'Xmx' => "#{mb_orchestrator}m" }
+        java_args_for_console['XX:+UseG1GC'] = '' if (jruby_9k_enabled? == false) && (mb_console >= minimum_mb_g1gc)
+
+        java_args_for_orchestrator = { 'Xms' => "#{mb_orchestrator}m", 'Xmx' => "#{mb_orchestrator}m" }
+        java_args_for_orchestrator['XX:+UseG1GC'] = '' if (jruby_9k_enabled? == false) && (mb_orchestrator >= minimum_mb_g1gc)
 
         settings['puppet_enterprise::puppetdb::command_processing_threads'] = command_processing_threads
         settings['puppet_enterprise::master::jruby_max_active_instances'] = jruby_max_active_instances
@@ -401,7 +408,7 @@ module PuppetX
         settings['puppet_enterprise::profile::master::java_args'] = java_args_for_puppetserver
         settings['puppet_enterprise::profile::puppetdb::java_args'] = java_args_for_puppetdb
         settings['puppet_enterprise::profile::console::java_args'] = java_args_for_console
-        settings['puppet_enterprise::profile::orchestrator::java_args'] = java_args_orchestrator
+        settings['puppet_enterprise::profile::orchestrator::java_args'] = java_args_for_orchestrator
         settings['puppet_enterprise::profile::amq::broker::heap_mb'] = mb_activemq
 
         cpu_used = command_processing_threads + jruby_max_active_instances
@@ -424,6 +431,7 @@ module PuppetX
       # mb_orchestrator            based upon tuning_monolithic: changed from 192,384,768 to 512,768,1024; see also config_java_args: 1024
       # mb_activemq                based upon tuning_monolithic;                                           see also config_java_args: 1024
       # reserve_mb_os              estimated by support
+      # minimum_mb_g1gc            estimated by support
 
       def calculate_master_settings(resources, with_activemq, with_orchestrator)
         return [{}, {}] unless node_meets_minimum_system_requirements?(resources)
@@ -436,6 +444,7 @@ module PuppetX
         mb_orchestrator            = fit_to_memory(resources['ram'], 512, 768, 1024)
         mb_activemq                = fit_to_memory(resources['ram'], 512, 1024, 2048)
         reserve_mb_os              = 1024
+        minimum_mb_g1gc            = 2048
 
         mb_orchestrator            = with_orchestrator ? mb_orchestrator : 0
         mb_activemq                = with_activemq     ? mb_activemq     : 0
@@ -458,11 +467,13 @@ module PuppetX
         mb_jrubies = (jruby_max_active_instances * mb_per_puppetserver_jruby)
         mb_puppetserver = [mb_jrubies, minimum_mb_puppetserver].max
         java_args_for_puppetserver = { 'Xms' => "#{mb_puppetserver}m", 'Xmx' => "#{mb_puppetserver}m" }
+        java_args_for_puppetserver['XX:+UseG1GC'] = '' if (jruby_9k_enabled? == false) && (mb_puppetserver >= minimum_mb_g1gc)
         settings['puppet_enterprise::profile::master::java_args'] = java_args_for_puppetserver
 
         if with_orchestrator
-          java_args_orchestrator = { 'Xms' => "#{mb_orchestrator}m", 'Xmx' => "#{mb_orchestrator}m" }
-          settings['puppet_enterprise::profile::orchestrator::java_args'] = java_args_orchestrator
+          java_args_for_orchestrator = { 'Xms' => "#{mb_orchestrator}m", 'Xmx' => "#{mb_orchestrator}m" }
+          java_args_for_orchestrator['XX:+UseG1GC'] = '' if (jruby_9k_enabled? == false) && (mb_orchestrator >= minimum_mb_g1gc)
+          settings['puppet_enterprise::profile::orchestrator::java_args'] = java_args_for_orchestrator
         end
 
         if with_activemq
@@ -485,6 +496,7 @@ module PuppetX
       # minimum_mb_console based upon tuning_monolithic; changed from 256,512,1024 to 512,768,1024; see also config_java_args: 512
       # maximum_mb_console recommended by support
       # reserve_mb_os      estimated by support
+      # minimum_mb_g1gc    estimated by support
 
       def calculate_console_settings(resources)
         return [{}, {}] unless node_meets_minimum_system_requirements?(resources)
@@ -493,6 +505,7 @@ module PuppetX
         minimum_mb_console = fit_to_memory(resources['ram'], 512, 768, 1024)
         maximum_mb_console = 4096
         reserve_mb_os      = 1024
+        minimum_mb_g1gc    = 2048
 
         settings = {}
         totals = {}
@@ -504,6 +517,7 @@ module PuppetX
 
         mb_console = percent_of_resource(resources['ram'], percent_mb_console, minimum_mb_console, maximum_mb_console)
         java_args_for_console = { 'Xms' => "#{mb_console}m", 'Xmx' => "#{mb_console}m" }
+        java_args_for_console['XX:+UseG1GC'] = '' if (jruby_9k_enabled? == false) && (mb_console >= minimum_mb_g1gc)
         settings['puppet_enterprise::profile::console::java_args'] = java_args_for_console
 
         ram_used = mb_console
@@ -525,6 +539,7 @@ module PuppetX
       # minimum_mb_buffers  based upon tuning_monolithic: changed from 2048,4096 to 2048,3072,4096
       # maximum_mb_buffers  recommended by postgresql
       # reserve_mb_os       estimated by support
+      # minimum_mb_g1gc     estimated by support
 
       def calculate_puppetdb_settings(resources, with_external_postgresql)
         return [{}, {}] unless node_meets_minimum_system_requirements?(resources)
@@ -539,6 +554,7 @@ module PuppetX
         minimum_mb_buffers  = fit_to_memory(resources['ram'], 2048, 3072, 4096)
         maximum_mb_buffers  = 16384
         reserve_mb_os       = 1024
+        minimum_mb_g1gc     = 2048
 
         minimum_mb_buffers = with_external_postgresql ? 0 : minimum_mb_buffers
 
@@ -567,6 +583,7 @@ module PuppetX
 
         mb_puppetdb = percent_of_resource(resources['ram'], percent_mb_puppetdb, minimum_mb_puppetdb, maximum_mb_puppetdb)
         java_args_for_puppetdb = { 'Xms' => "#{mb_puppetdb}m", 'Xmx' => "#{mb_puppetdb}m" }
+        java_args_for_puppetdb['XX:+UseG1GC'] = '' if (jruby_9k_enabled? == false) && (mb_puppetdb >= minimum_mb_g1gc)
         settings['puppet_enterprise::profile::puppetdb::java_args'] = java_args_for_puppetdb
 
         cpu_used = command_processing_threads
@@ -584,6 +601,7 @@ module PuppetX
       # minimum_mb_buffers based upon tuning_monolithic, changed from 2048,4096 to 2048,3072,4096
       # maximum_mb_buffers recommended by postgresql
       # reserve_mb_os      estimated by support
+      # minimum_mb_g1gc    estimated by support
 
       def calculate_external_postgresql_settings(resources)
         return [{}, {}] unless node_meets_minimum_system_requirements?(resources)
