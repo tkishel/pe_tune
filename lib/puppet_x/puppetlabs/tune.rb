@@ -381,7 +381,7 @@ module PuppetX
 
         mb_puppetdb = percent_of_resource(resources['ram'], percent_mb_puppetdb, minimum_mb_puppetdb, maximum_mb_puppetdb)
         java_args_for_puppetdb = { 'Xms' => "#{mb_puppetdb}m", 'Xmx' => "#{mb_puppetdb}m" }
-        java_args_for_puppetdb['XX:+UseG1GC'] = '' if (jruby_9k_enabled? == false) && (mb_puppetdb >= minimum_mb_g1gc)
+        # java_args_for_puppetdb['XX:+UseG1GC'] = '' if (jruby_9k_enabled? == false) && (mb_puppetdb >= minimum_mb_g1gc)
 
         available_mb_for_puppetserver = resources['ram'] - reserve_mb_os - mb_buffers - mb_puppetdb - mb_console - mb_orchestrator - mb_activemq - mb_puppetserver_code_cache
         if available_mb_for_puppetserver < minimum_mb_puppetserver
@@ -394,13 +394,13 @@ module PuppetX
         mb_jrubies = (jruby_max_active_instances * mb_per_puppetserver_jruby)
         mb_puppetserver = [mb_jrubies, minimum_mb_puppetserver].max
         java_args_for_puppetserver = { 'Xms' => "#{mb_puppetserver}m", 'Xmx' => "#{mb_puppetserver}m" }
-        java_args_for_puppetserver['XX:+UseG1GC'] = '' if (jruby_9k_enabled? == false) && (mb_puppetserver >= minimum_mb_g1gc)
+        # java_args_for_puppetserver['XX:+UseG1GC'] = '' if (jruby_9k_enabled? == false) && (mb_puppetserver >= minimum_mb_g1gc)
 
         java_args_for_console = { 'Xms' => "#{mb_console}m", 'Xmx' => "#{mb_console}m" }
-        java_args_for_console['XX:+UseG1GC'] = '' if (jruby_9k_enabled? == false) && (mb_console >= minimum_mb_g1gc)
+        # java_args_for_console['XX:+UseG1GC'] = '' if (jruby_9k_enabled? == false) && (mb_console >= minimum_mb_g1gc)
 
         java_args_for_orchestrator = { 'Xms' => "#{mb_orchestrator}m", 'Xmx' => "#{mb_orchestrator}m" }
-        java_args_for_orchestrator['XX:+UseG1GC'] = '' if (jruby_9k_enabled? == false) && (mb_orchestrator >= minimum_mb_g1gc)
+        # java_args_for_orchestrator['XX:+UseG1GC'] = '' if (jruby_9k_enabled? == false) && (mb_orchestrator >= minimum_mb_g1gc)
 
         settings['puppet_enterprise::puppetdb::command_processing_threads'] = command_processing_threads
         settings['puppet_enterprise::master::jruby_max_active_instances'] = jruby_max_active_instances
@@ -467,12 +467,12 @@ module PuppetX
         mb_jrubies = (jruby_max_active_instances * mb_per_puppetserver_jruby)
         mb_puppetserver = [mb_jrubies, minimum_mb_puppetserver].max
         java_args_for_puppetserver = { 'Xms' => "#{mb_puppetserver}m", 'Xmx' => "#{mb_puppetserver}m" }
-        java_args_for_puppetserver['XX:+UseG1GC'] = '' if (jruby_9k_enabled? == false) && (mb_puppetserver >= minimum_mb_g1gc)
+        # java_args_for_puppetserver['XX:+UseG1GC'] = '' if (jruby_9k_enabled? == false) && (mb_puppetserver >= minimum_mb_g1gc)
         settings['puppet_enterprise::profile::master::java_args'] = java_args_for_puppetserver
 
         if with_orchestrator
           java_args_for_orchestrator = { 'Xms' => "#{mb_orchestrator}m", 'Xmx' => "#{mb_orchestrator}m" }
-          java_args_for_orchestrator['XX:+UseG1GC'] = '' if (jruby_9k_enabled? == false) && (mb_orchestrator >= minimum_mb_g1gc)
+          # java_args_for_orchestrator['XX:+UseG1GC'] = '' if (jruby_9k_enabled? == false) && (mb_orchestrator >= minimum_mb_g1gc)
           settings['puppet_enterprise::profile::orchestrator::java_args'] = java_args_for_orchestrator
         end
 
@@ -517,7 +517,7 @@ module PuppetX
 
         mb_console = percent_of_resource(resources['ram'], percent_mb_console, minimum_mb_console, maximum_mb_console)
         java_args_for_console = { 'Xms' => "#{mb_console}m", 'Xmx' => "#{mb_console}m" }
-        java_args_for_console['XX:+UseG1GC'] = '' if (jruby_9k_enabled? == false) && (mb_console >= minimum_mb_g1gc)
+        # java_args_for_console['XX:+UseG1GC'] = '' if (jruby_9k_enabled? == false) && (mb_console >= minimum_mb_g1gc)
         settings['puppet_enterprise::profile::console::java_args'] = java_args_for_console
 
         ram_used = mb_console
@@ -583,7 +583,7 @@ module PuppetX
 
         mb_puppetdb = percent_of_resource(resources['ram'], percent_mb_puppetdb, minimum_mb_puppetdb, maximum_mb_puppetdb)
         java_args_for_puppetdb = { 'Xms' => "#{mb_puppetdb}m", 'Xmx' => "#{mb_puppetdb}m" }
-        java_args_for_puppetdb['XX:+UseG1GC'] = '' if (jruby_9k_enabled? == false) && (mb_puppetdb >= minimum_mb_g1gc)
+        # java_args_for_puppetdb['XX:+UseG1GC'] = '' if (jruby_9k_enabled? == false) && (mb_puppetdb >= minimum_mb_g1gc)
         settings['puppet_enterprise::profile::puppetdb::java_args'] = java_args_for_puppetdb
 
         cpu_used = command_processing_threads
