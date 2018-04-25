@@ -9,7 +9,7 @@ end
 describe PuppetX::Puppetlabs::Tune do
   subject(:tune) { described_class.new(:unit_test => true) }
 
-  before do
+  before(:each) do
     suppress_standard_output
   end
 

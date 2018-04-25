@@ -3,14 +3,15 @@
   "version": "1.0.0",
   "author": "Thomas Kishel",
   "summary": "Inspect infrastructure and suggest tuned settings for services.",
-  "description": "Collects information about your Puppet Enterprise installation. Outputs tuned Hiera YAML data for services based upon CPU and RAM.",
   "license": "Apache-2.0",
   "source": "https://github.com/tkishel/pe_tune.git",
   "project_page": "https://github.com/tkishel/pe_tune",
   "issues_url": "https://github.com/tkishel/pe_tune/issues",
-  "dependencies": [  ],
-  "data_provider": null,
-  "operatingsystem_support": [{
+  "dependencies": [
+
+  ],
+  "operatingsystem_support": [
+    {
       "operatingsystem": "RedHat",
       "operatingsystemrelease": [
         "5",
@@ -35,8 +36,14 @@
       ]
     }
   ],
-  "requirements": [{
-    "name": "puppet",
-    "version_requirement": "> 4.0.0 < 6.0.0"
-  }]
+  "requirements": [
+    {
+      "name": "puppet",
+      "version_requirement": "> 4.0.0 < 6.0.0"
+    }
+  ],
+  "description": "Collects information about your Puppet Enterprise installation. Outputs tuned Hiera YAML data for services based upon CPU and RAM.",
+  "pdk-version": "1.5.0.pre (ga170dad)",
+  "template-url": "file:///opt/puppetlabs/pdk/share/cache/pdk-templates.git",
+  "template-ref": "heads/master-0-g033771c"
 }

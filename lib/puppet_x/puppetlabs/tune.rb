@@ -842,7 +842,7 @@ if File.expand_path(__FILE__) == File.expand_path($PROGRAM_NAME)
       puts opts
       exit 0
     end
-  end.parse!
+  end
 
   Puppet.debug("Command Options: #{options}")
 
