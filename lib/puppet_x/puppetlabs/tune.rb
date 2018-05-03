@@ -824,7 +824,7 @@ if File.expand_path(__FILE__) == File.expand_path($PROGRAM_NAME)
   Puppet::Util::Log.newdestination :console
 
   options = {}
-  OptionParser.new do |opts|
+  parser = OptionParser.new do |opts|
     opts.banner = 'Usage: tune.rb [options]'
     opts.separator ''
     opts.separator 'Summary: Inspect infrastructure and output optimized settings for services'
@@ -834,15 +834,23 @@ if File.expand_path(__FILE__) == File.expand_path($PROGRAM_NAME)
     opts.on('--hiera DIRECTORY', 'Optional output directory for settings as Hiera YAML files') do |h|
       options[:hiera] = h
     end
+    options[:debug] = false
+    opts.on('--debug', 'Enable logging of debug information') do
+      options[:debug] = true
+    end
     options[:force] = false
     opts.on('--force', 'Do not enforce minimum system requirements') do
       options[:force] = true
     end
     opts.on('-h', '--help', 'Display help') do
       puts opts
+      puts
       exit 0
     end
   end
+  parser.parse!
+
+  Puppet.debug = options[:debug]
 
   Puppet.debug("Command Options: #{options}")
 
