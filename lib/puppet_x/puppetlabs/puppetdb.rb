@@ -4,6 +4,7 @@ module PuppetX
   module Puppetlabs
     # Query PuppetDB via its API.
     class Puppetdb
+      attr_reader :environment
       attr_reader :replica_masters
       attr_reader :primary_masters
       attr_reader :compile_masters
@@ -12,13 +13,30 @@ module PuppetX
       attr_reader :database_hosts
 
       def initialize
-        environment = Puppet[:environment]
-        @replica_masters = get_pe_infra_nodes_by_class('Primary_master_replica', environment)
-        @primary_masters = get_pe_infra_nodes_by_class('Certificate_authority', environment) - @replica_masters
-        @compile_masters = get_pe_infra_nodes_by_class('Master', environment)   - @primary_masters - @replica_masters
-        @console_hosts   = get_pe_infra_nodes_by_class('Console', environment)  - @primary_masters - @replica_masters
-        @puppetdb_hosts  = get_pe_infra_nodes_by_class('Puppetdb', environment) - @primary_masters - @replica_masters
-        @database_hosts  = get_pe_infra_nodes_by_class('Database', environment) - @primary_masters - @replica_masters
+        # PE-15116 results in Puppet[:environment] being set to 'enterprise' within the infrastructure face.
+        @environment = Puppet::Util::Execution.execute('/opt/puppetlabs/puppet/bin/puppet config print environment').chomp
+        @replica_masters = get_pe_infra_nodes_by_class('Primary_master_replica', @environment)
+        @primary_masters = get_pe_infra_nodes_by_class('Certificate_authority', @environment) - @replica_masters
+        @compile_masters = get_pe_infra_nodes_by_class('Master', @environment)   - @primary_masters - @replica_masters
+        @console_hosts   = get_pe_infra_nodes_by_class('Console', @environment)  - @primary_masters - @replica_masters
+        @puppetdb_hosts  = get_pe_infra_nodes_by_class('Puppetdb', @environment) - @primary_masters - @replica_masters
+        @database_hosts  = get_pe_infra_nodes_by_class('Database', @environment) - @primary_masters - @replica_masters
+      end
+
+      def get_cpu_for_node(certname)
+        # Testing workaround.
+        return ENV['TEST_CPU'].to_i if ENV['TEST_CPU']
+        results = get_fact_for_node(certname, 'processors', @environment)
+        return 0 unless results
+        results['count'].to_i
+      end
+
+      def get_ram_for_node(certname)
+        # Testing workaround.
+        return ENV['TEST_RAM'].to_i if ENV['TEST_RAM']
+        results = get_fact_for_node(certname, 'memory', @environment)
+        return 0 unless results
+        (results['system']['total_bytes'].to_i / 1024 / 1024).to_i
       end
 
       def get_pe_infra_nodes_by_class(class_name, environment = 'production')
@@ -55,24 +73,6 @@ module PuppetX
         Puppet.debug(results)
         return unless results.first['value']
         results.first['value']
-      end
-
-      def get_cpu_for_node(certname)
-        # Testing workaround.
-        return ENV['TEST_CPU'].to_i if ENV['TEST_CPU']
-        environment = Puppet[:environment]
-        results = get_fact_for_node(certname, 'processors', environment)
-        return 0 unless results
-        results['count'].to_i
-      end
-
-      def get_ram_for_node(certname)
-        # Testing workaround.
-        return ENV['TEST_RAM'].to_i if ENV['TEST_RAM']
-        environment = Puppet[:environment]
-        results = get_fact_for_node(certname, 'memory', environment)
-        return 0 unless results
-        (results['system']['total_bytes'].to_i / 1024 / 1024).to_i
       end
     end
   end
