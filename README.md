@@ -2,7 +2,7 @@
 
 #### Table of Contents
 
-1. [Description - What the module does and why it is useful](#module-description)
+1. [Description - What the module does and why it is useful](#description)
 1. [Setup - Getting started with this module](#setup)
 1. [Usage - Command parameters and how to use it](#usage)
 1. [Reference - How the module works and how to use its output](#reference)
