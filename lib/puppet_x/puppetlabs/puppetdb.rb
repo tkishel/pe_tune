@@ -24,16 +24,20 @@ module PuppetX
       end
 
       def get_cpu_for_node(certname)
-        # Testing workaround.
-        return ENV['TEST_CPU'].to_i if ENV['TEST_CPU']
+        if ENV['TEST_CPU']
+          Puppet.debug("Using TEST_CPU=#{ENV['TEST_CPU']} for get_cpu_for_node for #{certname}")
+          return ENV['TEST_CPU'].to_i
+        end
         results = get_fact_for_node(certname, 'processors', @environment)
         return 0 unless results
         results['count'].to_i
       end
 
       def get_ram_for_node(certname)
-        # Testing workaround.
-        return ENV['TEST_RAM'].to_i if ENV['TEST_RAM']
+        if ENV['TEST_RAM']
+          Puppet.debug("Using TEST_RAM=#{ENV['TEST_RAM']} for get_ram_for_node for #{certname}")
+          return ENV['TEST_RAM'].to_i
+        end
         results = get_fact_for_node(certname, 'memory', @environment)
         return 0 unless results
         (results['system']['total_bytes'].to_i / 1024 / 1024).to_i

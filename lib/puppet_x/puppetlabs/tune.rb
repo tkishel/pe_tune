@@ -325,9 +325,10 @@ module PuppetX
       # Calculate the number of jrubies by the number of jrubies that will fit into RAM rather than CPU.
       #
       # percent_cpu_threads        based upon tuning_monolithic;                                            see also config_puppetdb
-      # minimum_cpu_jrubies        based upon tuning_monolithic
-      # maximum_cpu_jrubies        based upon tuning_monolithic
+      # percent_cpu_jrubies        based upon tuning_monolithic
       # minimum_cpu_threads        based upon tuning_monolithic
+      # minimum_cpu_jrubies        based upon tuning_monolithic
+      # maximum_cpu_jrubies        based upon tuning_monolithic; subtracting 1 estimated by support
       # maximum_cpu_threads        based upon tuning_monolithic
       # minimum_mb_puppetserver    based upon tuning_monolithic
       # mb_per_puppetserver_jruby  based upon tuning_monolithic: changed from 512 to 512,768,1024;          see also config_puppetserver
@@ -342,18 +343,19 @@ module PuppetX
       # mb_orchestrator            based upon tuning_monolithic: changed from 192,384,768 to 512,768,1024;  see also config_java_args: 1024
       # mb_activemq                based upon tuning_monolithic;                                            see also config_java_args: 1024
       # minimum_mb_os              estimated by support
-      # minimum_mb_g1gc            estimated by support
+      # minimum_mb_g1gc            estimated by support;         not yet implemented in this script
       #
-      # Note: In 2018.x, JRuby 9K uses an additional 128MB of RAM compared to earlier versions.
+      # Note: In 2018.x, JRuby 9K uses additional RAM compared to earlier versions.
 
       def calculate_monolithic_master_settings(resources, with_compile_masters, with_external_postgresql)
         return [{}, {}] unless node_meets_minimum_system_requirements?(resources)
 
         percent_cpu_threads        = with_compile_masters ? 75 : 25
-        minimum_cpu_jrubies        = 2
-        maximum_cpu_jrubies        = fit_to_processors(resources['cpu'], 2, 6, 10)
+        percent_cpu_jrubies        = with_compile_masters ? 25 : 75
         minimum_cpu_threads        = 2
-        maximum_cpu_threads        = fit_to_processors(resources['cpu'], 2, 6, 10)
+        minimum_cpu_jrubies        = 2
+        maximum_cpu_threads        = (resources['cpu'] * (percent_cpu_threads * 0.01)).to_i     # fit_to_processors(resources['cpu'], 2, 6, 10)
+        maximum_cpu_jrubies        = (resources['cpu'] * (percent_cpu_jrubies * 0.01) - 1).to_i # fit_to_processors(resources['cpu'], 2, 6, 10)
         minimum_mb_puppetserver    = with_compile_masters ? 1024 : 2048
         mb_per_puppetserver_jruby  = memory_per_jruby(resources['ram'])
         mb_puppetserver_code_cache = (resources['ram'] < 2048) ? 48 : 512
@@ -383,11 +385,11 @@ module PuppetX
             Puppet.debug("Error: available_mb_for_buffers: #{available_mb_for_buffers} < minimum_mb_buffers: #{minimum_mb_buffers}")
             return [{}, {}]
           end
-          mb_buffers = percent_of_resource(resources['ram'], percent_mb_buffers, minimum_mb_buffers, maximum_mb_buffers)
+          mb_buffers = clamp_percent_of_resource(resources['ram'], percent_mb_buffers, minimum_mb_buffers, maximum_mb_buffers)
           settings['puppet_enterprise::profile::database::shared_buffers'] = "#{mb_buffers}MB"
         end
 
-        command_processing_threads = percent_of_resource(resources['cpu'], percent_cpu_threads, minimum_cpu_threads, maximum_cpu_threads)
+        command_processing_threads = clamp_percent_of_resource(resources['cpu'], percent_cpu_threads, minimum_cpu_threads, maximum_cpu_threads)
 
         available_mb_for_puppetdb = resources['ram'] - minimum_mb_os - mb_buffers
         if available_mb_for_puppetdb < minimum_mb_puppetdb
@@ -395,7 +397,7 @@ module PuppetX
           return [{}, {}]
         end
 
-        mb_puppetdb = percent_of_resource(resources['ram'], percent_mb_puppetdb, minimum_mb_puppetdb, maximum_mb_puppetdb)
+        mb_puppetdb = clamp_percent_of_resource(resources['ram'], percent_mb_puppetdb, minimum_mb_puppetdb, maximum_mb_puppetdb)
         java_args_for_puppetdb = { 'Xms' => "#{mb_puppetdb}m", 'Xmx' => "#{mb_puppetdb}m" }
         # java_args_for_puppetdb['XX:+UseG1GC'] = '' if (jruby_9k_enabled? == false) && (mb_puppetdb >= minimum_mb_g1gc)
 
@@ -406,7 +408,7 @@ module PuppetX
         end
 
         jrubies_by_mb = (available_mb_for_puppetserver / mb_per_puppetserver_jruby).to_i
-        jruby_max_active_instances = percent_of_resource(jrubies_by_mb, 100, minimum_cpu_jrubies, maximum_cpu_jrubies)
+        jruby_max_active_instances = clamp_percent_of_resource(jrubies_by_mb, 100, minimum_cpu_jrubies, maximum_cpu_jrubies)
 
         mb_jrubies = (jruby_max_active_instances * mb_per_puppetserver_jruby)
         mb_puppetserver = [mb_jrubies, minimum_mb_puppetserver].max
@@ -421,7 +423,7 @@ module PuppetX
 
         settings['puppet_enterprise::puppetdb::command_processing_threads'] = command_processing_threads
         settings['puppet_enterprise::master::jruby_max_active_instances'] = jruby_max_active_instances
-        settings['puppet_enterprise::master::puppetserver::reserved_code_cache'] = "#{mb_puppetserver_code_cache}m" if jruby_9k_enabled?
+        settings['puppet_enterprise::master::puppetserver::reserved_code_cache'] = "#{mb_puppetserver_code_cache}m" if mb_puppetserver_code_cache > 0
         settings['puppet_enterprise::profile::master::java_args'] = java_args_for_puppetserver
         settings['puppet_enterprise::profile::puppetdb::java_args'] = java_args_for_puppetdb
         settings['puppet_enterprise::profile::console::java_args'] = java_args_for_console
@@ -448,7 +450,7 @@ module PuppetX
       # mb_orchestrator            based upon tuning_monolithic: changed from 192,384,768 to 512,768,1024; see also config_java_args: 1024
       # mb_activemq                based upon tuning_monolithic;                                           see also config_java_args: 1024
       # minimum_mb_os              estimated by support
-      # minimum_mb_g1gc            estimated by support
+      # minimum_mb_g1gc            estimated by support;         not yet implemented in this script
 
       def calculate_master_settings(resources, with_activemq, with_orchestrator)
         return [{}, {}] unless node_meets_minimum_system_requirements?(resources)
@@ -477,10 +479,10 @@ module PuppetX
         end
 
         jrubies_by_mb = (available_mb_for_puppetserver / mb_per_puppetserver_jruby).to_i
-        jruby_max_active_instances = percent_of_resource(jrubies_by_mb, 100, minimum_cpu_jrubies, maximum_cpu_jrubies)
+        jruby_max_active_instances = clamp_percent_of_resource(jrubies_by_mb, 100, minimum_cpu_jrubies, maximum_cpu_jrubies)
         settings['puppet_enterprise::master::jruby_max_active_instances'] = jruby_max_active_instances
 
-        settings['puppet_enterprise::master::puppetserver::reserved_code_cache'] = "#{mb_puppetserver_code_cache}m" if jruby_9k_enabled?
+        settings['puppet_enterprise::master::puppetserver::reserved_code_cache'] = "#{mb_puppetserver_code_cache}m" if mb_puppetserver_code_cache > 0
 
         mb_jrubies = (jruby_max_active_instances * mb_per_puppetserver_jruby)
         mb_puppetserver = [mb_jrubies, minimum_mb_puppetserver].max
@@ -514,7 +516,7 @@ module PuppetX
       # minimum_mb_console based upon tuning_monolithic; changed from 256,512,1024 to 512,768,1024; see also config_java_args: 512
       # maximum_mb_console recommended by support
       # minimum_mb_os      estimated by support
-      # minimum_mb_g1gc    estimated by support
+      # minimum_mb_g1gc    estimated by support;         not yet implemented in this script
 
       def calculate_console_settings(resources)
         return [{}, {}] unless node_meets_minimum_system_requirements?(resources)
@@ -534,7 +536,7 @@ module PuppetX
           return [{}, {}]
         end
 
-        mb_console = percent_of_resource(resources['ram'], percent_mb_console, minimum_mb_console, maximum_mb_console)
+        mb_console = clamp_percent_of_resource(resources['ram'], percent_mb_console, minimum_mb_console, maximum_mb_console)
         java_args_for_console = { 'Xms' => "#{mb_console}m", 'Xmx' => "#{mb_console}m" }
         # java_args_for_console['XX:+UseG1GC'] = '' if (jruby_9k_enabled? == false) && (mb_console >= minimum_mb_g1gc)
         settings['puppet_enterprise::profile::console::java_args'] = java_args_for_console
@@ -558,7 +560,7 @@ module PuppetX
       # minimum_mb_buffers  based upon tuning_monolithic: changed from 2048,4096 to 2048,3072,4096
       # maximum_mb_buffers  recommended by postgresql
       # minimum_mb_os       estimated by support
-      # minimum_mb_g1gc     estimated by support
+      # minimum_mb_g1gc     estimated by support;         not yet implemented in this script
 
       def calculate_puppetdb_settings(resources, with_external_postgresql)
         return [{}, {}] unless node_meets_minimum_system_requirements?(resources)
@@ -588,11 +590,11 @@ module PuppetX
             Puppet.debug("Error: available_mb_for_buffers: #{available_mb_for_buffers} < minimum_mb_buffers: #{minimum_mb_buffers}")
             return [{}, {}]
           end
-          mb_buffers = percent_of_resource(resources['ram'], percent_mb_buffers, minimum_mb_buffers, maximum_mb_buffers)
+          mb_buffers = clamp_percent_of_resource(resources['ram'], percent_mb_buffers, minimum_mb_buffers, maximum_mb_buffers)
           settings['puppet_enterprise::profile::database::shared_buffers'] = "#{mb_buffers}MB"
         end
 
-        command_processing_threads = percent_of_resource(resources['cpu'], percent_cpu_threads, minimum_cpu_threads, maximum_cpu_threads)
+        command_processing_threads = clamp_percent_of_resource(resources['cpu'], percent_cpu_threads, minimum_cpu_threads, maximum_cpu_threads)
         settings['puppet_enterprise::puppetdb::command_processing_threads'] = command_processing_threads
 
         available_mb_for_puppetdb = resources['ram'] - minimum_mb_os - mb_buffers
@@ -602,7 +604,7 @@ module PuppetX
           return [{}, {}]
         end
 
-        mb_puppetdb = percent_of_resource(resources['ram'], percent_mb_puppetdb, minimum_mb_puppetdb, maximum_mb_puppetdb)
+        mb_puppetdb = clamp_percent_of_resource(resources['ram'], percent_mb_puppetdb, minimum_mb_puppetdb, maximum_mb_puppetdb)
         java_args_for_puppetdb = { 'Xms' => "#{mb_puppetdb}m", 'Xmx' => "#{mb_puppetdb}m" }
         # java_args_for_puppetdb['XX:+UseG1GC'] = '' if (jruby_9k_enabled? == false) && (mb_puppetdb >= minimum_mb_g1gc)
         settings['puppet_enterprise::profile::puppetdb::java_args'] = java_args_for_puppetdb
@@ -622,7 +624,7 @@ module PuppetX
       # minimum_mb_buffers based upon tuning_monolithic, changed from 2048,4096 to 2048,3072,4096
       # maximum_mb_buffers recommended by postgresql
       # minimum_mb_os      estimated by support
-      # minimum_mb_g1gc    estimated by support
+      # minimum_mb_g1gc    estimated by support;         not yet implemented in this script
 
       def calculate_external_postgresql_settings(resources)
         return [{}, {}] unless node_meets_minimum_system_requirements?(resources)
@@ -641,7 +643,7 @@ module PuppetX
           return [{}, {}]
         end
 
-        mb_buffers = percent_of_resource(resources['ram'], percent_mb_buffers, minimum_mb_buffers, maximum_mb_buffers)
+        mb_buffers = clamp_percent_of_resource(resources['ram'], percent_mb_buffers, minimum_mb_buffers, maximum_mb_buffers)
         settings['puppet_enterprise::profile::database::shared_buffers'] = "#{mb_buffers}MB"
 
         ram_used = mb_buffers
@@ -656,6 +658,7 @@ module PuppetX
         return small  if processors <= 4
         return medium if processors <= 8
         return medium if processors <  16
+        Puppet.debug('Using a maximum value for fit_to_processors')
         return large  if processors >= 16
       end
 
@@ -665,14 +668,14 @@ module PuppetX
         return small  if memory <= 8192
         return medium if memory <= 16384
         return medium if memory <  32768
+        Puppet.debug('Using a maximum value for fit_to_memory')
         return large  if memory >= 32768
       end
 
       # Return a percentage of a resource within a minimum and maximum.
-      # AKA: clamp_percent_of_resource
       # Alternative: [minimum, resource_percentage, maximum].sort[1]
 
-      def percent_of_resource(resource, percentage, minimum, maximum)
+      def clamp_percent_of_resource(resource, percentage, minimum, maximum)
         percentage *= 0.01
         resource_percentage = (resource * percentage).to_i
         resource_percentage_or_maximum = [resource_percentage, maximum].min
@@ -692,21 +695,27 @@ module PuppetX
       # Allow override via ENV.
 
       def reserved_memory_os
-        return ENV['TEST_MEM_OS'].to_i if ENV['TEST_MEM_OS']
+        if ENV['TEST_MEM_OS']
+          Puppet.debug("Using TEST_MEM_OS=#{ENV['TEST_MEM_OS']} for reserved_memory_os")
+          return ENV['TEST_MEM_OS'].to_i
+        end
         1024
       end
 
       # Allow override via ENV.
 
       def memory_per_jruby(memory)
-        return ENV['TEST_MEM_JR'].to_i if ENV['TEST_MEM_JR']
+        if ENV['TEST_MEM_JR']
+          Puppet.debug("Using TEST_MEM_JR=#{ENV['TEST_MEM_JR']} for memory_per_jruby")
+          return ENV['TEST_MEM_JR'].to_i
+        end
         fit_to_memory(memory, 512, 768, 1024)
       end
 
       # JRuby 9K is the default in 2018.x.
 
       def jruby_9k_enabled?
-        pe_server_version = Facter.value('pe_server_version') || 'NOT_NIL'
+        pe_server_version = Facter.value('pe_server_version') || 'NOT NIL'
         pe_server_version.start_with? '2018'
       end
     end
@@ -790,7 +799,7 @@ if File.expand_path(__FILE__) == File.expand_path($PROGRAM_NAME)
 
         def initialize
           # PE-15116 results in Puppet[:environment] == 'enterprise' in the infrastructure face.
-          @environment = Puppet[:environment]
+          @environment = Puppet::Util::Execution.execute('/opt/puppetlabs/puppet/bin/puppet config print environment').chomp
           @replica_masters = get_pe_infra_nodes_by_class('Primary_master_replica', @environment)
           @primary_masters = get_pe_infra_nodes_by_class('Certificate_authority', @environment) - @replica_masters
           @compile_masters = get_pe_infra_nodes_by_class('Master', @environment)   - @primary_masters - @replica_masters
@@ -800,16 +809,20 @@ if File.expand_path(__FILE__) == File.expand_path($PROGRAM_NAME)
         end
 
         def get_cpu_for_node(certname)
-          # Testing workaround.
-          return ENV['TEST_CPU'].to_i if ENV['TEST_CPU']
+          if ENV['TEST_CPU']
+            Puppet.debug("Using TEST_CPU=#{ENV['TEST_CPU']} for get_cpu_for_node for #{certname}")
+            return ENV['TEST_CPU'].to_i
+          end
           results = get_fact_for_node(certname, 'processors', @environment)
           return 0 unless results
           results['count'].to_i
         end
 
         def get_ram_for_node(certname)
-          # Testing workaround.
-          return ENV['TEST_RAM'].to_i if ENV['TEST_RAM']
+          if ENV['TEST_RAM']
+            Puppet.debug("Using TEST_RAM=#{ENV['TEST_RAM']} for get_ram_for_node for #{certname}")
+            return ENV['TEST_RAM'].to_i
+          end
           results = get_fact_for_node(certname, 'memory', @environment)
           return 0 unless results
           (results['system']['total_bytes'].to_i / 1024 / 1024).to_i
