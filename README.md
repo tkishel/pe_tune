@@ -124,15 +124,15 @@ hierarchy:
 
 For more information, review:
 
-* [PE Hardware Requirements] https://puppet.com/docs/pe/latest/installing/hardware_requirements.html
-* [PE Configuration] https://puppet.com/docs/pe/latest/configuring/config_intro.html
-* [PE Java Arguments] https://puppet.com/docs/pe/latest/configuring/config_java_args.html
-* [PE Puppetserver Configuration] https://puppet.com/docs/pe/latest/configuring/config_puppetserver.html
-* [PE Console Configuration] https://puppet.com/docs/pe/latest/configuring/config_console.html
-* [PE PuppetDB Configuration] https://puppet.com/docs/pe/latest/configuring/config_puppetdb.html
-* [PE Tuning Monolithic] https://puppet.com/docs/pe/latest/configuring/tuning_monolithic.html
-* [PE Puppetserver Tuning Guide] https://puppet.com/docs/puppetserver/latest/tuning_guide.html
-* [Hiera] https://puppet.com/docs/puppet/latest/hiera_intro.html
+* [PE Hardware Requirements](https://puppet.com/docs/pe/latest/installing/hardware_requirements.html)
+* [PE Configuration](https://puppet.com/docs/pe/latest/configuring/config_intro.html)
+* [PE Java Arguments](https://puppet.com/docs/pe/latest/configuring/config_java_args.html)
+* [PE Puppetserver Configuration](https://puppet.com/docs/pe/latest/configuring/config_puppetserver.html)
+* [PE Console Configuration](https://puppet.com/docs/pe/latest/configuring/config_console.html)
+* [PE PuppetDB Configuration](https://puppet.com/docs/pe/latest/configuring/config_puppetdb.html)
+* [PE Tuning Monolithic](https://puppet.com/docs/pe/latest/configuring/tuning_monolithic.html)
+* [PE Puppetserver Tuning Guide](https://puppet.com/docs/puppetserver/latest/tuning_guide.html)
+* [Hiera](https://puppet.com/docs/puppet/latest/hiera_intro.html)
 
 ## Limitations
 
