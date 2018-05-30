@@ -6,7 +6,7 @@
 1. [Setup - Getting started with this module](#setup)
 1. [Usage - Command parameters and how to use it](#usage)
 1. [Reference - How the module works and how to use its output](#reference)
-1. [Limitations - Supported infrastructures](#limitations)
+1. [Limitations - Supported versions and infrastructures](#limitations)
 
 ## Description
 
@@ -140,6 +140,12 @@ For more information, review:
 * [Hiera](https://puppet.com/docs/puppet/latest/hiera_intro.html)
 
 ## Limitations
+
+Support limited to the following versions:
+
+* PE 2016.4.x
+* PE 2017.x.x
+* PE 2018.x.x
 
 Support limited to the following infrastructures:
 

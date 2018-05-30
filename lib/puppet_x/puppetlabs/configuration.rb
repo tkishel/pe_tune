@@ -42,6 +42,12 @@ module PuppetX
         defined?(Puppet::Util::Pe_conf::Recover.facts_for_node) == 'method'
       end
 
+      # Puppet::Util::Pe_conf::Recover in PE 2016.x does not implement get_node_terminus() and implements find_hiera_overrides(params, facts, environment)
+
+      def recover_with_node_terminus?
+        defined?(Puppet::Util::Pe_conf::Recover.get_node_terminus) == 'method'
+      end
+
       def read_node_facts(certname)
         node_facts = {}
         if recover_without_instance?
@@ -56,8 +62,12 @@ module PuppetX
       def read_hiera_classifier_overrides(certname, settings)
         if recover_without_instance?
           node_facts = Puppet::Util::Pe_conf::Recover.facts_for_node(certname, @environment)
-          node_terminus = Puppet::Util::Pe_conf::Recover.get_node_terminus
-          overrides_hiera = Puppet::Util::Pe_conf::Recover.find_hiera_overrides(certname, settings, node_facts, @environment, node_terminus)
+          if recover_with_node_terminus?
+            node_terminus = Puppet::Util::Pe_conf::Recover.get_node_terminus
+            overrides_hiera = Puppet::Util::Pe_conf::Recover.find_hiera_overrides(certname, settings, node_facts, @environment, node_terminus)
+          else
+            overrides_hiera = Puppet::Util::Pe_conf::Recover.find_hiera_overrides(settings, node_facts, @environment)
+          end
           overrides_classifier = Puppet::Util::Pe_conf::Recover.classifier_overrides_for_node(certname, node_facts, node_facts['::trusted'])
         else
           recover = Puppet::Util::Pe_conf::Recover.new
