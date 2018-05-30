@@ -36,13 +36,13 @@ module PuppetX
         pe_conf
       end
 
-      # PE-24106 changes Recover to a class with instance methods in PE 2018 and newer.
+      # PE-24106 changes Recover to a class with instance methods.
 
       def recover_without_instance?
         defined?(Puppet::Util::Pe_conf::Recover.facts_for_node) == 'method'
       end
 
-      # Puppet::Util::Pe_conf::Recover in PE 2016.x does not implement get_node_terminus() and implements find_hiera_overrides(params, facts, environment)
+      # In some versions, Puppet::Util::Pe_conf::Recover does not implement get_node_terminus() and implements find_hiera_overrides(params, facts, environment)
 
       def recover_with_node_terminus?
         defined?(Puppet::Util::Pe_conf::Recover.get_node_terminus) == 'method'
@@ -51,7 +51,15 @@ module PuppetX
       def read_node_facts(certname)
         node_facts = {}
         if recover_without_instance?
-          node_facts = Puppet::Util::Pe_conf::Recover.facts_for_node(certname, @environment)
+          facts_hash = Puppet::Util::Pe_conf::Recover.facts_for_node(certname, @environment)
+          if facts_hash.key?('puppetversion')
+            node_facts = facts_hash
+          else
+            # Prior to PE-22444, facts are returned as a Hash with elements in this format: {"name"=>"puppetversion", "value"=>"4.10.10"} => nil
+            facts_hash.each do |fact, _nil|
+              node_facts[fact['name']] = fact['value']
+            end
+          end
         else
           recover = Puppet::Util::Pe_conf::Recover.new
           node_facts = recover.facts_for_node(certname, @environment)
