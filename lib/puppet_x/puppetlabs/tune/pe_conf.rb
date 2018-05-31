@@ -1,3 +1,4 @@
+require 'hocon'
 require 'puppet/util/pe_conf'
 require 'puppet/util/pe_conf/recover'
 

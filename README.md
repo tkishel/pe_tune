@@ -24,13 +24,13 @@ puppet agent -t
 Or, install this module (on the Primary Master) as a standalone script:
 
 ```shell
-curl -O https://raw.githubusercontent.com/tkishel/pe_tune/master/lib/puppet_x/puppetlabs/tune.rb
-chmod +x tune.rb
+git clone https://github.com/tkishel/pe_tune.git
+chmod +x ./pe_tune/lib/puppet_x/puppetlabs/tune.rb 
 ```
 
 ## Usage
 
-1. Run `puppet infrastructure tune` (or `./tune.rb`) on the Primary Master.
+1. Run `puppet infrastructure tune` (or `./pe_tune/lib/puppet_x/puppetlabs/tune.rb`) on the Primary Master.
 1. Verify the settings.
 1. Add the settings to Hiera.
 1. Remove duplicate settings from the Console.
