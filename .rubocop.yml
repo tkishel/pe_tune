@@ -114,6 +114,8 @@ Layout/MultilineArrayBraceLayout:
   Enabled: false
 RSpec/FilePath:
   Enabled: false
+Style/ClassAndModuleCamelCase:
+  Enabled: false
 Style/ClassAndModuleChildren:
   Enabled: false
 Style/ColonMethodCall:

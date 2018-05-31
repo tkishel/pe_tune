@@ -1,9 +1,5 @@
 #!/opt/puppetlabs/puppet/bin/ruby
 
-require 'facter'
-require 'json'
-require 'yaml'
-
 # Notes:
 #
 # This script optimizes the settings documented in tuning_monolithic:
@@ -34,10 +30,10 @@ module PuppetX
           output_not_primary_master_and_exit
         end
 
-        @configuration = PuppetX::Puppetlabs::Configuration.new
-        @pe_database_host = @configuration.pe_conf_database_host
+        @pe_conf = PuppetX::Puppetlabs::Tune::Pe_conf.new
+        @pe_database_host = @pe_conf.pe_conf_database_host
 
-        @puppetdb = PuppetX::Puppetlabs::Puppetdb.new
+        @puppetdb = PuppetX::Puppetlabs::Tune::Puppetdb.new
         @replica_masters = @puppetdb.replica_masters
         @primary_masters = @puppetdb.primary_masters
         @compile_masters = @puppetdb.compile_masters
@@ -49,7 +45,7 @@ module PuppetX
       # This method requires an @instance method in another class.
 
       def get_settings_for_node(certname, settings)
-        @configuration::read_hiera_classifier_overrides(certname, settings)
+        @pe_conf::read_hiera_classifier_overrides(certname, settings)
       end
 
       # This method requires an @instance method in another class.
@@ -57,9 +53,9 @@ module PuppetX
 
       def get_resources_for_node(certname)
         resources = {}
-        facts = @configuration::read_node_facts(certname)
-        resources['cpu'] = facts['processors']['count'].to_i
-        resources['ram'] = (facts['memory']['system']['total_bytes'].to_i / 1024 / 1024).to_i
+        node_facts = @pe_conf::read_node_facts(certname)
+        resources['cpu'] = node_facts['processors']['count'].to_i
+        resources['ram'] = (node_facts['memory']['system']['total_bytes'].to_i / 1024 / 1024).to_i
         if ENV['TEST_CPU']
           Puppet.debug("Using TEST_CPU=#{ENV['TEST_CPU']} for #{certname}")
           resources['cpu'] = ENV['TEST_CPU'].to_i
@@ -782,12 +778,11 @@ end
 # TODO: Delete the remainder of this file prior to release of this script as a module.
 
 if File.expand_path(__FILE__) == File.expand_path($PROGRAM_NAME)
-  require 'hocon'
   require 'optparse'
   require 'puppet'
-  require 'puppet/util/puppetdb'
 
   # The location of enterprise modules varies from version to version.
+
   enterprise_modules = ['pe_infrastructure', 'pe_install', 'pe_manager']
   ent_mod = '/opt/puppetlabs/server/data/enterprise/modules'
   env_mod = '/opt/puppetlabs/server/data/environments/enterprise/modules'
@@ -797,153 +792,10 @@ if File.expand_path(__FILE__) == File.expand_path($PROGRAM_NAME)
     $LOAD_PATH.unshift(enterprise_module_lib) unless $LOAD_PATH.include?(enterprise_module_lib)
   end
 
-  require 'puppet/util/pe_conf'
-  require 'puppet/util/pe_conf/recover'
+  # The following code replaces lib/puppet/face/infrastructure/tune.rb
 
-  module PuppetX
-    module Puppetlabs
-      # This class duplicates lib/puppet_x/configuration.rb
-      # Read pe.conf, and query facts and overrides via Recover.
-      class Configuration
-        attr_reader :environment
-        attr_reader :pe_conf
-        attr_reader :pe_conf_database_host
-
-        def initialize
-          # PE-15116 results in Puppet[:environment] being set to 'enterprise' in the infrastructure face.
-          @environment = Puppet::Util::Execution.execute('/opt/puppetlabs/puppet/bin/puppet config print environment --section master').chomp
-          @pe_conf = read_pe_conf
-          pe_conf_puppet_master_host = @pe_conf['puppet_enterprise::puppet_master_host'] || Puppet[:certname]
-          pe_conf_puppet_master_host = Puppet[:certname] if pe_conf_puppet_master_host == '%{::trusted.certname}'
-          Puppet.debug("Found pe.conf puppet_master_host: #{pe_conf_puppet_master_host}")
-          pe_conf_puppetdb_host = @pe_conf['puppet_enterprise::puppetdb_host'] || pe_conf_puppet_master_host
-          Puppet.debug("Found pe.conf pe_puppetdb_host: #{pe_conf_puppetdb_host}")
-          @pe_conf_database_host = @pe_conf['puppet_enterprise::database_host'] || pe_conf_puppetdb_host
-          Puppet.debug("Found pe.conf pe_database_host: #{@pe_conf_database_host}")
-        end
-
-        def read_pe_conf
-          pe_conf_file = '/etc/puppetlabs/enterprise/conf.d/pe.conf'
-          Puppet.debug("Reading: #{pe_conf_file}")
-          if File.exist?(pe_conf_file)
-            Puppet.debug("Found: #{pe_conf_file}")
-            pe_conf = Hocon.load(pe_conf_file)
-          else
-            Puppet.err("File does not exist: #{pe_conf_file}")
-            pe_conf = {}
-          end
-          pe_conf
-        end
-
-        # PE-24106 changes Recover to a class with instance methods.
-
-        def recover_without_instance?
-          defined?(Puppet::Util::Pe_conf::Recover.facts_for_node) == 'method'
-        end
-
-        # In some versions, Puppet::Util::Pe_conf::Recover does not implement get_node_terminus() and implements find_hiera_overrides(params, facts, environment)
-
-        def recover_with_node_terminus?
-          defined?(Puppet::Util::Pe_conf::Recover.get_node_terminus) == 'method'
-        end
-
-        def read_node_facts(certname)
-          node_facts = {}
-          if recover_without_instance?
-            facts_hash = Puppet::Util::Pe_conf::Recover.facts_for_node(certname, @environment)
-            if facts_hash.key?('puppetversion')
-              node_facts = facts_hash
-            else
-              # Prior to PE-22444, facts are returned as a Hash with elements in this format: {"name"=>"puppetversion", "value"=>"4.10.10"} => nil
-              facts_hash.each do |fact, _nil|
-                node_facts[fact['name']] = fact['value']
-              end
-            end
-          else
-            recover = Puppet::Util::Pe_conf::Recover.new
-            node_facts = recover.facts_for_node(certname, @environment)
-          end
-          node_facts
-        end
-
-        def read_hiera_classifier_overrides(certname, settings)
-          if recover_without_instance?
-            node_facts = Puppet::Util::Pe_conf::Recover.facts_for_node(certname, @environment)
-            if recover_with_node_terminus?
-              node_terminus = Puppet::Util::Pe_conf::Recover.get_node_terminus
-              overrides_hiera = Puppet::Util::Pe_conf::Recover.find_hiera_overrides(certname, settings, node_facts, @environment, node_terminus)
-            else
-              overrides_hiera = Puppet::Util::Pe_conf::Recover.find_hiera_overrides(settings, node_facts, @environment)
-            end
-            overrides_classifier = Puppet::Util::Pe_conf::Recover.classifier_overrides_for_node(certname, node_facts, node_facts['::trusted'])
-          else
-            recover = Puppet::Util::Pe_conf::Recover.new
-            node_facts = recover.facts_for_node(certname, @environment)
-            node_terminus = recover.get_node_terminus
-            overrides_hiera = recover.find_hiera_overrides(certname, settings, node_facts, @environment, node_terminus)
-            overrides_classifier = recover.classifier_overrides_for_node(certname, node_facts, node_facts['::trusted'])
-          end
-          overrides = overrides_hiera
-          duplicates = []
-          # Classifier settings take precedence over Hiera settings.
-          overrides_classifier.each do |k, v|
-            # find_hiera_overrides() returns the specified settings, while classifier_overrides_for_node() returns all settings.
-            next unless settings.include?(k)
-            # This setting is specifed in both the Classifier and Hiera.
-            if overrides.key?(k)
-              Puppet.debug("# Duplicate settings for #{certname}: #{k} Classifier: #{v} Hiera: #{overrides_hiera[k]}")
-              duplicates.push(k)
-            end
-            overrides[k] = v
-          end
-          [overrides, duplicates]
-        end
-      end
-
-      # This class duplicates lib/puppet_x/puppetdb.rb
-      # Query PuppetDB via its API.
-      class Puppetdb
-        attr_reader :replica_masters
-        attr_reader :primary_masters
-        attr_reader :compile_masters
-        attr_reader :console_hosts
-        attr_reader :puppetdb_hosts
-        attr_reader :database_hosts
-
-        def initialize
-          # PE-15116 results in Puppet[:environment] being set to 'enterprise' in the infrastructure face.
-          environment = Puppet::Util::Execution.execute('/opt/puppetlabs/puppet/bin/puppet config print environment --section master').chomp
-          @replica_masters = get_pe_infra_nodes_by_class('Primary_master_replica', environment)
-          @primary_masters = get_pe_infra_nodes_by_class('Certificate_authority', environment) - @replica_masters
-          @compile_masters = get_pe_infra_nodes_by_class('Master', environment)   - @primary_masters - @replica_masters
-          @console_hosts   = get_pe_infra_nodes_by_class('Console', environment)  - @primary_masters - @replica_masters
-          @puppetdb_hosts  = get_pe_infra_nodes_by_class('Puppetdb', environment) - @primary_masters - @replica_masters
-          @database_hosts  = get_pe_infra_nodes_by_class('Database', environment) - @primary_masters - @replica_masters
-        end
-
-        # Note: This is an alternative to get_pe_infra_nodes() in puppetlabs-pe_manager.
-
-        def get_pe_infra_nodes_by_class(class_name, environment = 'production')
-          Puppet.debug("Querying PuppetDB for Class: Puppet_enterprise::Profile::#{class_name}")
-          pql = ['from', 'resources',
-                  ['extract', ['certname', 'parameters'],
-                    ['and',
-                      ['=', 'type', 'Class'],
-                      ['=', 'environment', environment],
-                      ['=', ['node', 'active'], true],
-                      ['=', 'title', "Puppet_enterprise::Profile::#{class_name}"]
-                    ]
-                  ]
-                ]
-          results = Puppet::Util::Puppetdb.query_puppetdb(pql)
-          Puppet.debug(results)
-          results.map { |resource| resource.fetch('certname') }
-        end
-      end
-    end
-  end
-
-  # This code replaces: lib/puppet/face/infrastructure/tune.rb
+  require_relative 'tune/pe_conf'
+  require_relative 'tune/puppetdb'
 
   Puppet.initialize_settings
   Puppet::Util::Log.newdestination :console
@@ -952,7 +804,7 @@ if File.expand_path(__FILE__) == File.expand_path($PROGRAM_NAME)
   parser = OptionParser.new do |opts|
     opts.banner = 'Usage: tune.rb [options]'
     opts.separator ''
-    opts.separator 'Summary: Inspect infrastructure and output optimized settings for services'
+    opts.separator 'Summary: Inspect infrastructure and output optimized settings'
     opts.separator ''
     opts.separator 'Options:'
     opts.separator ''

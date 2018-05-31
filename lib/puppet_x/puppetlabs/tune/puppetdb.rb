@@ -2,8 +2,8 @@ require 'puppet/util/puppetdb'
 
 module PuppetX
   module Puppetlabs
-    # Query PuppetDB via its API.
-    class Puppetdb
+    # Interface to Puppet::Util::Puppetdb
+    class Tune::Puppetdb
       attr_reader :replica_masters
       attr_reader :primary_masters
       attr_reader :compile_masters

@@ -1,13 +1,13 @@
 require 'puppet/indirector/face'
 require 'puppet/feature/base'
 
-require 'puppet_x/puppetlabs/configuration'
-require 'puppet_x/puppetlabs/puppetdb'
 require 'puppet_x/puppetlabs/tune'
+require 'puppet_x/puppetlabs/tune/pe_conf'
+require 'puppet_x/puppetlabs/tune/puppetdb'
 
 Puppet::Face.define(:infrastructure, '1.0.0') do
   action(:tune) do
-    summary 'Inspect infrastructure and output optimized settings for services'
+    summary 'Inspect infrastructure and output optimized settings'
 
     description <<-'DESC'
       Collects information about your Puppet Enterprise installation.

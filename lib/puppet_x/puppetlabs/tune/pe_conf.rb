@@ -1,11 +1,10 @@
-require 'hocon'
 require 'puppet/util/pe_conf'
 require 'puppet/util/pe_conf/recover'
 
 module PuppetX
   module Puppetlabs
-    # Read pe.conf, and query facts and overrides via Recover.
-    class Configuration
+    # Interface to Puppet::Util::Pe_conf and Puppet::Util::Pe_conf::Recover
+    class Tune::Pe_conf
       attr_reader :environment
       attr_reader :pe_conf
       attr_reader :pe_conf_database_host
@@ -34,18 +33,6 @@ module PuppetX
           pe_conf = {}
         end
         pe_conf
-      end
-
-      # PE-24106 changes Recover to a class with instance methods.
-
-      def recover_without_instance?
-        defined?(Puppet::Util::Pe_conf::Recover.facts_for_node) == 'method'
-      end
-
-      # In some versions, Puppet::Util::Pe_conf::Recover does not implement get_node_terminus() and implements find_hiera_overrides(params, facts, environment)
-
-      def recover_with_node_terminus?
-        defined?(Puppet::Util::Pe_conf::Recover.get_node_terminus) == 'method'
       end
 
       def read_node_facts(certname)
@@ -98,6 +85,22 @@ module PuppetX
           overrides[k] = v
         end
         [overrides, duplicates]
+      end
+
+      # Internal helper methods.
+
+      private
+
+      # PE-24106 changes Recover to a class with instance methods.
+
+      def recover_without_instance?
+        defined?(Puppet::Util::Pe_conf::Recover.facts_for_node) == 'method'
+      end
+
+      # In some versions, Puppet::Util::Pe_conf::Recover does not implement get_node_terminus() and implements find_hiera_overrides(params, facts, environment)
+
+      def recover_with_node_terminus?
+        defined?(Puppet::Util::Pe_conf::Recover.get_node_terminus) == 'method'
       end
     end
   end
