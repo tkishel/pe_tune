@@ -1,12 +1,13 @@
 require 'spec_helper'
 
-require 'puppet_x/puppetlabs/tune.rb'
+require 'puppet_x/puppetlabs/tune'
+require 'puppet_x/puppetlabs/tune/calculate.rb'
 
 # TODO: Refactor these tests.
 
-describe PuppetX::Puppetlabs::Tune do
+describe PuppetX::Puppetlabs::Tune::Calculate do
   # TODO: Replace/remove this unit_test workaround. my_hash = { key: 'value' }
-  subject(:tune) { described_class.new(:unit_test => true) }
+  subject(:calculon) { described_class.new }
 
   context 'with a monolithic infrastructure, server size small' do
     Facter.add(:pe_server_version) { setcode { '2017.1.1' } }
@@ -37,7 +38,7 @@ describe PuppetX::Puppetlabs::Tune do
       }
       with_compile_masters = false
       with_external_postgresql = false
-      expect(tune::optimize_monolithic_master_settings(resources, with_compile_masters, with_external_postgresql)).to eq([settings, totals])
+      expect(calculon::calculate_monolithic_master_settings(resources, with_compile_masters, with_external_postgresql)).to eq([settings, totals])
     end
 
     it 'can calculate master settings with compile masters' do
@@ -66,7 +67,7 @@ describe PuppetX::Puppetlabs::Tune do
       }
       with_compile_masters = true
       with_external_postgresql = false
-      expect(tune::optimize_monolithic_master_settings(resources, with_compile_masters, with_external_postgresql)).to eq([settings, totals])
+      expect(calculon::calculate_monolithic_master_settings(resources, with_compile_masters, with_external_postgresql)).to eq([settings, totals])
     end
 
     it 'can calculate master host settings with external postgresql' do
@@ -94,7 +95,7 @@ describe PuppetX::Puppetlabs::Tune do
       }
       with_compile_masters = false
       with_external_postgresql = true
-      expect(tune::optimize_monolithic_master_settings(resources, with_compile_masters, with_external_postgresql)).to eq([settings, totals])
+      expect(calculon::calculate_monolithic_master_settings(resources, with_compile_masters, with_external_postgresql)).to eq([settings, totals])
     end
   end
 
@@ -125,7 +126,7 @@ describe PuppetX::Puppetlabs::Tune do
       }
       with_compile_masters = false
       with_external_postgresql = false
-      expect(tune::optimize_monolithic_master_settings(resources, with_compile_masters, with_external_postgresql)).to eq([settings, totals])
+      expect(calculon::calculate_monolithic_master_settings(resources, with_compile_masters, with_external_postgresql)).to eq([settings, totals])
     end
   end
 
@@ -156,7 +157,7 @@ describe PuppetX::Puppetlabs::Tune do
       }
       with_compile_masters = false
       with_external_postgresql = false
-      expect(tune::optimize_monolithic_master_settings(resources, with_compile_masters, with_external_postgresql)).to eq([settings, totals])
+      expect(calculon::calculate_monolithic_master_settings(resources, with_compile_masters, with_external_postgresql)).to eq([settings, totals])
     end
   end
 
@@ -178,7 +179,7 @@ describe PuppetX::Puppetlabs::Tune do
       }
       with_activemq = false
       with_orchestrator = false
-      expect(tune::optimize_master_settings(resources, with_activemq, with_orchestrator)).to eq([settings, totals])
+      expect(calculon::calculate_master_settings(resources, with_activemq, with_orchestrator)).to eq([settings, totals])
     end
 
     it 'can calculate console host settings' do
@@ -191,7 +192,7 @@ describe PuppetX::Puppetlabs::Tune do
       }
       # settings['puppet_enterprise::profile::console::java_args']['XX:+UseG1GC'] = ''
       totals = { 'RAM' => { 'total' => 8192, 'used' => 4096 } }
-      expect(tune::optimize_console_settings(resources)).to eq([settings, totals])
+      expect(calculon::calculate_console_settings(resources)).to eq([settings, totals])
     end
 
     it 'can calculate puppetdb host settings' do
@@ -210,7 +211,7 @@ describe PuppetX::Puppetlabs::Tune do
         'RAM' => { 'total' => 8192, 'used' => 4096 },
       }
       with_external_postgresql = false
-      expect(tune::optimize_puppetdb_settings(resources, with_external_postgresql)).to eq([settings, totals])
+      expect(calculon::calculate_puppetdb_settings(resources, with_external_postgresql)).to eq([settings, totals])
     end
 
     it 'can calculate puppetdb host settings with an external postgresql server' do
@@ -228,7 +229,7 @@ describe PuppetX::Puppetlabs::Tune do
         'RAM' => { 'total' => 8192, 'used' => 4096 },
       }
       with_external_postgresql = true
-      expect(tune::optimize_puppetdb_settings(resources, with_external_postgresql)).to eq([settings, totals])
+      expect(calculon::calculate_puppetdb_settings(resources, with_external_postgresql)).to eq([settings, totals])
     end
   end
 
@@ -244,7 +245,43 @@ describe PuppetX::Puppetlabs::Tune do
       totals = {
         'RAM' => { 'total' => 8192, 'used' => 2048 },
       }
-      expect(tune::optimize_external_postgresql_settings(resources)).to eq([settings, totals])
+      expect(calculon::calculate_external_postgresql_settings(resources)).to eq([settings, totals])
+    end
+  end
+
+  context 'its private methods' do
+    it 'can fit a setting based upon number of processors' do
+      expect((calculon.send :fit_to_processors, 1,  'S', 'M', 'L')).to eq('S')
+      expect((calculon.send :fit_to_processors, 4,  'S', 'M', 'L')).to eq('S')
+      expect((calculon.send :fit_to_processors, 8,  'S', 'M', 'L')).to eq('M')
+      expect((calculon.send :fit_to_processors, 16, 'S', 'M', 'L')).to eq('L')
+      expect((calculon.send :fit_to_processors, 17, 'S', 'M', 'L')).to eq('L')
+    end
+
+    it 'can fit a setting based upon amount of memory' do
+      expect((calculon.send :fit_to_memory, 4096,  'S', 'M', 'L')).to eq('S')
+      expect((calculon.send :fit_to_memory, 8192,  'S', 'M', 'L')).to eq('S')
+      expect((calculon.send :fit_to_memory, 16384, 'S', 'M', 'L')).to eq('M')
+      expect((calculon.send :fit_to_memory, 32768, 'S', 'M', 'L')).to eq('L')
+      expect((calculon.send :fit_to_memory, 32769, 'S', 'M', 'L')).to eq('L')
+    end
+
+    it 'can calculate the percentage of a resource limited to a minimum and maximum' do
+      expect((calculon.send :clamp_percent_of_resource, 4096, 50, 1024, 3072)).to eq(2048)
+      expect((calculon.send :clamp_percent_of_resource, 4096, 10, 1024, 3072)).to eq(1024)
+      expect((calculon.send :clamp_percent_of_resource, 4096, 90, 1024, 3072)).to eq(3072)
+    end
+
+    it 'can detect the absense of JRuby 9K via PE Server Version' do
+      Facter.clear
+      Facter.add(:pe_server_version) { setcode { '2017.1.1' } }
+      expect((calculon.send :jruby_9k_enabled?)).to eq(false)
+    end
+
+    it 'can detect JRuby 9K via PE Server Version' do
+      Facter.clear
+      Facter.add(:pe_server_version) { setcode { '2018.1.1' } }
+      expect((calculon.send :jruby_9k_enabled?)).to eq(true)
     end
   end
 end

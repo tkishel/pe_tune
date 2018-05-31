@@ -2,6 +2,7 @@ require 'puppet/indirector/face'
 require 'puppet/feature/base'
 
 require 'puppet_x/puppetlabs/tune'
+require 'puppet_x/puppetlabs/tune/calculate'
 require 'puppet_x/puppetlabs/tune/pe_conf'
 require 'puppet_x/puppetlabs/tune/puppetdb'
 

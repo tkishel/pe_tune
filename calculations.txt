@@ -1,6 +1,6 @@
-Documentation of source of values for each method:
+Documentation of source of information for each method ...
 
-optimize_monolithic_master_settings
+calculate_monolithic_master_settings
 
 # percent_cpu_threads        based upon tuning_monolithic;                                            see also config_puppetdb
 # percent_cpu_jrubies        based upon tuning_monolithic
@@ -25,7 +25,7 @@ optimize_monolithic_master_settings
 #
 # Note: In 2018.x, JRuby 9K uses additional RAM compared to earlier versions.
 
-optimize_master_settings
+calculate_master_settings
 
 # minimum_cpu_jrubies        recommended by support
 # maximum_cpu_jrubies        based upon config_puppetserver
@@ -37,7 +37,7 @@ optimize_master_settings
 # minimum_mb_os              estimated by support
 # minimum_mb_g1gc            estimated by support;         not yet implemented
 
-optimize_console_settings
+calculate_console_settings
 
 # percent_mb_console recommended by support
 # minimum_mb_console based upon tuning_monolithic; changed from 256,512,1024 to 512,768,1024; see also config_java_args: 512
@@ -45,7 +45,7 @@ optimize_console_settings
 # minimum_mb_os      estimated by support
 # minimum_mb_g1gc    estimated by support;                 not yet implemented
 
-optimize_puppetdb_settings
+calculate_puppetdb_settings
 
 # percent_cpu_threads based upon tuning_monolithic; see also config_puppetdb
 # minimum_cpu_threads recommended by support
@@ -59,7 +59,7 @@ optimize_puppetdb_settings
 # minimum_mb_os       estimated by support
 # minimum_mb_g1gc     estimated by support;                not yet implemented
 
-optimize_external_postgresql_settings
+calculate_external_postgresql_settings
 
 # percent_mb_buffers recommended by postgresql
 # minimum_mb_buffers based upon tuning_monolithic,        changed from 2048,4096 to 2048,3072,4096

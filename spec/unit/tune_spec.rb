@@ -63,46 +63,12 @@ describe PuppetX::Puppetlabs::Tune do
       expect(tune::meets_minimum_system_requirements?(resources)).to eq(true)
     end
 
-    it 'can not enforce minimum system requirements' do
+    it 'can be configured to not enforce minimum system requirements' do
       tune.instance_variable_set(:@option_no_minimum_system_requirements, true)
       resources = { 'cpu' => 3, 'ram' => 8191 }
       expect(tune::meets_minimum_system_requirements?(resources)).to eq(true)
     end
 
-    # Refer to tune_calculate_spec.rb for testing of optimize_* methods.
-
-    it 'can fit a setting based upon number of processors' do
-      expect(tune::fit_to_processors(1,  'S', 'M', 'L')).to eq('S')
-      expect(tune::fit_to_processors(4,  'S', 'M', 'L')).to eq('S')
-      expect(tune::fit_to_processors(8,  'S', 'M', 'L')).to eq('M')
-      expect(tune::fit_to_processors(16, 'S', 'M', 'L')).to eq('L')
-      expect(tune::fit_to_processors(17, 'S', 'M', 'L')).to eq('L')
-    end
-
-    it 'can fit a setting based upon amount of memory' do
-      expect(tune::fit_to_memory(4096,  'S', 'M', 'L')).to eq('S')
-      expect(tune::fit_to_memory(8192,  'S', 'M', 'L')).to eq('S')
-      expect(tune::fit_to_memory(16384, 'S', 'M', 'L')).to eq('M')
-      expect(tune::fit_to_memory(32768, 'S', 'M', 'L')).to eq('L')
-      expect(tune::fit_to_memory(32769, 'S', 'M', 'L')).to eq('L')
-    end
-
-    it 'can calculate the percentage of a resource limited to a minimum and maximum' do
-      expect(tune::clamp_percent_of_resource(4096, 50, 1024, 3072)).to eq(2048)
-      expect(tune::clamp_percent_of_resource(4096, 10, 1024, 3072)).to eq(1024)
-      expect(tune::clamp_percent_of_resource(4096, 90, 1024, 3072)).to eq(3072)
-    end
-
-    it 'can detect the absense of JRuby 9K via PE Server Version' do
-      Facter.clear
-      Facter.add(:pe_server_version) { setcode { '2017.1.1' } }
-      expect(tune::jruby_9k_enabled?).to eq(false)
-    end
-
-    it 'can detect JRuby 9K via PE Server Version' do
-      Facter.clear
-      Facter.add(:pe_server_version) { setcode { '2018.1.1' } }
-      expect(tune::jruby_9k_enabled?).to eq(true)
-    end
+    # Refer to tune_calculate_spec.rb for testing of calculate_* methods.
   end
 end
