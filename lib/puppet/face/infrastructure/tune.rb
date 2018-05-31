@@ -14,13 +14,13 @@ Puppet::Face.define(:infrastructure, '1.0.0') do
       Outputs optimized settings for services based upon CPU and RAM.
     DESC
 
-    option '--current' do
-      summary 'Output current settings and exit'
+    option '--common' do
+      summary 'Extract common settings from node-specific settings'
       default_to { false }
     end
 
-    option '--deduplicate' do
-      summary 'Extract common settings from node-specific settings'
+    option '--current' do
+      summary 'Output current settings and exit'
       default_to { false }
     end
 

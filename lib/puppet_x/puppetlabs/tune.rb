@@ -26,7 +26,7 @@ module PuppetX
         @collected_nodes = {}
         @common_settings = {}
 
-        @option_common_settings = options[:dedup]
+        @option_common_settings = options[:common]
         @option_no_minimum_system_requirements = options[:force]
         @option_output_path = options[:hiera]
 
@@ -956,6 +956,10 @@ if File.expand_path(__FILE__) == File.expand_path($PROGRAM_NAME)
     opts.separator ''
     opts.separator 'Options:'
     opts.separator ''
+    options[:common] = false
+    opts.on('--common', 'Extract common settings from node-specific settings') do
+      options[:common] = true
+    end
     options[:current] = false
     opts.on('--current', 'Output current settings and exit') do
       options[:current] = true
@@ -963,10 +967,6 @@ if File.expand_path(__FILE__) == File.expand_path($PROGRAM_NAME)
     options[:debug] = false
     opts.on('--debug', 'Enable logging of debug information') do
       options[:debug] = true
-    end
-    options[:dedup] = false
-    opts.on('--deduplicate', 'Extract common settings from node-specific settings') do
-      options[:dedup] = true
     end
     options[:force] = false
     opts.on('--force', 'Do not enforce minimum system requirements') do

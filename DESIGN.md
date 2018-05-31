@@ -14,11 +14,11 @@ The tuning documentation for Monolithic infrastructures is limited to a fixed se
 
 * Provide a command to output optimized settings for Puppet Enterprise services, based upon infrastructure type and infrastructure host resources.
 
+* Utilize canonical functions in other puppetlabs-pe_* modules to read configuration files, node group membership, and/or profile class assignment.
+
 ## Solutions: To Do
 
 * Define canonical functions (in this module, or in other puppetlabs-pe_* modules) for use by other modules to calculate optimized settings for Puppet Enterprise services.
-
-* Utilize canonical functions in other puppetlabs-pe_* modules to read configuration files, node group membership, and/or profile class assignment.
 
 * Update, normalize, and simplify the existing tuning documentation.
 

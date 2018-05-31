@@ -38,21 +38,21 @@ chmod +x tune.rb
 
 #### Parameters
 
+##### `--common`
+
+Extract common settings from node-specific settings when outputting optimized settings (BETA).
+
 ##### `--current`
 
 Output current settings and exit.
 
 Settings may be defined either in the Classifier (Console) or in Hiera, with Classifier settings taking precedence over Hiera settings. Define settings in Hiera (preferred) or the Classifier, but not both.
 
-The output of this option will identify duplicate settings found in both the Classifier and Hiera.
+The output of this option also identifies duplicate settings found in both the Classifier and Hiera.
 
 ##### `--debug`
 
 Enable logging of debug information.
-
-##### `--deduplicate`
-
-Extract common settings from node-specific settings (BETA).
 
 ##### `--hiera DIRECTORY`
 
