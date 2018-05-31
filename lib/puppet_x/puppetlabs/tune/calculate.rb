@@ -310,16 +310,6 @@ module PuppetX
         [resource_percentage_or_maximum, minimum].max
       end
 
-      # Return a number as a computer-science number.
-
-      def nearest_power_of_two(number)
-        return 0 if number <= 0
-        exponent = Math.log2 number
-        higher_power = 2**exponent.ceil
-        lower_power  = 2**exponent.floor
-        ((higher_power - number) <= (number - lower_power)) ? higher_power : lower_power
-      end
-
       # Note: Allow override via ENV for testing.
 
       def reserved_memory_os
@@ -345,6 +335,16 @@ module PuppetX
       def jruby_9k_enabled?
         pe_server_version = Facter.value('pe_server_version') || 'NOT NIL'
         pe_server_version.start_with? '2018'
+      end
+
+      # Return a number as a computer-science number.
+
+      def nearest_power_of_two(number)
+        return 0 if number <= 0
+        exponent = Math.log2 number
+        higher_power = 2**exponent.ceil
+        lower_power  = 2**exponent.floor
+        ((higher_power - number) <= (number - lower_power)) ? higher_power : lower_power
       end
     end
   end

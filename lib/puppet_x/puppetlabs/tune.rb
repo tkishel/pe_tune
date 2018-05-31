@@ -193,7 +193,7 @@ module PuppetX
             settings, totals = @calculator::calculate_master_settings(resources, true, true)
           end
           output_minimum_system_requirements_error_and_exit(certname) if settings.empty? || totals.empty?
-          collect_node_properties(certname, 'Primary Master', resources, settings, totals)
+          collect_node(certname, 'Primary Master', resources, settings, totals)
         end
 
         # Replica Master: Applicable to Monolithic Infrastructures.
@@ -202,7 +202,7 @@ module PuppetX
           output_minimum_system_requirements_error_and_exit(certname) unless meets_minimum_system_requirements?(resources)
           settings, totals = @calculator::calculate_monolithic_master_settings(resources, with_compile_masters, with_external_postgresql)
           output_minimum_system_requirements_error_and_exit(certname) if settings.empty? || totals.empty?
-          collect_node_properties(certname, 'Replica Master', resources, settings, totals)
+          collect_node(certname, 'Replica Master', resources, settings, totals)
         end
 
         unless is_monolithic
@@ -212,7 +212,7 @@ module PuppetX
             output_minimum_system_requirements_error_and_exit(certname) unless meets_minimum_system_requirements?(resources)
             settings, totals = @calculator::calculate_master_settings(resources, false, false)
             output_minimum_system_requirements_error_and_exit(certname) if settings.empty? || totals.empty?
-            collect_node_properties(certname, 'Compile Master', resources, settings, totals)
+            collect_node(certname, 'Compile Master', resources, settings, totals)
           end
 
           # PuppetDB Host: Specific to Split Infrastructures. By default, a list of one.
@@ -221,7 +221,7 @@ module PuppetX
             output_minimum_system_requirements_error_and_exit(certname) unless meets_minimum_system_requirements?(resources)
             settings, totals = @calculator::calculate_puppetdb_settings(resources, with_external_postgresql)
             output_minimum_system_requirements_error_and_exit(certname) if settings.empty? || totals.empty?
-            collect_node_properties(certname, 'PuppetDB Host', resources, settings, totals)
+            collect_node(certname, 'PuppetDB Host', resources, settings, totals)
           end
         end
 
@@ -232,14 +232,14 @@ module PuppetX
             output_minimum_system_requirements_error_and_exit(certname) unless meets_minimum_system_requirements?(resources)
             settings, totals = @calculator::calculate_external_postgresql_settings(resources)
             output_minimum_system_requirements_error_and_exit(certname) if settings.empty? || totals.empty?
-            collect_node_properties(certname, 'External PostgreSQL Host', resources, settings, totals)
+            collect_node(certname, 'External PostgreSQL Host', resources, settings, totals)
           end
           if @database_hosts.count.zero?
             resources = get_resources_for_node(@pe_database_host)
             output_minimum_system_requirements_error_and_exit(certname) unless meets_minimum_system_requirements?(resources)
             settings, totals = @calculator::calculate_external_postgresql_settings(resources)
             output_minimum_system_requirements_error_and_exit(certname) if settings.empty? || totals.empty?
-            collect_node_properties(@pe_database_host, 'External PostgreSQL Host', resources, settings, totals)
+            collect_node(@pe_database_host, 'External PostgreSQL Host', resources, settings, totals)
           end
         end
 
@@ -250,28 +250,28 @@ module PuppetX
             output_minimum_system_requirements_error_and_exit(certname) unless meets_minimum_system_requirements?(resources)
             settings, totals = @calculator::calculate_master_settings(resources, false, false)
             output_minimum_system_requirements_error_and_exit(certname) if settings.empty? || totals.empty?
-            collect_node_properties(certname, 'Compile Master', resources, settings, totals)
+            collect_node(certname, 'Compile Master', resources, settings, totals)
           end
         end
 
         # Output collected information.
 
-        extract_common_settings
+        extract_common_optimized_settings
 
         @collected_nodes.each do |certname, properties|
           output_node_resources(certname, properties['profile'], properties['resources'])
           output_node_optimized_settings(certname, properties['settings'])
-          output_node_summary(certname, properties['totals'])
+          output_node_optimized_settings_summary(certname, properties['totals'])
         end
 
-        output_common_settings
+        output_common_optimized_settings
 
         create_output_files
       end
 
-      # Collect settings for output.
+      # Collect node for output.
 
-      def collect_node_properties(certname, profile, resources, settings, totals)
+      def collect_node(certname, profile, resources, settings, totals)
         properties = {
           'profile'   => profile,
           'resources' => resources,
@@ -283,7 +283,7 @@ module PuppetX
 
       # Extract common settings for common.yaml from <certname>.yaml.
 
-      def extract_common_settings
+      def extract_common_optimized_settings
         return unless @option_common_settings
         nodes_with_setting = {}
         @collected_nodes.each do |certname, properties|
@@ -388,7 +388,7 @@ module PuppetX
         output("## Found: #{resources['cpu']} CPU(s) / #{resources['ram']} MB RAM for #{profile} #{certname}")
       end
 
-      def output_node_summary(certname, totals)
+      def output_node_optimized_settings_summary(certname, totals)
         return if totals.empty?
         if totals['CPU']
           total = totals['CPU']['total']
@@ -408,7 +408,7 @@ module PuppetX
         end
       end
 
-      def output_common_settings
+      def output_common_optimized_settings
         return unless @option_common_settings
         return if @common_settings.empty?
         output("## Specify the following optimized settings in Hiera in common.yaml\n\n")
@@ -445,7 +445,7 @@ module PuppetX
 end
 
 # The remainder of this file allows this class to be executed as a standalone script.
-# TODO: Delete the remainder of this file prior to release of this script as a module.
+# TODO: Delete the remainder of this file prior to release of the module.
 
 if File.expand_path(__FILE__) == File.expand_path($PROGRAM_NAME)
   require 'optparse'

@@ -37,18 +37,14 @@ Puppet::Face.define(:infrastructure, '1.0.0') do
 
     when_invoked do |*args|
       options = args.pop
-
       Puppet.debug("Command Options: #{options}")
-
       Tune = PuppetX::Puppetlabs::Tune.new(options)
-
       if options[:current]
         Tune.output_current_settings
       else
         Tune.output_optimized_settings
       end
-
-      return
+      return true
     end
   end
 end

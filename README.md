@@ -10,18 +10,11 @@
 
 ## Description
 
-This module provides a `puppet infrastructure tune` command that outputs optimized settings for Puppet Enterprise services based upon hardware resources. See DESIGN.md for more information.
+This module provides a script that outputs optimized settings for Puppet Enterprise services based upon hardware resources.
 
 ## Setup
 
 Install this module on the Primary Master:
-
-```shell
-git clone https://github.com/tkishel/pe_tune.git /etc/puppetlabs/code/environments/production/modules/pe_tune
-puppet agent -t
-```
-
-Or, install this module (on the Primary Master) as a standalone script:
 
 ```shell
 git clone https://github.com/tkishel/pe_tune.git
@@ -30,11 +23,11 @@ chmod +x ./pe_tune/lib/puppet_x/puppetlabs/tune.rb
 
 ## Usage
 
-1. Run `puppet infrastructure tune` (or `./pe_tune/lib/puppet_x/puppetlabs/tune.rb`) on the Primary Master.
-1. Verify the settings.
-1. Add the settings to Hiera.
-1. Remove duplicate settings from the Console.
-1. Run `puppet agent -t` on each Puppet Enterprise infrastructure host to apply the settings.
+1. Run the `./pe_tune/lib/puppet_x/puppetlabs/tune.rb` script on the Primary Master.
+1. Verify the optimized settings.
+1. Add the optimized settings to Hiera.
+1. Remove any duplicate settings from the Console.
+1. Run `puppet agent -t` on each Puppet Enterprise infrastructure host to apply the optimized settings.
 
 #### Parameters
 
@@ -66,7 +59,7 @@ Do not enforce minimum system requirements (4 Cores, 8 GB RAM) for infrastructur
 
 ## Reference
 
-This command reads infrastructure settings on the Primary Master, queries PuppetDB for node group membership to identify infrastructure hosts, queries PuppetDB for processor and memory facts for each infrastructure host, and outputs optimizing settings for each infrastructure host as Hiera YAML data.
+This module reads infrastructure settings on the Primary Master, queries PuppetDB for node group membership to identify infrastructure hosts, queries PuppetDB for processor and memory facts for each infrastructure host, and outputs optimizing settings for each infrastructure host as Hiera YAML data.
 
 ### Output
 
@@ -75,7 +68,7 @@ By default, settings are output to STDOUT.
 For example:
 
 ```shell
-[root@master ~] puppet infrastructure tune
+[root@master ~] tune.rb
 ### Puppet Infrastructure Summary: Found a Monolithic Infrastructure
 
 ## Found: 8 Core(s) / 16384 MB RAM for Primary Master master.puppetdebug.vlan
@@ -141,13 +134,13 @@ For more information, review:
 
 ## Limitations
 
-Support limited to the following versions:
+Support is limited to the following versions:
 
 * PE 2016.4.x
 * PE 2017.x.x
 * PE 2018.x.x
 
-Support limited to the following infrastructures:
+Support is limited to the following infrastructures:
 
 * Monolithic Infrastructure
 * Monolithic with Compile Masters
