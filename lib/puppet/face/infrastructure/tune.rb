@@ -1,10 +1,8 @@
 require 'puppet/indirector/face'
-
 require 'puppet_x/puppetlabs/tune'
 require 'puppet_x/puppetlabs/tune/calculate'
-require 'puppet_x/puppetlabs/tune/pe_conf'
-require 'puppet_x/puppetlabs/tune/puppetdb'
-
+require 'puppet_x/puppetlabs/tune/configuration'
+  
 Puppet::Face.define(:infrastructure, '1.0.0') do
   action(:tune) do
     summary 'Inspect infrastructure and output optimized settings'

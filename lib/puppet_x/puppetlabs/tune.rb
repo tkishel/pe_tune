@@ -16,7 +16,6 @@ module PuppetX
     # Query infrastructure and show current or calculate optimized settings.
     class Tune
       # List of settings optimized by this module.
-
       def tunable_settings
         [
           'puppet_enterprise::master::puppetserver::jruby_max_active_instances',
@@ -46,29 +45,37 @@ module PuppetX
           output_not_primary_master_and_exit
         end
 
+        # PE-15116 results in Puppet[:environment] being set to 'enterprise' within the infrastructure face.
+        @environment = Puppet::Util::Execution.execute('/opt/puppetlabs/puppet/bin/puppet config print environment --section master').chomp
+
         @calculator = PuppetX::Puppetlabs::Tune::Calculate.new
+        @configurator = PuppetX::Puppetlabs::Tune::Configuration.new
 
-        @pe_conf = PuppetX::Puppetlabs::Tune::Pe_conf.new
-        @pe_database_host = @pe_conf.pe_conf_database_host
+        @pe_database_host = @configurator.pe_conf_database_host
 
-        @puppetdb = PuppetX::Puppetlabs::Tune::Puppetdb.new
-        @replica_masters = @puppetdb.replica_masters
-        @primary_masters = @puppetdb.primary_masters
-        @compile_masters = @puppetdb.compile_masters
-        @console_hosts   = @puppetdb.console_hosts
-        @puppetdb_hosts  = @puppetdb.puppetdb_hosts
-        @database_hosts  = @puppetdb.database_hosts
+        @replica_masters = get_nodes_with_class('Primary_master_replica')
+        @primary_masters = get_nodes_with_class('Certificate_authority') - @replica_masters
+        @compile_masters = get_nodes_with_class('Master')   - @primary_masters - @replica_masters
+        @console_hosts   = get_nodes_with_class('Console')  - @primary_masters - @replica_masters
+        @puppetdb_hosts  = get_nodes_with_class('Puppetdb') - @primary_masters - @replica_masters
+        @database_hosts  = get_nodes_with_class('Database') - @primary_masters - @replica_masters
+      end
+
+      # Interfaces to Puppet::Util::Pe_conf and Puppet::Util::Pe_conf::Recover
+
+      def get_nodes_with_class(classname)
+        @configurator::get_infra_nodes_with_class(classname, @environment)
       end
 
       def get_settings_for_node(certname, settings)
-        @pe_conf::read_hiera_classifier_overrides(certname, settings)
+        @configurator::read_hiera_classifier_overrides(certname, settings, @environment)
       end
 
       # Note: Allow override via ENV for testing.
 
       def get_resources_for_node(certname)
         resources = {}
-        node_facts = @pe_conf::read_node_facts(certname)
+        node_facts = @configurator::read_node_facts(certname, @environment)
         resources['cpu'] = node_facts['processors']['count'].to_i
         resources['ram'] = (node_facts['memory']['system']['total_bytes'].to_i / 1024 / 1024).to_i
         if ENV['TEST_CPU']
@@ -465,8 +472,7 @@ if File.expand_path(__FILE__) == File.expand_path($PROGRAM_NAME)
   # The following code replaces lib/puppet/face/infrastructure/tune.rb
 
   require_relative 'tune/calculate'
-  require_relative 'tune/pe_conf'
-  require_relative 'tune/puppetdb'
+  require_relative 'tune/configuration'
 
   Puppet.initialize_settings
   Puppet::Util::Log.newdestination :console
