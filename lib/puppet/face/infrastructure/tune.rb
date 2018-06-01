@@ -1,5 +1,4 @@
 require 'puppet/indirector/face'
-require 'puppet/feature/base'
 
 require 'puppet_x/puppetlabs/tune'
 require 'puppet_x/puppetlabs/tune/calculate'
@@ -44,7 +43,7 @@ Puppet::Face.define(:infrastructure, '1.0.0') do
       else
         Tune.output_optimized_settings
       end
-      return true
+      return
     end
   end
 end
