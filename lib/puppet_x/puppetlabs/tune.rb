@@ -123,7 +123,7 @@ module PuppetX
       # TODO: Replace with a query of puppet_enterprise::master::puppetserver::jruby_9k_enabled
 
       def jruby_9k_enabled?
-        ps_puppetserver = Puppet::Util::Execution.execute("ps ax | grep 'puppetserver/jruby-9k.jar' | grep -v grep").chomp
+        ps_puppetserver = `ps ax | grep 'puppetserver/jruby-9k.jar' | grep -v grep`.chomp
         ps_puppetserver.empty? == false
       end
 

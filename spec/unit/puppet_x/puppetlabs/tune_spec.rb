@@ -64,9 +64,9 @@ describe PuppetX::Puppetlabs::Tune do
       tune.instance_variable_set(:@option_common_settings, true)
       tune.instance_variable_set(:@common_settings, {})
       collected_nodes = {
-                           'node_1' => { 'settings' => { 'a' => 1, 'b' => 'b' } }, 
-                           'node_2' => { 'settings' => { 'a' => 2, 'b' => 'b' } }
-                         }
+        'node_1' => { 'settings' => { 'a' => 1, 'b' => 'b' } },
+        'node_2' => { 'settings' => { 'a' => 2, 'b' => 'b' } }
+      }
       common_settings = { 'b' => 'b' }
       tune.instance_variable_set(:@collected_nodes, collected_nodes)
       expect(tune::extract_common_optimized_settings).to eq(common_settings)

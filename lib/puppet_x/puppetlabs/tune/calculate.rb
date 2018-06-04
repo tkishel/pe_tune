@@ -106,7 +106,7 @@ module PuppetX
 
         def calculate_master_settings(resources, with_jruby_9k, with_activemq, with_orchestrator)
           minimum_cpu_jrubies        = 1
-          maximum_cpu_jrubies        = resources['cpu'] - 1
+          maximum_cpu_jrubies        = [1, (resources['cpu'] - 1)].max
           minimum_mb_puppetserver    = 1024
           mb_per_puppetserver_jruby  = memory_per_jruby(resources['ram'])
           mb_puppetserver_code_cache = (resources['ram'] < 2048) ? 48 : 512
@@ -195,7 +195,7 @@ module PuppetX
         def calculate_puppetdb_settings(resources, with_external_postgresql)
           percent_cpu_threads = 75
           minimum_cpu_threads = 1
-          maximum_cpu_threads = resources['cpu'] - 1
+          maximum_cpu_threads = [1, (resources['cpu'] - 1)].max
           percent_mb_puppetdb = with_external_postgresql ? 50 : 25
           percent_mb_buffers  = with_external_postgresql ? 0  : 25
           minimum_mb_puppetdb = fit_to_memory(resources['ram'], 512, 1024, 2048)

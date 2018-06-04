@@ -55,7 +55,10 @@ module PuppetX
 
         def read_node_facts(certname, environment)
           node_facts = {}
-          if recover_without_instance?
+          if recover_with_instance_method?
+            recover = Puppet::Util::Pe_conf::Recover.new
+            node_facts = recover.facts_for_node(certname, environment)
+          else
             facts_hash = Puppet::Util::Pe_conf::Recover.facts_for_node(certname, environment)
             if facts_hash.key?('puppetversion')
               node_facts = facts_hash
@@ -65,9 +68,6 @@ module PuppetX
                 node_facts[fact['name']] = fact['value']
               end
             end
-          else
-            recover = Puppet::Util::Pe_conf::Recover.new
-            node_facts = recover.facts_for_node(certname, environment)
           end
           node_facts
         end
