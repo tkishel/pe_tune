@@ -460,27 +460,12 @@ module PuppetX
   end
 end
 
-# The remainder of this file allows this class to be executed as a standalone script.
+# The following code replaces lib/puppet/face/infrastructure/tune.rb
+#   allowing this class to be executed as a standalone script.
 
 if File.expand_path(__FILE__) == File.expand_path($PROGRAM_NAME)
   require 'optparse'
   require 'puppet'
-
-  # The location of enterprise modules varies from version to version.
-
-  enterprise_modules = ['pe_infrastructure', 'pe_install', 'pe_manager']
-  ent_mod = '/opt/puppetlabs/server/data/enterprise/modules'
-  env_mod = '/opt/puppetlabs/server/data/environments/enterprise/modules'
-  enterprise_module_path = File.directory?(ent_mod) ? ent_mod : env_mod
-  enterprise_modules.each do |enterprise_module|
-    enterprise_module_lib = "#{enterprise_module_path}/#{enterprise_module}/lib"
-    $LOAD_PATH.unshift(enterprise_module_lib) unless $LOAD_PATH.include?(enterprise_module_lib)
-  end
-
-  # The following code replaces lib/puppet/face/infrastructure/tune.rb
-
-  require_relative 'tune/calculate'
-  require_relative 'tune/configuration'
 
   Puppet.initialize_settings
   Puppet::Util::Log.newdestination :console
@@ -523,6 +508,25 @@ if File.expand_path(__FILE__) == File.expand_path($PROGRAM_NAME)
   Puppet.debug = options[:debug]
 
   Puppet.debug("Command Options: #{options}")
+
+  # The location of enterprise modules varies from version to version.
+
+  enterprise_modules = ['pe_infrastructure', 'pe_install', 'pe_manager']
+  env_mod = '/opt/puppetlabs/server/data/environments/enterprise/modules'
+  ent_mod = '/opt/puppetlabs/server/data/enterprise/modules'
+  enterprise_module_paths = [env_mod, ent_mod]
+  enterprise_module_paths.each do |enterprise_module_path|
+    next unless File.directory?(enterprise_module_path)
+    enterprise_modules.each do |enterprise_module|
+      enterprise_module_lib = "#{enterprise_module_path}/#{enterprise_module}/lib"
+      next if $LOAD_PATH.include?(enterprise_module_lib)
+      Puppet.debug("Adding #{enterprise_module} to LOAD_PATH: #{enterprise_module_lib}")
+      $LOAD_PATH.unshift(enterprise_module_lib)
+    end
+  end
+
+  require_relative 'tune/calculate'
+  require_relative 'tune/configuration'
 
   Tune = PuppetX::Puppetlabs::Tune.new(options)
 
