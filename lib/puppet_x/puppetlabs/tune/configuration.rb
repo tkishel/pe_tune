@@ -36,8 +36,6 @@ module PuppetX
           pe_conf
         end
 
-        # Note: This is an alternative to get_pe_infra_nodes() in puppetlabs-pe_manager.
-
         def get_infra_nodes_with_class(classname, environment)
           Puppet.debug("Querying PuppetDB for Class: Puppet_enterprise::Profile::#{classname}")
           pql = ['from', 'resources',

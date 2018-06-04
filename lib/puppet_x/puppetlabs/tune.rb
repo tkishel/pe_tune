@@ -45,7 +45,7 @@ module PuppetX
           output_not_primary_master_and_exit
         end
 
-        # PE-15116 results in Puppet[:environment] being set to 'enterprise' within the infrastructure face.
+        # PE-15116 overrides environment and environmentpath in the infrastructure face.
         @environment = Puppet::Util::Execution.execute('/opt/puppetlabs/puppet/bin/puppet config print environment --section master').chomp
 
         @calculator = PuppetX::Puppetlabs::Tune::Calculate.new
@@ -119,6 +119,13 @@ module PuppetX
         @replica_masters.count > 0
       end
 
+      # TODO: Replace with a query of puppet_enterprise::master::puppetserver::jruby_9k_enabled
+
+      def jruby_9k_enabled?
+        ps_puppetserver = Puppet::Util::Execution.execute("ps ax | grep 'puppetserver/jruby-9k.jar' | grep -v grep").chomp
+        ps_puppetserver.empty? == false
+      end
+
       # Output current settings based upon Classifier and Hiera data.
 
       def output_current_settings
@@ -185,6 +192,7 @@ module PuppetX
         is_monolithic = monolithic?
         with_compile_masters = with_compile_masters?
         with_external_postgresql = with_external_postgresql?
+        with_jruby_9k = jruby_9k_enabled?
 
         create_output_directories
 
@@ -195,11 +203,11 @@ module PuppetX
           resources = get_resources_for_node(certname)
           output_minimum_system_requirements_error_and_exit(certname) unless meets_minimum_system_requirements?(resources)
           if is_monolithic
-            settings, totals = @calculator::calculate_monolithic_master_settings(resources, with_compile_masters, with_external_postgresql)
+            settings, totals = @calculator::calculate_monolithic_master_settings(resources, with_jruby_9k, with_compile_masters, with_external_postgresql)
           else
-            settings, totals = @calculator::calculate_master_settings(resources, true, true)
+            settings, totals = @calculator::calculate_master_settings(resources, with_jruby_9k, true, true)
           end
-          output_minimum_system_requirements_error_and_exit(certname) if settings.empty? || totals.empty?
+          output_minimum_system_requirements_error_and_exit(certname) if settings.empty?
           collect_node(certname, 'Primary Master', resources, settings, totals)
         end
 
@@ -207,8 +215,8 @@ module PuppetX
         @replica_masters.each do |certname|
           resources = get_resources_for_node(certname)
           output_minimum_system_requirements_error_and_exit(certname) unless meets_minimum_system_requirements?(resources)
-          settings, totals = @calculator::calculate_monolithic_master_settings(resources, with_compile_masters, with_external_postgresql)
-          output_minimum_system_requirements_error_and_exit(certname) if settings.empty? || totals.empty?
+          settings, totals = @calculator::calculate_monolithic_master_settings(resources, with_jruby_9k, with_compile_masters, with_external_postgresql)
+          output_minimum_system_requirements_error_and_exit(certname) if settings.empty?
           collect_node(certname, 'Replica Master', resources, settings, totals)
         end
 
@@ -217,8 +225,8 @@ module PuppetX
           @console_hosts.each do |certname|
             resources = get_resources_for_node(certname)
             output_minimum_system_requirements_error_and_exit(certname) unless meets_minimum_system_requirements?(resources)
-            settings, totals = @calculator::calculate_master_settings(resources, false, false)
-            output_minimum_system_requirements_error_and_exit(certname) if settings.empty? || totals.empty?
+            settings, totals = @calculator::calculate_console_settings(resources)
+            output_minimum_system_requirements_error_and_exit(certname) if settings.empty?
             collect_node(certname, 'Compile Master', resources, settings, totals)
           end
 
@@ -227,7 +235,7 @@ module PuppetX
             resources = get_resources_for_node(certname)
             output_minimum_system_requirements_error_and_exit(certname) unless meets_minimum_system_requirements?(resources)
             settings, totals = @calculator::calculate_puppetdb_settings(resources, with_external_postgresql)
-            output_minimum_system_requirements_error_and_exit(certname) if settings.empty? || totals.empty?
+            output_minimum_system_requirements_error_and_exit(certname) if settings.empty?
             collect_node(certname, 'PuppetDB Host', resources, settings, totals)
           end
         end
@@ -238,14 +246,14 @@ module PuppetX
             resources = get_resources_for_node(certname)
             output_minimum_system_requirements_error_and_exit(certname) unless meets_minimum_system_requirements?(resources)
             settings, totals = @calculator::calculate_external_postgresql_settings(resources)
-            output_minimum_system_requirements_error_and_exit(certname) if settings.empty? || totals.empty?
+            output_minimum_system_requirements_error_and_exit(certname) if settings.empty?
             collect_node(certname, 'External PostgreSQL Host', resources, settings, totals)
           end
           if @database_hosts.count.zero?
             resources = get_resources_for_node(@pe_database_host)
             output_minimum_system_requirements_error_and_exit(certname) unless meets_minimum_system_requirements?(resources)
             settings, totals = @calculator::calculate_external_postgresql_settings(resources)
-            output_minimum_system_requirements_error_and_exit(certname) if settings.empty? || totals.empty?
+            output_minimum_system_requirements_error_and_exit(certname) if settings.empty?
             collect_node(@pe_database_host, 'External PostgreSQL Host', resources, settings, totals)
           end
         end
@@ -255,8 +263,8 @@ module PuppetX
           @compile_masters.each do |certname|
             resources = get_resources_for_node(certname)
             output_minimum_system_requirements_error_and_exit(certname) unless meets_minimum_system_requirements?(resources)
-            settings, totals = @calculator::calculate_master_settings(resources, false, false)
-            output_minimum_system_requirements_error_and_exit(certname) if settings.empty? || totals.empty?
+            settings, totals = @calculator::calculate_master_settings(resources, with_jruby_9k, false, false)
+            output_minimum_system_requirements_error_and_exit(certname) if settings.empty?
             collect_node(certname, 'Compile Master', resources, settings, totals)
           end
         end

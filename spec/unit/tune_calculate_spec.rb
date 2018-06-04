@@ -36,9 +36,10 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'RAM'          => { 'total' => 8192, 'used' => 6451 },
         'MB_PER_JRUBY' => 512,
       }
+      with_jruby_9k = false
       with_compile_masters = false
       with_external_postgresql = false
-      expect(calculon::calculate_monolithic_master_settings(resources, with_compile_masters, with_external_postgresql)).to eq([settings, totals])
+      expect(calculon::calculate_monolithic_master_settings(resources, with_jruby_9k, with_compile_masters, with_external_postgresql)).to eq([settings, totals])
     end
 
     it 'can calculate master settings with compile masters' do
@@ -65,9 +66,10 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'RAM'          => { 'total' => 8192, 'used' => 6246 },
         'MB_PER_JRUBY' => 512,
       }
+      with_jruby_9k = false
       with_compile_masters = true
       with_external_postgresql = false
-      expect(calculon::calculate_monolithic_master_settings(resources, with_compile_masters, with_external_postgresql)).to eq([settings, totals])
+      expect(calculon::calculate_monolithic_master_settings(resources, with_jruby_9k, with_compile_masters, with_external_postgresql)).to eq([settings, totals])
     end
 
     it 'can calculate master host settings with external postgresql' do
@@ -93,9 +95,10 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'RAM'          => { 'total' => 8192, 'used' => 4403 },
         'MB_PER_JRUBY' => 512,
       }
+      with_jruby_9k = false
       with_compile_masters = false
       with_external_postgresql = true
-      expect(calculon::calculate_monolithic_master_settings(resources, with_compile_masters, with_external_postgresql)).to eq([settings, totals])
+      expect(calculon::calculate_monolithic_master_settings(resources, with_jruby_9k, with_compile_masters, with_external_postgresql)).to eq([settings, totals])
     end
   end
 
@@ -124,9 +127,10 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'RAM'          => { 'total' => 16384, 'used' => 12134 },
         'MB_PER_JRUBY' => 768,
       }
+      with_jruby_9k = false
       with_compile_masters = false
       with_external_postgresql = false
-      expect(calculon::calculate_monolithic_master_settings(resources, with_compile_masters, with_external_postgresql)).to eq([settings, totals])
+      expect(calculon::calculate_monolithic_master_settings(resources, with_jruby_9k, with_compile_masters, with_external_postgresql)).to eq([settings, totals])
     end
   end
 
@@ -155,9 +159,10 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'RAM'          => { 'total' => 32768, 'used' => 26828 },
         'MB_PER_JRUBY' => 1024,
       }
+      with_jruby_9k = false
       with_compile_masters = false
       with_external_postgresql = false
-      expect(calculon::calculate_monolithic_master_settings(resources, with_compile_masters, with_external_postgresql)).to eq([settings, totals])
+      expect(calculon::calculate_monolithic_master_settings(resources, with_jruby_9k, with_compile_masters, with_external_postgresql)).to eq([settings, totals])
     end
   end
 
@@ -177,9 +182,10 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'RAM'          => { 'total' => 8192, 'used' => 1536 },
         'MB_PER_JRUBY' => 512,
       }
+      with_jruby_9k = false
       with_activemq = false
       with_orchestrator = false
-      expect(calculon::calculate_master_settings(resources, with_activemq, with_orchestrator)).to eq([settings, totals])
+      expect(calculon::calculate_master_settings(resources, with_jruby_9k, with_activemq, with_orchestrator)).to eq([settings, totals])
     end
 
     it 'can calculate console host settings' do
@@ -270,18 +276,6 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       expect((calculon.send :clamp_percent_of_resource, 4096, 50, 1024, 3072)).to eq(2048)
       expect((calculon.send :clamp_percent_of_resource, 4096, 10, 1024, 3072)).to eq(1024)
       expect((calculon.send :clamp_percent_of_resource, 4096, 90, 1024, 3072)).to eq(3072)
-    end
-
-    it 'can detect the absense of JRuby 9K via PE Server Version' do
-      Facter.clear
-      Facter.add(:pe_server_version) { setcode { '2017.1.1' } }
-      expect((calculon.send :jruby_9k_enabled?)).to eq(false)
-    end
-
-    it 'can detect JRuby 9K via PE Server Version' do
-      Facter.clear
-      Facter.add(:pe_server_version) { setcode { '2018.1.1' } }
-      expect((calculon.send :jruby_9k_enabled?)).to eq(true)
     end
   end
 end
