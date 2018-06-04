@@ -3,8 +3,6 @@ require 'spec_helper'
 require 'puppet_x/puppetlabs/tune'
 require 'puppet_x/puppetlabs/tune/calculate.rb'
 
-# TODO: Refactor these tests.
-
 describe PuppetX::Puppetlabs::Tune::Calculate do
   # TODO: Replace/remove this unit_test workaround. my_hash = { key: 'value' }
   subject(:calculon) { described_class.new }
