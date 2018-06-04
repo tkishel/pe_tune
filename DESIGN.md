@@ -1,12 +1,12 @@
 # pe_tune
 
-## Problems
+## Issues
 
-The default settings for Puppet Enterprise services are initially tuned, but not necessarily optimized based upon infrastructure type and infrastructure host resources (processors and memory).
-
-There is no command to retune the settings for Puppet Enterprise services after adding infrastructure hosts (compile masters) or increasing the resources (memory and/or processors) of infrastructure hosts.
-
-Tuning Puppet Enterprise services requires synthesizing multiple documents, identifying the resources of each infrastructure host, and performing manual calculations for each infrastructure host and its services.
+The default settings for Puppet Enterprise services are tuned, but not necessarily optimized for infrastructure type, and the combination of services on each infrastructure node.
+    
+There is no command to retune the settings for services after adding infrastructure hosts (such as compile masters) or modifying the resources (such as memory or processors) of infrastructure nodes. 
+ 
+Tuning Puppet Enterprise services requires synthesizing multiple documents, identifying the resources of each infrastructure host, and performing manual calculations for each infrastructure node and service.
 
 The tuning documentation for Monolithic infrastructures is limited to a fixed set of resource sizes (4 CPU/8GB RAM, 8 CPU/16GB RAM, 16 CPU/32GB RAM) and therefore is not optimized for other combinations of resources.
 
@@ -16,9 +16,9 @@ The tuning documentation for Monolithic infrastructures is limited to a fixed se
 
 * Utilize canonical functions in other puppetlabs-pe_* modules to read configuration files, node group membership, and/or profile class assignment.
 
-## Solutions: To Do
-
 * Define canonical functions (in this module, or in other puppetlabs-pe_* modules) for use by other modules to calculate optimized settings for Puppet Enterprise services.
+
+## Solutions: To Do
 
 * Update, normalize, and simplify the existing tuning documentation.
 
