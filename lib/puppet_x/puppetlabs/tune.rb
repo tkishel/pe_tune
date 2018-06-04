@@ -47,6 +47,7 @@ module PuppetX
 
         # PE-15116 overrides environment and environmentpath in the infrastructure face.
         @environment = Puppet::Util::Execution.execute('/opt/puppetlabs/puppet/bin/puppet config print environment --section master').chomp
+        @environmentpath = Puppet::Util::Execution.execute('/opt/puppetlabs/puppet/bin/puppet config print environmentpath --section master').chomp
 
         @calculator = PuppetX::Puppetlabs::Tune::Calculate.new
         @configurator = PuppetX::Puppetlabs::Tune::Configuration.new
@@ -68,7 +69,7 @@ module PuppetX
       end
 
       def get_settings_for_node(certname, settings)
-        @configurator::read_hiera_classifier_overrides(certname, settings, @environment)
+        @configurator::read_hiera_classifier_overrides(certname, settings, @environment, @environmentpath)
       end
 
       # Note: Allow override via ENV for testing.
@@ -460,7 +461,6 @@ module PuppetX
 end
 
 # The remainder of this file allows this class to be executed as a standalone script.
-# TODO: Delete the remainder of this file prior to release of the module.
 
 if File.expand_path(__FILE__) == File.expand_path($PROGRAM_NAME)
   require 'optparse'

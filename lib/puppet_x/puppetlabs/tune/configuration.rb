@@ -72,7 +72,23 @@ module PuppetX
           node_facts
         end
 
-        def read_hiera_classifier_overrides(certname, settings, environment)
+        def read_hiera_classifier_overrides(certname, settings, environment, environmentpath)
+          duplicates = []
+          overrides_hiera, overrides_classifier = _read_hiera_classifier_overrides(certname, settings, environment, environmentpath)
+          overrides = overrides_hiera
+          overrides_classifier.each do |classifier_k, classifier_v|
+            next unless settings.include?(classifier_k)
+            if overrides.key?(classifier_k)
+              Puppet.debug("# Duplicate settings for #{certname}: #{classifier_k} Classifier: #{classifier_v} Hiera: #{overrides_hiera[classifier_k]}")
+              duplicates.push(classifier_k)
+            end
+            # Classifer settings take precedence over Hiera settings.
+            overrides[classifier_k] = classifier_v
+          end
+          [overrides, duplicates]
+        end
+
+        def _read_hiera_classifier_overrides(certname, settings, environment, _environmentpath)
           if recover_without_instance?
             node_facts = Puppet::Util::Pe_conf::Recover.facts_for_node(certname, environment)
             if recover_with_node_terminus?
@@ -89,20 +105,7 @@ module PuppetX
             overrides_hiera = recover.find_hiera_overrides(certname, settings, node_facts, environment, node_terminus)
             overrides_classifier = recover.classifier_overrides_for_node(certname, node_facts, node_facts['::trusted'])
           end
-          overrides = overrides_hiera
-          duplicates = []
-          # Classifer settings take precedence over Hiera settings.
-          overrides_classifier.each do |k, v|
-            # find_hiera_overrides() returns the specified settings, while classifier_overrides_for_node() returns all settings.
-            next unless settings.include?(k)
-            # This setting is specifed in both the Classifer and Hiera.
-            if overrides.key?(k)
-              Puppet.debug("# Duplicate settings for #{certname}: #{k} Classifier: #{v} Hiera: #{overrides_hiera[k]}")
-              duplicates.push(k)
-            end
-            overrides[k] = v
-          end
-          [overrides, duplicates]
+          [overrides_hiera, overrides_classifier]
         end
 
         # Internal helper methods.
