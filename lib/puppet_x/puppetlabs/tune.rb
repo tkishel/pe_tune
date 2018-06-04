@@ -304,11 +304,11 @@ module PuppetX
         nodes_with_setting = {}
         @collected_nodes.each do |certname, properties|
           properties['settings'].each do |setting, value|
-            nodes_with_setting[setting] = { certname => value }
+            nodes_with_setting[setting] = {} unless nodes_with_setting.key?(setting)
+            nodes_with_setting[setting][certname] = value
           end
         end
         nodes_with_setting.each do |setting, nodes|
-          # This is not a deep_merge comparison.
           next unless nodes.values.uniq.length == 1
           @common_settings[setting] = nodes.values[0]
           nodes.each do |certname, _value|
