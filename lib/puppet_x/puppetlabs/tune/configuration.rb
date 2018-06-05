@@ -14,13 +14,7 @@ module PuppetX
 
         def initialize
           @pe_conf = read_pe_conf
-          pe_conf_puppet_master_host = @pe_conf['puppet_enterprise::puppet_master_host'] || Puppet[:certname]
-          pe_conf_puppet_master_host = Puppet[:certname] if pe_conf_puppet_master_host == '%{::trusted.certname}'
-          Puppet.debug("Found pe.conf puppet_master_host: #{pe_conf_puppet_master_host}")
-          pe_conf_puppetdb_host = @pe_conf['puppet_enterprise::puppetdb_host'] || pe_conf_puppet_master_host
-          Puppet.debug("Found pe.conf pe_puppetdb_host: #{pe_conf_puppetdb_host}")
-          @pe_conf_database_host = @pe_conf['puppet_enterprise::database_host'] || pe_conf_puppetdb_host
-          Puppet.debug("Found pe.conf pe_database_host: #{@pe_conf_database_host}")
+          @pe_conf_database_host = identify_pe_conf_database_host(@pe_conf)
         end
 
         def read_pe_conf
@@ -34,6 +28,18 @@ module PuppetX
             pe_conf = {}
           end
           pe_conf
+        end
+
+        def identify_pe_conf_database_host(pe_conf)
+          return Puppet[:certname] if pe_conf.empty?
+          pe_conf_puppet_master_host = pe_conf['puppet_enterprise::puppet_master_host'] || Puppet[:certname]
+          pe_conf_puppet_master_host = Puppet[:certname] if pe_conf_puppet_master_host == '%{::trusted.certname}'
+          Puppet.debug("Found pe.conf puppet_master_host: #{pe_conf_puppet_master_host}")
+          pe_conf_puppetdb_host = pe_conf['puppet_enterprise::puppetdb_host'] || pe_conf_puppet_master_host
+          Puppet.debug("Found pe.conf pe_puppetdb_host: #{pe_conf_puppetdb_host}")
+          pe_conf_database_host = pe_conf['puppet_enterprise::database_host'] || pe_conf_puppetdb_host
+          Puppet.debug("Found pe.conf pe_database_host: #{pe_conf_database_host}")
+          pe_conf_database_host
         end
 
         def get_infra_nodes_with_class(classname, environment)
