@@ -54,6 +54,8 @@ module PuppetX
 
         @pe_database_host = @configurator.pe_conf_database_host
 
+        # https://github.com/puppetlabs/puppetlabs-pe_infrastructure/blob/irving/lib/puppet_x/puppetlabs/meep/defaults.rb
+
         @replica_masters = get_nodes_with_class('Primary_master_replica')
         @primary_masters = get_nodes_with_class('Certificate_authority') - @replica_masters
         @compile_masters = get_nodes_with_class('Master')   - @primary_masters - @replica_masters
