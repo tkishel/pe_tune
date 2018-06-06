@@ -41,8 +41,6 @@ module PuppetX
         @option_no_minimum_system_requirements = options[:force]
         @option_output_path = options[:hiera]
 
-        require_classifier_node_terminus
-
         # PE-15116 overrides environment and environmentpath in the infrastructure face.
         @environment = Puppet::Util::Execution.execute('/opt/puppetlabs/puppet/bin/puppet config print environment --section master').chomp
         @environmentpath = Puppet::Util::Execution.execute('/opt/puppetlabs/puppet/bin/puppet config print environmentpath --section master').chomp
@@ -60,14 +58,6 @@ module PuppetX
         @console_hosts   = get_nodes_with_class('Console')  - @primary_masters - @replica_masters
         @puppetdb_hosts  = get_nodes_with_class('Puppetdb') - @primary_masters - @replica_masters
         @database_hosts  = get_nodes_with_class('Database') - @primary_masters - @replica_masters
-      end
-
-      # Alternative to: if Puppet[:certname] != Puppet[:server] 
-
-      def require_classifier_node_terminus
-        require 'puppet/indirector/node/classifier'
-      rescue LoadError
-        output_not_primary_master_and_exit
       end
 
       # Interfaces to Puppet::Util::Pe_conf and Puppet::Util::Pe_conf::Recover
