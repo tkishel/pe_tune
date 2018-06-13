@@ -20,7 +20,7 @@ module PuppetX
           maximum_cpu_jrubies        = (resources['cpu'] * (percent_cpu_jrubies * 0.01) - 1).to_i # fit_to_processors(resources['cpu'], 2, 6, 10)
           minimum_mb_puppetserver    = with_compile_masters ? 1024 : 2048
           mb_per_puppetserver_jruby  = memory_per_jruby(resources['ram'])
-          mb_puppetserver_code_cache = (resources['ram'] < 2048) ? 48 : 512
+          mb_puppetserver_code_cache = fit_to_memory(resources['ram'], 512, 1024, 2048) # DOC-3605
           percent_mb_puppetdb        = with_compile_masters ? 20 : 10
           minimum_mb_puppetdb        = fit_to_memory(resources['ram'], 512, 1024, 2048)
           maximum_mb_puppetdb        = 8192
@@ -109,7 +109,7 @@ module PuppetX
           maximum_cpu_jrubies        = [1, (resources['cpu'] - 1)].max
           minimum_mb_puppetserver    = 1024
           mb_per_puppetserver_jruby  = memory_per_jruby(resources['ram'])
-          mb_puppetserver_code_cache = (resources['ram'] < 2048) ? 48 : 512
+          mb_puppetserver_code_cache = fit_to_memory(resources['ram'], 512, 1024, 2048) # DOC-3605
           mb_orchestrator            = fit_to_memory(resources['ram'], 512, 768, 1024)
           mb_activemq                = fit_to_memory(resources['ram'], 512, 1024, 2048)
           minimum_mb_os              = reserved_memory_os
