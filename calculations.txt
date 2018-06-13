@@ -10,7 +10,7 @@ calculate_monolithic_master_settings
 # maximum_cpu_threads        based upon tuning_monolithic
 # minimum_mb_puppetserver    based upon tuning_monolithic
 # mb_per_puppetserver_jruby  based upon tuning_monolithic: changed from 512 to 512,768,1024;          see also config_puppetserver
-# mb_puppetserver_code_cache based upon puppetlabs-puppet_enterprise/.../manifests/params.pp
+# mb_puppetserver_code_cache based upon DOC-3605
 # percent_mb_puppetdb        based upon tuning_monolithic
 # minimum_mb_puppetdb        based upon tuning_monolithic: changed from 256,2048 to 512,1024,2048;    see also config_java_args: 512
 # maximum_mb_puppetdb        based upon tuning_monolithic: changed from 6144 to 8192
@@ -31,7 +31,7 @@ calculate_master_settings
 # maximum_cpu_jrubies        based upon config_puppetserver
 # minimum_mb_puppetserver    based upon tuning_monolithic;
 # mb_per_puppetserver_jruby  based upon tuning_monolithic: changed from 512 to 512,768,1024;         see also config_puppetserver
-# mb_puppetserver_code_cache based upon puppetlabs-puppet_enterprise/.../manifests/params.pp
+# mb_puppetserver_code_cache based upon DOC-3605
 # mb_orchestrator            based upon tuning_monolithic: changed from 192,384,768 to 512,768,1024; see also config_java_args: 1024
 # mb_activemq                based upon tuning_monolithic;                                           see also config_java_args: 1024
 # minimum_mb_os              estimated by support

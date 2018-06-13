@@ -41,10 +41,6 @@ module PuppetX
         @option_no_minimum_system_requirements = options[:force]
         @option_output_path = options[:hiera]
 
-        if Puppet[:certname] != Puppet[:server]
-          output_not_primary_master_and_exit
-        end
-
         # PE-15116 overrides environment and environmentpath in the infrastructure face.
         @environment = Puppet::Util::Execution.execute('/opt/puppetlabs/puppet/bin/puppet config print environment --section master').chomp
         @environmentpath = Puppet::Util::Execution.execute('/opt/puppetlabs/puppet/bin/puppet config print environmentpath --section master').chomp
@@ -52,7 +48,11 @@ module PuppetX
         @calculator = PuppetX::Puppetlabs::Tune::Calculate.new
         @configurator = PuppetX::Puppetlabs::Tune::Configuration.new
 
-        @pe_database_host = @configurator.pe_conf_database_host
+        if Puppet[:certname] != @configurator::find_pe_conf_puppet_master_host
+          output_not_primary_master_and_exit
+        end
+
+        @pe_database_host = @configurator::find_pe_conf_database_host || Puppet[:certname]
 
         # https://github.com/puppetlabs/puppetlabs-pe_infrastructure/blob/irving/lib/puppet_x/puppetlabs/meep/defaults.rb
 

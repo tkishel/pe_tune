@@ -1,6 +1,5 @@
 require 'spec_helper'
 
-require 'puppet_x/puppetlabs/tune'
 require 'puppet_x/puppetlabs/tune/calculate.rb'
 
 describe PuppetX::Puppetlabs::Tune::Calculate do
