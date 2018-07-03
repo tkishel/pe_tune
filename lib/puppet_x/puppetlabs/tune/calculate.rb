@@ -36,6 +36,19 @@ module PuppetX
           minimum_mb_buffers         = 0 if with_external_postgresql
           mb_puppetserver_code_cache = 0 unless with_jruby_9k
 
+          # The Vegas Renormalization, AKA: the immovable vmpooler vs the unstoppable --force.
+          if resources['cpu'] < 4
+            minimum_cpu_jrubies = 1
+            maximum_cpu_jrubies = 1
+            minimum_cpu_threads = 1
+            maximum_cpu_threads = 1
+          end
+          if resources['ram'] < 8096
+            minimum_mb_buffers      = 256
+            maximum_mb_buffers      = 256
+            minimum_mb_puppetserver = 256
+          end
+
           settings = {}
           totals = {}
 
