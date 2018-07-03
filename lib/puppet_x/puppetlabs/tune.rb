@@ -380,7 +380,11 @@ module PuppetX
       # Output current information.
 
       def output_node_settings(profile, certname, settings, duplicates)
-        output("## Current settings for #{profile} #{certname}\n\n")
+        if settings.empty?
+          output("## Default settings found for #{profile} #{certname}\n\n")
+          return
+        end
+        output("## Customized settings for #{profile} #{certname}\n\n")
         output_data(JSON.pretty_generate(settings))
         output("\n")
         output_node_duplicate_settings(duplicates)
@@ -388,10 +392,10 @@ module PuppetX
 
       def output_node_duplicate_settings(duplicates)
         return if duplicates.count.zero?
-        output("## Duplicate settings found in the Classifier and in Hiera:\n\n")
+        output("## Duplicate customized settings found in the Classifier and in Hiera:\n\n")
         output_data(duplicates.join("\n"))
         output("\n")
-        output("## Define settings in Hiera (preferred) or the Classifier, but not both.\n\n")
+        output("## Define custom settings in Hiera (preferred) or the Classifier, but not both.\n\n")
       end
 
       # Output optimized information.
