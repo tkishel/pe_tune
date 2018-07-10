@@ -61,7 +61,8 @@ module PuppetX
         @compile_masters = get_nodes_with_class('Master')   - @primary_masters - @replica_masters
         @console_hosts   = get_nodes_with_class('Console')  - @primary_masters - @replica_masters
         @puppetdb_hosts  = get_nodes_with_class('Puppetdb') - @primary_masters - @replica_masters
-        @database_hosts  = get_nodes_with_class('Database') - @primary_masters - @replica_masters
+        @database_hosts  = get_nodes_with_class('Database')
+        @external_database_hosts = @database_hosts - @primary_masters - @replica_masters
       end
 
       # Interfaces to Puppet::Util::Pe_conf and Puppet::Util::Pe_conf::Recover
@@ -111,11 +112,11 @@ module PuppetX
       end
 
       def with_external_postgresql?
-        if monolithic?
-          @primary_masters.count > 0 && @primary_masters.include?(@pe_database_host) == false
-        else
-          @puppetdb_hosts.count  > 0 && @puppetdb_hosts.include?(@pe_database_host)  == false
-        end
+        @external_database_hosts.count > 0
+      end
+
+      def with_postgresql?(host)
+        @database_hosts.count > 0 && @database_hosts.include?(host)
       end
 
       def with_ha?
@@ -167,15 +168,9 @@ module PuppetX
         end
 
         # External PostgreSQL Host: Applicable to Monolithic and Split Infrastructures.
-        if with_external_postgresql
-          @database_hosts.each do |certname|
-            settings, duplicates = get_settings_for_node(certname, tunable_settings)
-            output_node_settings('External PostgreSQL Host', certname, settings, duplicates)
-          end
-          if @database_hosts.count.zero?
-            settings, duplicates = get_settings_for_node(@pe_database_host, tunable_settings)
-            output_node_settings('External PostgreSQL Host', @pe_database_host, settings, duplicates)
-          end
+        @external_database_hosts.each do |certname|
+          settings, duplicates = get_settings_for_node(certname, tunable_settings)
+          output_node_settings('External PostgreSQL Host', certname, settings, duplicates)
         end
 
         # Compile Masters: Applicable to Monolithic and Split Infrastructures.
@@ -206,9 +201,12 @@ module PuppetX
           resources = get_resources_for_node(certname)
           output_minimum_system_requirements_error_and_exit(certname) unless meets_minimum_system_requirements?(resources)
           if is_monolithic
-            settings, totals = @calculator::calculate_monolithic_master_settings(resources, with_jruby_9k, with_compile_masters, with_external_postgresql)
+            settings, totals = @calculator::calculate_monolithic_master_settings(resources, with_jruby_9k, with_compile_masters, with_postgresql?(certname))
           else
-            settings, totals = @calculator::calculate_master_settings(resources, with_jruby_9k, true, true)
+            with_activemq     = true
+            with_orchestrator = true
+            with_puppetdb     = false
+            settings, totals = @calculator::calculate_master_settings(resources, with_jruby_9k, with_activemq, with_orchestrator, with_puppetdb)
           end
           output_minimum_system_requirements_error_and_exit(certname) if settings.empty?
           collect_node(certname, 'Primary Master', resources, settings, totals)
@@ -218,7 +216,7 @@ module PuppetX
         @replica_masters.each do |certname|
           resources = get_resources_for_node(certname)
           output_minimum_system_requirements_error_and_exit(certname) unless meets_minimum_system_requirements?(resources)
-          settings, totals = @calculator::calculate_monolithic_master_settings(resources, with_jruby_9k, with_compile_masters, with_external_postgresql)
+          settings, totals = @calculator::calculate_monolithic_master_settings(resources, with_jruby_9k, with_compile_masters, with_postgresql?(certname))
           output_minimum_system_requirements_error_and_exit(certname) if settings.empty?
           collect_node(certname, 'Replica Master', resources, settings, totals)
         end
@@ -237,28 +235,19 @@ module PuppetX
           @puppetdb_hosts.each do |certname|
             resources = get_resources_for_node(certname)
             output_minimum_system_requirements_error_and_exit(certname) unless meets_minimum_system_requirements?(resources)
-            settings, totals = @calculator::calculate_puppetdb_settings(resources, with_external_postgresql)
+            settings, totals = @calculator::calculate_puppetdb_settings(resources, with_postgresql?(certname))
             output_minimum_system_requirements_error_and_exit(certname) if settings.empty?
             collect_node(certname, 'PuppetDB Host', resources, settings, totals)
           end
         end
 
         # External PostgreSQL Host: Applicable to Monolithic and Split Infrastructures.
-        if with_external_postgresql
-          @pe_database_hosts.each do |certname|
-            resources = get_resources_for_node(certname)
-            output_minimum_system_requirements_error_and_exit(certname) unless meets_minimum_system_requirements?(resources)
-            settings, totals = @calculator::calculate_external_postgresql_settings(resources)
-            output_minimum_system_requirements_error_and_exit(certname) if settings.empty?
-            collect_node(certname, 'External PostgreSQL Host', resources, settings, totals)
-          end
-          if @database_hosts.count.zero?
-            resources = get_resources_for_node(@pe_database_host)
-            output_minimum_system_requirements_error_and_exit(certname) unless meets_minimum_system_requirements?(resources)
-            settings, totals = @calculator::calculate_external_postgresql_settings(resources)
-            output_minimum_system_requirements_error_and_exit(certname) if settings.empty?
-            collect_node(@pe_database_host, 'External PostgreSQL Host', resources, settings, totals)
-          end
+        @external_database_hosts.each do |certname|
+          resources = get_resources_for_node(certname)
+          output_minimum_system_requirements_error_and_exit(certname) unless meets_minimum_system_requirements?(resources)
+          settings, totals = @calculator::calculate_external_postgresql_settings(resources)
+          output_minimum_system_requirements_error_and_exit(certname) if settings.empty?
+          collect_node(certname, 'External PostgreSQL Host', resources, settings, totals)
         end
 
         # Compile Masters: Applicable to Monolithic and Split Infrastructures.
@@ -266,7 +255,10 @@ module PuppetX
           @compile_masters.each do |certname|
             resources = get_resources_for_node(certname)
             output_minimum_system_requirements_error_and_exit(certname) unless meets_minimum_system_requirements?(resources)
-            settings, totals = @calculator::calculate_master_settings(resources, with_jruby_9k, false, false)
+            with_activemq     = false
+            with_orchestrator = false
+            with_puppetdb     = false
+            settings, totals = @calculator::calculate_master_settings(resources, with_jruby_9k, with_activemq, with_orchestrator, with_puppetdb)
             output_minimum_system_requirements_error_and_exit(certname) if settings.empty?
             collect_node(certname, 'Compile Master', resources, settings, totals)
           end

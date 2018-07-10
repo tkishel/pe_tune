@@ -22,7 +22,9 @@ describe PuppetX::Puppetlabs::Tune do
     it 'can detect a monolithic infrastructure' do
       tune.instance_variable_set(:@console_hosts,  [])
       tune.instance_variable_set(:@puppetdb_hosts, [])
+      tune.instance_variable_set(:@external_database_hosts, [])
       expect(tune::monolithic?).to eq(true)
+      expect(tune::with_external_postgresql?).to eq(false)
     end
 
     it 'can detect a split infrastructure' do
@@ -40,7 +42,7 @@ describe PuppetX::Puppetlabs::Tune do
       tune.instance_variable_set(:@primary_masters,  ['master'])
       tune.instance_variable_set(:@console_hosts,    [])
       tune.instance_variable_set(:@puppetdb_hosts,   [])
-      tune.instance_variable_set(:@pe_database_host, 'postgresql')
+      tune.instance_variable_set(:@external_database_hosts, ['postgresql'])
       expect(tune::with_external_postgresql?).to eq(true)
     end
 
@@ -48,7 +50,7 @@ describe PuppetX::Puppetlabs::Tune do
       tune.instance_variable_set(:@primary_masters, ['master'])
       tune.instance_variable_set(:@console_hosts,   ['console'])
       tune.instance_variable_set(:@puppetdb_hosts,  ['puppetdb'])
-      tune.instance_variable_set(:@pe_database_host, 'postgresql')
+      tune.instance_variable_set(:@external_database_hosts, ['postgresql'])
       expect(tune::with_external_postgresql?).to eq(true)
     end
 
@@ -83,7 +85,7 @@ describe PuppetX::Puppetlabs::Tune do
       expect(tune::meets_minimum_system_requirements?(resources)).to eq(true)
     end
 
-    it 'can not enforce minimum system requirements' do
+    it 'can disable minimum system requirements' do
       tune.instance_variable_set(:@option_no_minimum_system_requirements, true)
       resources = { 'cpu' => 3, 'ram' => 8191 }
       expect(tune::meets_minimum_system_requirements?(resources)).to eq(true)
