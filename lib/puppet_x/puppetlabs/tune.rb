@@ -60,9 +60,10 @@ module PuppetX
         @primary_masters = get_nodes_with_class('Certificate_authority') - @replica_masters
         @compile_masters = get_nodes_with_class('Master')   - @primary_masters - @replica_masters
         @console_hosts   = get_nodes_with_class('Console')  - @primary_masters - @replica_masters
-        @puppetdb_hosts  = get_nodes_with_class('Puppetdb') - @primary_masters - @replica_masters
+        @puppetdb_hosts  = get_nodes_with_class('Puppetdb') - @primary_masters - @replica_masters - @compile_masters
+        # TODO: Implement raw and filtered _hosts, to detect compile masters with: activemq, orchestrator, puppetdb, postgresql.
         @database_hosts  = get_nodes_with_class('Database')
-        @external_database_hosts = @database_hosts - @primary_masters - @replica_masters
+        @external_database_hosts = @database_hosts - @primary_masters - @replica_masters - @compile_masters
       end
 
       # Interfaces to Puppet::Util::Pe_conf and Puppet::Util::Pe_conf::Recover
