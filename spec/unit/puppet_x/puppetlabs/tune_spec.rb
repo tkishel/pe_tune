@@ -13,7 +13,7 @@ describe PuppetX::Puppetlabs::Tune do
     suppress_standard_output
   end
 
-  context 'helper methods' do
+  context 'its supporting methods' do
     it 'can detect an unknown infrastructure' do
       tune.instance_variable_set(:@primary_masters,  [])
       expect(tune::unknown_pe_infrastructure?).to eq(true)
@@ -33,30 +33,22 @@ describe PuppetX::Puppetlabs::Tune do
       expect(tune::monolithic?).to eq(false)
     end
 
+    it 'can detect a replica master' do
+      tune.instance_variable_set(:@replica_masters, ['HA1'])
+      expect(tune::with_ha?).to eq(true)
+    end
+
     it 'can detect a compile master' do
       tune.instance_variable_set(:@compile_masters, ['compile'])
       expect(tune::with_compile_masters?).to eq(true)
     end
 
-    it 'can detect a monolithic infrastructure with an external postgresql server' do
+    it 'can detect an external postgresql server' do
       tune.instance_variable_set(:@primary_masters,  ['master'])
       tune.instance_variable_set(:@console_hosts,    [])
       tune.instance_variable_set(:@puppetdb_hosts,   [])
       tune.instance_variable_set(:@external_database_hosts, ['postgresql'])
       expect(tune::with_external_postgresql?).to eq(true)
-    end
-
-    it 'can detect a split infrastructure with an external postgresql server' do
-      tune.instance_variable_set(:@primary_masters, ['master'])
-      tune.instance_variable_set(:@console_hosts,   ['console'])
-      tune.instance_variable_set(:@puppetdb_hosts,  ['puppetdb'])
-      tune.instance_variable_set(:@external_database_hosts, ['postgresql'])
-      expect(tune::with_external_postgresql?).to eq(true)
-    end
-
-    it 'can detect a replica master' do
-      tune.instance_variable_set(:@replica_masters, ['HA1'])
-      expect(tune::with_ha?).to eq(true)
     end
 
     # it 'can detect that JRuby9K is enabled for the puppetsever service' do

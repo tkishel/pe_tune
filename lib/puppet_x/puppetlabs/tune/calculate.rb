@@ -116,7 +116,8 @@ module PuppetX
           [settings, totals]
         end
 
-        # Compile Masters in both Monolithic and Split Infrastructures, and Primary Masters in Split Infrastructures.
+        # Primary Masters in Split Infrastructures.
+        # Compile Masters in both Monolithic and Split Infrastructures.
         # Note: Calculate the number of jrubies by the number of jrubies that will fit into RAM rather than CPU.
 
         def calculate_master_settings(resources, with_jruby_9k, with_activemq, with_orchestrator, with_puppetdb)
