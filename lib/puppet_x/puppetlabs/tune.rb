@@ -135,11 +135,14 @@ module PuppetX
         @hosts_with_database.count > 0 && @hosts_with_database.include?(host)
       end
 
-      # TODO: Replace with a query of puppet_enterprise::master::puppetserver::jruby_9k_enabled
+      # TODO: Refactor this.
 
-      def jruby_9k_enabled?
-        ps_puppetserver = `ps ax | grep 'puppetserver/jruby-9k.jar' | grep -v grep`.chomp
-        ps_puppetserver.empty? == false
+      def jruby_9k_enabled?(host)
+        setting = 'puppet_enterprise::master::puppetserver::jruby_9k_enabled'
+        jar = '/opt/puppetlabs/server/apps/puppetserver/jruby-9k.jar'
+        available = File.exist?(jar)
+        enabled = `puppet lookup #{setting} --node #{host} --render-as s`.chomp != 'false'
+        available && enabled
       end
 
       # Output current settings based upon Classifier and Hiera data.
@@ -202,7 +205,6 @@ module PuppetX
         is_monolithic = monolithic?
         with_compile_masters = with_compile_masters?
         with_external_postgresql = with_external_postgresql?
-        with_jruby_9k = jruby_9k_enabled?
 
         create_output_directories
 
@@ -212,6 +214,7 @@ module PuppetX
         @primary_masters.each do |certname|
           resources = get_resources_for_node(certname)
           output_minimum_system_requirements_error_and_exit(certname) unless meets_minimum_system_requirements?(resources)
+          with_jruby_9k = jruby_9k_enabled?(certname)
           if is_monolithic
             is_mono_master    = true
             with_activemq     = true
@@ -237,6 +240,7 @@ module PuppetX
           resources = get_resources_for_node(certname)
           output_minimum_system_requirements_error_and_exit(certname) unless meets_minimum_system_requirements?(resources)
           is_mono_master    = true
+          with_jruby_9k     = jruby_9k_enabled?(certname)
           with_activemq     = true
           with_console      = true
           with_orchestrator = true
@@ -283,6 +287,7 @@ module PuppetX
             resources = get_resources_for_node(certname)
             output_minimum_system_requirements_error_and_exit(certname) unless meets_minimum_system_requirements?(resources)
             is_mono_master    = false
+            with_jruby_9k     = jruby_9k_enabled?(certname)
             with_activemq     = false
             with_console      = false
             with_orchestrator = false
