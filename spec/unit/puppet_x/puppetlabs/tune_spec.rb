@@ -51,6 +51,16 @@ describe PuppetX::Puppetlabs::Tune do
       expect(tune::with_external_postgresql?).to eq(true)
     end
 
+    it 'can detect puppetdb on a host' do
+      tune.instance_variable_set(:@hosts_with_puppetdb, ['compile_master'])
+      expect(tune::with_puppetdb?('compile_master')).to eq(true)
+    end
+
+    it 'can detect postgresql on a host' do
+      tune.instance_variable_set(:@hosts_with_database, ['master'])
+      expect(tune::with_postgresql?('master')).to eq(true)
+    end
+
     # it 'can detect that JRuby9K is enabled for the puppetsever service' do
     # end
 

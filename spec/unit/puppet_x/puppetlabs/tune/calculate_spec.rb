@@ -23,19 +23,21 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'puppet_enterprise::profile::orchestrator::java_args'     => { 'Xms' => '512m',  'Xmx' => '512m' },
         'puppet_enterprise::profile::amq::broker::heap_mb'        => 512,
       }
-      # settings['puppet_enterprise::profile::master::java_args']['XX:+UseG1GC'] = ''
-      # settings['puppet_enterprise::profile::puppetdb::java_args']['XX:+UseG1GC']     = ''
-      # settings['puppet_enterprise::profile::console::java_args']['XX:+UseG1GC']      = ''
-      # settings['puppet_enterprise::profile::orchestrator::java_args']['XX:+UseG1GC'] = ''
       totals = {
         'CPU'          => { 'total' => 4,    'used' => 4 },
         'RAM'          => { 'total' => 8192, 'used' => 6451 },
         'MB_PER_JRUBY' => 512,
       }
-      with_jruby_9k = false
+      is_mono_master       = true
+      with_jruby_9k        = false
       with_compile_masters = false
-      with_postgresql = true
-      expect(calculator::calculate_monolithic_master_settings(resources, with_jruby_9k, with_compile_masters, with_postgresql)).to eq([settings, totals])
+      with_activemq        = true
+      with_console         = true
+      with_orchestrator    = true
+      with_puppetdb        = true
+      with_postgresql      = true
+      expect(calculator::calculate_master_settings(resources, is_mono_master, with_jruby_9k, with_compile_masters,
+                                                   with_activemq, with_console, with_orchestrator, with_postgresql, with_puppetdb)).to eq([settings, totals])
     end
   end
 
@@ -55,19 +57,21 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'puppet_enterprise::profile::orchestrator::java_args'     => { 'Xms' => '768m',  'Xmx' => '768m' },
         'puppet_enterprise::profile::amq::broker::heap_mb'        => 1024,
       }
-      # settings['puppet_enterprise::profile::master::java_args']['XX:+UseG1GC'] = ''
-      # settings['puppet_enterprise::profile::puppetdb::java_args']['XX:+UseG1GC']     = ''
-      # settings['puppet_enterprise::profile::console::java_args']['XX:+UseG1GC']      = ''
-      # settings['puppet_enterprise::profile::orchestrator::java_args']['XX:+UseG1GC'] = ''
       totals = {
         'CPU'          => { 'total' => 8,     'used' => 7 },
         'RAM'          => { 'total' => 16384, 'used' => 12134 },
         'MB_PER_JRUBY' => 768,
       }
-      with_jruby_9k = false
+      is_mono_master       = true
+      with_jruby_9k        = false
       with_compile_masters = false
-      with_postgresql = true
-      expect(calculator::calculate_monolithic_master_settings(resources, with_jruby_9k, with_compile_masters, with_postgresql)).to eq([settings, totals])
+      with_activemq        = true
+      with_console         = true
+      with_orchestrator    = true
+      with_puppetdb        = true
+      with_postgresql      = true
+      expect(calculator::calculate_master_settings(resources, is_mono_master, with_jruby_9k, with_compile_masters,
+                                                   with_activemq, with_console, with_orchestrator, with_postgresql, with_puppetdb)).to eq([settings, totals])
     end
   end
 
@@ -87,19 +91,21 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'puppet_enterprise::profile::orchestrator::java_args'     => { 'Xms' => '1024m',  'Xmx' => '1024m' },
         'puppet_enterprise::profile::amq::broker::heap_mb'        => 2048,
       }
-      # settings['puppet_enterprise::profile::master::java_args']['XX:+UseG1GC']   = ''
-      # settings['puppet_enterprise::profile::puppetdb::java_args']['XX:+UseG1GC'] = ''
-      # settings['puppet_enterprise::profile::console::java_args']['XX:+UseG1GC']      = ''
-      # settings['puppet_enterprise::profile::orchestrator::java_args']['XX:+UseG1GC'] = ''
       totals = {
         'CPU'          => { 'total' => 16,    'used' => 15 },
         'RAM'          => { 'total' => 32768, 'used' => 26828 },
         'MB_PER_JRUBY' => 1024,
       }
-      with_jruby_9k = false
+      is_mono_master       = true
+      with_jruby_9k        = false
       with_compile_masters = false
-      with_postgresql = true
-      expect(calculator::calculate_monolithic_master_settings(resources, with_jruby_9k, with_compile_masters, with_postgresql)).to eq([settings, totals])
+      with_activemq        = true
+      with_console         = true
+      with_orchestrator    = true
+      with_puppetdb        = true
+      with_postgresql      = true
+      expect(calculator::calculate_master_settings(resources, is_mono_master, with_jruby_9k, with_compile_masters,
+                                                   with_activemq, with_console, with_orchestrator, with_postgresql, with_puppetdb)).to eq([settings, totals])
     end
   end
 
@@ -121,19 +127,21 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'puppet_enterprise::profile::orchestrator::java_args'     => { 'Xms' => '512m',  'Xmx' => '512m' },
         'puppet_enterprise::profile::amq::broker::heap_mb'        => 512,
       }
-      # settings['puppet_enterprise::profile::master::java_args']['XX:+UseG1GC']       = ''
-      # settings['puppet_enterprise::profile::puppetdb::java_args']['XX:+UseG1GC']     = ''
-      # settings['puppet_enterprise::profile::console::java_args']['XX:+UseG1GC']      = ''
-      # settings['puppet_enterprise::profile::orchestrator::java_args']['XX:+UseG1GC'] = ''
       totals = {
         'CPU'          => { 'total' => 4,    'used' => 5 },
         'RAM'          => { 'total' => 8192, 'used' => 6246 },
         'MB_PER_JRUBY' => 512,
       }
-      with_jruby_9k = false
+      is_mono_master       = true
+      with_jruby_9k        = false
       with_compile_masters = true
-      with_postgresql = true
-      expect(calculator::calculate_monolithic_master_settings(resources, with_jruby_9k, with_compile_masters, with_postgresql)).to eq([settings, totals])
+      with_activemq        = true
+      with_console         = true
+      with_orchestrator    = true
+      with_puppetdb        = true
+      with_postgresql      = true
+      expect(calculator::calculate_master_settings(resources, is_mono_master, with_jruby_9k, with_compile_masters,
+                                                   with_activemq, with_console, with_orchestrator, with_postgresql, with_puppetdb)).to eq([settings, totals])
     end
 
     it 'can calculate master host settings with external postgresql' do
@@ -150,19 +158,21 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'puppet_enterprise::profile::orchestrator::java_args'     => { 'Xms' => '512m',  'Xmx' => '512m' },
         'puppet_enterprise::profile::amq::broker::heap_mb'        => 512,
       }
-      # settings['puppet_enterprise::profile::master::java_args']['XX:+UseG1GC'] = ''
-      # settings['puppet_enterprise::profile::puppetdb::java_args']['XX:+UseG1GC']     = ''
-      # settings['puppet_enterprise::profile::console::java_args']['XX:+UseG1GC']      = ''
-      # settings['puppet_enterprise::profile::orchestrator::java_args']['XX:+UseG1GC'] = ''
       totals = {
         'CPU'          => { 'total' => 4,    'used' => 4 },
         'RAM'          => { 'total' => 8192, 'used' => 4403 },
         'MB_PER_JRUBY' => 512,
       }
-      with_jruby_9k = false
+      is_mono_master       = true
+      with_jruby_9k        = false
       with_compile_masters = false
-      with_postgresql = false
-      expect(calculator::calculate_monolithic_master_settings(resources, with_jruby_9k, with_compile_masters, with_postgresql)).to eq([settings, totals])
+      with_activemq        = true
+      with_console         = true
+      with_orchestrator    = true
+      with_puppetdb        = true
+      with_postgresql      = false
+      expect(calculator::calculate_master_settings(resources, is_mono_master, with_jruby_9k, with_compile_masters,
+                                                   with_activemq, with_console, with_orchestrator, with_postgresql, with_puppetdb)).to eq([settings, totals])
     end
   end
 
@@ -175,18 +185,23 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       settings = {
         'puppet_enterprise::master::jruby_max_active_instances' => 3,
         'puppet_enterprise::profile::master::java_args'         => { 'Xms' => '1536m', 'Xmx' => '1536m' },
+        'puppet_enterprise::profile::orchestrator::java_args'   => { 'Xms' => '512m',  'Xmx' => '512m' },
       }
-      # settings['puppet_enterprise::profile::master::java_args']['XX:+UseG1GC'] = ''
       totals = {
         'CPU'          => { 'total' => 4,    'used' => 3 },
-        'RAM'          => { 'total' => 8192, 'used' => 1536 },
+        'RAM'          => { 'total' => 8192, 'used' => 2048 },
         'MB_PER_JRUBY' => 512,
       }
-      with_jruby_9k = false
-      with_activemq = false
-      with_orchestrator = false
-      with_puppetdb = false
-      expect(calculator::calculate_master_settings(resources, with_jruby_9k, with_activemq, with_orchestrator, with_puppetdb)).to eq([settings, totals])
+      is_mono_master       = false
+      with_jruby_9k        = false
+      with_compile_masters = false
+      with_activemq        = false
+      with_console         = false
+      with_orchestrator    = true
+      with_puppetdb        = false
+      with_postgresql      = false
+      expect(calculator::calculate_master_settings(resources, is_mono_master, with_jruby_9k, with_compile_masters,
+                                                   with_activemq, with_console, with_orchestrator, with_postgresql, with_puppetdb)).to eq([settings, totals])
     end
 
     it 'can calculate console host settings' do
@@ -197,7 +212,6 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       settings = {
         'puppet_enterprise::profile::console::java_args' => { 'Xms' => '4096m', 'Xmx' => '4096m' },
       }
-      # settings['puppet_enterprise::profile::console::java_args']['XX:+UseG1GC'] = ''
       totals = { 'RAM' => { 'total' => 8192, 'used' => 4096 } }
       expect(calculator::calculate_console_settings(resources)).to eq([settings, totals])
     end
@@ -230,7 +244,6 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'puppet_enterprise::puppetdb::command_processing_threads' => 3,
         'puppet_enterprise::profile::puppetdb::java_args'         => { 'Xms' => '4096m', 'Xmx' => '4096m' },
       }
-      # settings['puppet_enterprise::profile::puppetdb::java_args']['XX:+UseG1GC'] = ''
       totals = {
         'CPU' => { 'total' => 4, 'used' => 3 },
         'RAM' => { 'total' => 8192, 'used' => 4096 },
@@ -250,17 +263,21 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'puppet_enterprise::master::jruby_max_active_instances' => 3,
         'puppet_enterprise::profile::master::java_args'         => { 'Xms' => '1536m', 'Xmx' => '1536m' },
       }
-      # settings['puppet_enterprise::profile::master::java_args']['XX:+UseG1GC'] = ''
       totals = {
         'CPU'          => { 'total' => 4,    'used' => 3 },
         'RAM'          => { 'total' => 8192, 'used' => 1536 },
         'MB_PER_JRUBY' => 512,
       }
-      with_jruby_9k = false
-      with_activemq = false
-      with_orchestrator = false
-      with_puppetdb = false
-      expect(calculator::calculate_master_settings(resources, with_jruby_9k, with_activemq, with_orchestrator, with_puppetdb)).to eq([settings, totals])
+      is_mono_master       = false
+      with_jruby_9k        = false
+      with_compile_masters = false
+      with_activemq        = false
+      with_console         = false
+      with_orchestrator    = false
+      with_puppetdb        = false
+      with_postgresql      = false
+      expect(calculator::calculate_master_settings(resources, is_mono_master, with_jruby_9k, with_compile_masters,
+                                                   with_activemq, with_console, with_orchestrator, with_postgresql, with_puppetdb)).to eq([settings, totals])
     end
 
     it 'can calculate compile master host (master) settings with puppetdb' do
@@ -269,22 +286,26 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'ram' => 8192,
       }
       settings = {
-        'puppet_enterprise::puppetdb::command_processing_threads' => 1,
-        'puppet_enterprise::profile::puppetdb::java_args'         => { 'Xms' => '1638m', 'Xmx' => '1638m' },
+        'puppet_enterprise::puppetdb::command_processing_threads' => 2,
+        'puppet_enterprise::profile::puppetdb::java_args'         => { 'Xms' => '819m', 'Xmx' => '819m' },
         'puppet_enterprise::master::jruby_max_active_instances'   => 2,
         'puppet_enterprise::profile::master::java_args'           => { 'Xms' => '1024m', 'Xmx' => '1024m' },
       }
-      # settings['puppet_enterprise::profile::master::java_args']['XX:+UseG1GC'] = ''
       totals = {
-        'CPU'          => { 'total' => 4,    'used' => 3 },
-        'RAM'          => { 'total' => 8192, 'used' => 2662 },
+        'CPU'          => { 'total' => 4,    'used' => 4 },
+        'RAM'          => { 'total' => 8192, 'used' => 1843 },
         'MB_PER_JRUBY' => 512,
       }
-      with_jruby_9k = false
-      with_activemq = false
-      with_orchestrator = false
-      with_puppetdb = true
-      expect(calculator::calculate_master_settings(resources, with_jruby_9k, with_activemq, with_orchestrator, with_puppetdb)).to eq([settings, totals])
+      is_mono_master       = false
+      with_jruby_9k        = false
+      with_compile_masters = false
+      with_activemq        = false
+      with_console         = false
+      with_orchestrator    = false
+      with_puppetdb        = true
+      with_postgresql      = false
+      expect(calculator::calculate_master_settings(resources, is_mono_master, with_jruby_9k, with_compile_masters,
+                                                   with_activemq, with_console, with_orchestrator, with_postgresql, with_puppetdb)).to eq([settings, totals])
     end
 
     it 'can calculate database host (external postgresql) settings' do

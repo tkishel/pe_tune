@@ -8,7 +8,7 @@
 # It does not optimize the following settings in puppetlabs-puppet_enterprise:
 #   autovacuum_max_workers, autovacuum_work_mem, effective_cache_size, maintenance_work_mem, work_mem
 
-# It accepts the following overrides via ENV for testing:
+# It accepts the following overrides (for all hosts) via ENV for testing:
 #   export TEST_CPU=8; export TEST_RAM=16384; export TEST_MEM_ROS=512; export TEST_MEM_PJR=768
 
 module PuppetX
@@ -56,14 +56,21 @@ module PuppetX
 
         # https://github.com/puppetlabs/puppetlabs-pe_infrastructure/blob/irving/lib/puppet_x/puppetlabs/meep/defaults.rb
 
-        @replica_masters = get_nodes_with_class('Primary_master_replica')
-        @primary_masters = get_nodes_with_class('Certificate_authority') - @replica_masters
-        @compile_masters = get_nodes_with_class('Master')   - @primary_masters - @replica_masters
-        @console_hosts   = get_nodes_with_class('Console')  - @primary_masters - @replica_masters
-        @puppetdb_hosts  = get_nodes_with_class('Puppetdb') - @primary_masters - @replica_masters - @compile_masters
-        # TODO: Implement raw and filtered _hosts, to detect compile masters with: activemq, orchestrator, puppetdb, postgresql.
-        @database_hosts  = get_nodes_with_class('Database')
-        @external_database_hosts = @database_hosts - @primary_masters - @replica_masters - @compile_masters
+        @hosts_with_primary_master_replica = get_nodes_with_class('Primary_master_replica')
+        @hosts_with_certificate_authority  = get_nodes_with_class('Certificate_authority')
+        @hosts_with_master                 = get_nodes_with_class('Master')
+        @hosts_with_compile_master         = get_nodes_with_class('Compile_master')
+        @hosts_with_console                = get_nodes_with_class('Console')
+        @hosts_with_puppetdb               = get_nodes_with_class('Puppetdb')
+        @hosts_with_database               = get_nodes_with_class('Database')
+        @hosts_with_orchestrator           = get_nodes_with_class('Orchestrator')
+
+        @replica_masters = @hosts_with_primary_master_replica
+        @primary_masters = @hosts_with_certificate_authority - @replica_masters
+        @compile_masters = @hosts_with_master   - @primary_masters - @replica_masters
+        @console_hosts   = @hosts_with_console  - @primary_masters - @replica_masters
+        @puppetdb_hosts  = @hosts_with_puppetdb - @primary_masters - @replica_masters - @compile_masters
+        @external_database_hosts = @hosts_with_database - @primary_masters - @replica_masters - @compile_masters
       end
 
       # Interfaces to Puppet::Util::Pe_conf and Puppet::Util::Pe_conf::Recover
@@ -108,6 +115,10 @@ module PuppetX
         @console_hosts.count.zero? && @puppetdb_hosts.count.zero?
       end
 
+      def with_ha?
+        @replica_masters.count > 0
+      end
+
       def with_compile_masters?
         @compile_masters.count > 0
       end
@@ -116,12 +127,12 @@ module PuppetX
         @external_database_hosts.count > 0
       end
 
-      def with_postgresql?(host)
-        @database_hosts.count > 0 && @database_hosts.include?(host)
+      def with_puppetdb?(host)
+        @hosts_with_puppetdb.count > 0 && @hosts_with_puppetdb.include?(host)
       end
 
-      def with_ha?
-        @replica_masters.count > 0
+      def with_postgresql?(host)
+        @hosts_with_database.count > 0 && @hosts_with_database.include?(host)
       end
 
       # TODO: Replace with a query of puppet_enterprise::master::puppetserver::jruby_9k_enabled
@@ -202,13 +213,21 @@ module PuppetX
           resources = get_resources_for_node(certname)
           output_minimum_system_requirements_error_and_exit(certname) unless meets_minimum_system_requirements?(resources)
           if is_monolithic
-            settings, totals = @calculator::calculate_monolithic_master_settings(resources, with_jruby_9k, with_compile_masters, with_postgresql?(certname))
-          else
+            is_mono_master    = true
             with_activemq     = true
+            with_console      = true
             with_orchestrator = true
-            with_puppetdb     = false
-            settings, totals = @calculator::calculate_master_settings(resources, with_jruby_9k, with_activemq, with_orchestrator, with_puppetdb)
+            with_puppetdb     = true
+          else
+            is_mono_master    = false
+            with_activemq     = true
+            with_console      = false
+            with_orchestrator = true
+            with_puppetdb     = with_puppetdb?(certname)
           end
+          with_postgresql = with_postgresql?(certname)
+          settings, totals = @calculator::calculate_master_settings(resources, is_mono_master, with_jruby_9k, with_compile_masters,
+                                                                    with_activemq, with_console, with_orchestrator, with_postgresql, with_puppetdb)
           output_minimum_system_requirements_error_and_exit(certname) if settings.empty?
           collect_node(certname, 'Primary Master', resources, settings, totals)
         end
@@ -217,7 +236,14 @@ module PuppetX
         @replica_masters.each do |certname|
           resources = get_resources_for_node(certname)
           output_minimum_system_requirements_error_and_exit(certname) unless meets_minimum_system_requirements?(resources)
-          settings, totals = @calculator::calculate_monolithic_master_settings(resources, with_jruby_9k, with_compile_masters, with_postgresql?(certname))
+          is_mono_master    = true
+          with_activemq     = true
+          with_console      = true
+          with_orchestrator = true
+          with_postgresql   = with_postgresql?(certname)
+          with_puppetdb     = true
+          settings, totals = @calculator::calculate_master_settings(resources, is_mono_master, with_jruby_9k, with_compile_masters,
+                                                                    with_activemq, with_console, with_orchestrator, with_postgresql, with_puppetdb)
           output_minimum_system_requirements_error_and_exit(certname) if settings.empty?
           collect_node(certname, 'Replica Master', resources, settings, totals)
         end
@@ -256,10 +282,14 @@ module PuppetX
           @compile_masters.each do |certname|
             resources = get_resources_for_node(certname)
             output_minimum_system_requirements_error_and_exit(certname) unless meets_minimum_system_requirements?(resources)
+            is_mono_master    = false
             with_activemq     = false
+            with_console      = false
             with_orchestrator = false
-            with_puppetdb     = false
-            settings, totals = @calculator::calculate_master_settings(resources, with_jruby_9k, with_activemq, with_orchestrator, with_puppetdb)
+            with_postgresql   = with_postgresql?(certname)
+            with_puppetdb     = with_puppetdb?(certname)
+            settings, totals = @calculator::calculate_master_settings(resources, is_mono_master, with_jruby_9k, with_compile_masters,
+                                                                      with_activemq, with_console, with_orchestrator, with_postgresql, with_puppetdb)
             output_minimum_system_requirements_error_and_exit(certname) if settings.empty?
             collect_node(certname, 'Compile Master', resources, settings, totals)
           end
