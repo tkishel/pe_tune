@@ -123,7 +123,7 @@ module PuppetX
         @compile_masters.count > 0
       end
 
-      def with_external_postgresql?
+      def with_external_database?
         @external_database_hosts.count > 0
       end
 
@@ -152,9 +152,9 @@ module PuppetX
 
         is_monolithic = monolithic?
         with_compile_masters = with_compile_masters?
-        with_external_postgresql = with_external_postgresql?
+        with_external_database = with_external_database?
 
-        output_pe_infrastucture_summary(is_monolithic, with_compile_masters, with_external_postgresql)
+        output_pe_infrastucture_summary(is_monolithic, with_compile_masters, with_external_database)
 
         # Primary Master: Applicable to Monolithic and Split Infrastructures.
         @primary_masters.each do |certname|
@@ -182,10 +182,10 @@ module PuppetX
           end
         end
 
-        # External PostgreSQL Host: Applicable to Monolithic and Split Infrastructures.
+        # External Database Host: Applicable to Monolithic and Split Infrastructures.
         @external_database_hosts.each do |certname|
           settings, duplicates = get_settings_for_node(certname, tunable_settings)
-          output_node_settings('External PostgreSQL Host', certname, settings, duplicates)
+          output_node_settings('External Database Host', certname, settings, duplicates)
         end
 
         # Compile Masters: Applicable to Monolithic and Split Infrastructures.
@@ -204,11 +204,11 @@ module PuppetX
 
         is_monolithic = monolithic?
         with_compile_masters = with_compile_masters?
-        with_external_postgresql = with_external_postgresql?
+        with_external_database = with_external_database?
 
         create_output_directories
 
-        output_pe_infrastucture_summary(is_monolithic, with_compile_masters, with_external_postgresql)
+        output_pe_infrastucture_summary(is_monolithic, with_compile_masters, with_external_database)
 
         # Primary Master: Applicable to Monolithic and Split Infrastructures.
         @primary_masters.each do |certname|
@@ -272,13 +272,13 @@ module PuppetX
           end
         end
 
-        # External PostgreSQL Host: Applicable to Monolithic and Split Infrastructures.
+        # External Database Host: Applicable to Monolithic and Split Infrastructures.
         @external_database_hosts.each do |certname|
           resources = get_resources_for_node(certname)
           output_minimum_system_requirements_error_and_exit(certname) unless meets_minimum_system_requirements?(resources)
           settings, totals = @calculator::calculate_database_settings(resources)
           output_minimum_system_requirements_error_and_exit(certname) if settings.empty?
-          collect_node(certname, 'External PostgreSQL Host', resources, settings, totals)
+          collect_node(certname, 'External Database Host', resources, settings, totals)
         end
 
         # Compile Masters: Applicable to Monolithic and Split Infrastructures.
@@ -398,10 +398,10 @@ module PuppetX
 
       # Output infrastucture information.
 
-      def output_pe_infrastucture_summary(is_monolithic, with_compile_masters, with_external_postgresql)
+      def output_pe_infrastucture_summary(is_monolithic, with_compile_masters, with_external_database)
         type = is_monolithic ? 'Monolithic' : 'Split'
         w_cm = with_compile_masters ? ' with Compile Masters' : ''
-        w_ep = with_external_postgresql ? ' with External PostgreSQL' : ''
+        w_ep = with_external_database ? ' with External Database' : ''
         output("### Puppet Infrastructure Summary: Found a #{type} Infrastructure#{w_cm}#{w_ep}\n\n")
       end
 
@@ -412,7 +412,7 @@ module PuppetX
           output("## Default settings found for #{profile} #{certname}\n\n")
           return
         end
-        output("## Customized settings for #{profile} #{certname}\n\n")
+        output("## Current settings for #{profile} #{certname}\n\n")
         output_data(JSON.pretty_generate(settings))
         output("\n")
         output_node_duplicate_settings(duplicates)
@@ -420,10 +420,10 @@ module PuppetX
 
       def output_node_duplicate_settings(duplicates)
         return if duplicates.count.zero?
-        output("## Duplicate customized settings found in the Classifier and in Hiera:\n\n")
+        output("## Duplicate settings found in the Classifier and in Hiera:\n\n")
         output_data(duplicates.join("\n"))
         output("\n")
-        output("## Define custom settings in Hiera (preferred) or the Classifier, but not both.\n\n")
+        output("## Define settings in Hiera (preferred) or the Classifier, but not both.\n\n")
       end
 
       # Output optimized information.

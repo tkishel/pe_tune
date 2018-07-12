@@ -24,7 +24,7 @@ describe PuppetX::Puppetlabs::Tune do
       tune.instance_variable_set(:@puppetdb_hosts, [])
       tune.instance_variable_set(:@external_database_hosts, [])
       expect(tune::monolithic?).to eq(true)
-      expect(tune::with_external_postgresql?).to eq(false)
+      expect(tune::with_external_database?).to eq(false)
     end
 
     it 'can detect a split infrastructure' do
@@ -43,20 +43,20 @@ describe PuppetX::Puppetlabs::Tune do
       expect(tune::with_compile_masters?).to eq(true)
     end
 
-    it 'can detect an external database' do
+    it 'can detect an external database host' do
       tune.instance_variable_set(:@primary_masters,  ['master'])
       tune.instance_variable_set(:@console_hosts,    [])
       tune.instance_variable_set(:@puppetdb_hosts,   [])
       tune.instance_variable_set(:@external_database_hosts, ['postgresql'])
-      expect(tune::with_external_postgresql?).to eq(true)
+      expect(tune::with_external_database?).to eq(true)
     end
 
-    it 'can detect puppetdb on a host' do
+    it 'can detect the puppetdb service on a host' do
       tune.instance_variable_set(:@hosts_with_puppetdb, ['compile_master'])
       expect(tune::with_puppetdb?('compile_master')).to eq(true)
     end
 
-    it 'can detect postgresql on a host' do
+    it 'can detect the database service on a host' do
       tune.instance_variable_set(:@hosts_with_database, ['master'])
       expect(tune::with_database?('master')).to eq(true)
     end
