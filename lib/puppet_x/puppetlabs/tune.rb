@@ -127,21 +127,21 @@ module PuppetX
         @external_database_hosts.count > 0
       end
 
-      def with_puppetdb?(host)
-        @hosts_with_puppetdb.count > 0 && @hosts_with_puppetdb.include?(host)
+      def with_puppetdb?(certname)
+        @hosts_with_puppetdb.count > 0 && @hosts_with_puppetdb.include?(certname)
       end
 
-      def with_postgresql?(host)
-        @hosts_with_database.count > 0 && @hosts_with_database.include?(host)
+      def with_postgresql?(certname)
+        @hosts_with_database.count > 0 && @hosts_with_database.include?(certname)
       end
 
       # TODO: Refactor this.
 
-      def jruby_9k_enabled?(host)
+      def jruby_9k_enabled?(certname)
         setting = 'puppet_enterprise::master::puppetserver::jruby_9k_enabled'
-        jar = '/opt/puppetlabs/server/apps/puppetserver/jruby-9k.jar'
-        available = File.exist?(jar)
-        enabled = `puppet lookup #{setting} --node #{host} --render-as s`.chomp != 'false'
+        jr9kjar = '/opt/puppetlabs/server/apps/puppetserver/jruby-9k.jar'
+        available = File.exist?(jr9kjar)
+        enabled = Puppet::Util::Execution.execute("puppet lookup #{setting} --node #{certname} --render-as s", :failonfail => false).chomp != 'false'
         available && enabled
       end
 
