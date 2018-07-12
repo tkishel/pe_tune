@@ -131,17 +131,17 @@ module PuppetX
         @hosts_with_puppetdb.count > 0 && @hosts_with_puppetdb.include?(certname)
       end
 
-      def with_postgresql?(certname)
+      def with_database?(certname)
         @hosts_with_database.count > 0 && @hosts_with_database.include?(certname)
       end
 
-      # TODO: Refactor this.
-
       def jruby_9k_enabled?(certname)
-        setting = 'puppet_enterprise::master::puppetserver::jruby_9k_enabled'
         jr9kjar = '/opt/puppetlabs/server/apps/puppetserver/jruby-9k.jar'
         available = File.exist?(jr9kjar)
-        enabled = Puppet::Util::Execution.execute("puppet lookup #{setting} --node #{certname} --render-as s", :failonfail => false).chomp != 'false'
+        setting = 'puppet_enterprise::master::puppetserver::jruby_9k_enabled'
+        settings, _duplicates = get_settings_for_node(certname, [setting])
+        enabled = settings[setting] != 'false'
+        Puppet.debug("jruby_9k_enabled: available: #{available}, setting: '#{settings[setting]}', enabled: #{enabled}")
         available && enabled
       end
 
@@ -228,9 +228,9 @@ module PuppetX
             with_orchestrator = true
             with_puppetdb     = with_puppetdb?(certname)
           end
-          with_postgresql = with_postgresql?(certname)
+          with_database = with_database?(certname)
           settings, totals = @calculator::calculate_master_settings(resources, is_mono_master, with_jruby_9k, with_compile_masters,
-                                                                    with_activemq, with_console, with_orchestrator, with_postgresql, with_puppetdb)
+                                                                    with_activemq, with_console, with_orchestrator, with_puppetdb, with_database)
           output_minimum_system_requirements_error_and_exit(certname) if settings.empty?
           collect_node(certname, 'Primary Master', resources, settings, totals)
         end
@@ -244,10 +244,10 @@ module PuppetX
           with_activemq     = true
           with_console      = true
           with_orchestrator = true
-          with_postgresql   = with_postgresql?(certname)
           with_puppetdb     = true
+          with_database     = with_database?(certname)
           settings, totals = @calculator::calculate_master_settings(resources, is_mono_master, with_jruby_9k, with_compile_masters,
-                                                                    with_activemq, with_console, with_orchestrator, with_postgresql, with_puppetdb)
+                                                                    with_activemq, with_console, with_orchestrator, with_puppetdb, with_database)
           output_minimum_system_requirements_error_and_exit(certname) if settings.empty?
           collect_node(certname, 'Replica Master', resources, settings, totals)
         end
@@ -266,7 +266,7 @@ module PuppetX
           @puppetdb_hosts.each do |certname|
             resources = get_resources_for_node(certname)
             output_minimum_system_requirements_error_and_exit(certname) unless meets_minimum_system_requirements?(resources)
-            settings, totals = @calculator::calculate_puppetdb_settings(resources, with_postgresql?(certname))
+            settings, totals = @calculator::calculate_puppetdb_settings(resources, with_database?(certname))
             output_minimum_system_requirements_error_and_exit(certname) if settings.empty?
             collect_node(certname, 'PuppetDB Host', resources, settings, totals)
           end
@@ -276,7 +276,7 @@ module PuppetX
         @external_database_hosts.each do |certname|
           resources = get_resources_for_node(certname)
           output_minimum_system_requirements_error_and_exit(certname) unless meets_minimum_system_requirements?(resources)
-          settings, totals = @calculator::calculate_external_postgresql_settings(resources)
+          settings, totals = @calculator::calculate_database_settings(resources)
           output_minimum_system_requirements_error_and_exit(certname) if settings.empty?
           collect_node(certname, 'External PostgreSQL Host', resources, settings, totals)
         end
@@ -291,10 +291,10 @@ module PuppetX
             with_activemq     = false
             with_console      = false
             with_orchestrator = false
-            with_postgresql   = with_postgresql?(certname)
             with_puppetdb     = with_puppetdb?(certname)
+            with_database     = with_database?(certname)
             settings, totals = @calculator::calculate_master_settings(resources, is_mono_master, with_jruby_9k, with_compile_masters,
-                                                                      with_activemq, with_console, with_orchestrator, with_postgresql, with_puppetdb)
+                                                                      with_activemq, with_console, with_orchestrator, with_puppetdb, with_database)
             output_minimum_system_requirements_error_and_exit(certname) if settings.empty?
             collect_node(certname, 'Compile Master', resources, settings, totals)
           end

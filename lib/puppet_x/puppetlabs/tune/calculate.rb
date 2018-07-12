@@ -13,7 +13,7 @@ module PuppetX
         # Masters and Compile Masters in Monolithic or Split Infrastructures.
         # Note: Calculate the number of jrubies by the number of jrubies that will fit into RAM rather than CPU.
 
-        def calculate_master_settings(resources, is_mono_master, with_jruby_9k, with_compile_masters, with_activemq, with_console, with_orchestrator, with_postgresql, with_puppetdb)
+        def calculate_master_settings(resources, is_mono_master, with_jruby_9k, with_compile_masters, with_activemq, with_console, with_orchestrator, with_puppetdb, with_database)
           percent_cpu_threads        = 25
           percent_cpu_jrubies        = 75
           minimum_cpu_threads        = 2
@@ -46,7 +46,7 @@ module PuppetX
           maximum_cpu_threads        = (resources['cpu'] * (percent_cpu_threads * 0.01)).to_i
           maximum_cpu_jrubies        = (resources['cpu'] * (percent_cpu_jrubies * 0.01) - 1).to_i
 
-          minimum_mb_buffers         = 0 unless with_postgresql
+          minimum_mb_buffers         = 0 unless with_database
           mb_console                 = 0 unless with_console
           mb_orchestrator            = 0 unless with_orchestrator
           mb_activemq                = 0 unless with_activemq
@@ -68,7 +68,7 @@ module PuppetX
           settings = {}
           totals = {}
 
-          if with_postgresql
+          if with_database
             available_mb_for_buffers = resources['ram'] - minimum_mb_os
             if available_mb_for_buffers < minimum_mb_buffers
               Puppet.debug("Error: available_mb_for_buffers: #{available_mb_for_buffers} < minimum_mb_buffers: #{minimum_mb_buffers}")
@@ -116,7 +116,7 @@ module PuppetX
             java_args_for_orchestrator = { 'Xms' => "#{mb_orchestrator}m", 'Xmx' => "#{mb_orchestrator}m" }
           end
 
-          settings['puppet_enterprise::profile::database::shared_buffers'] = "#{mb_buffers}MB" if with_postgresql
+          settings['puppet_enterprise::profile::database::shared_buffers'] = "#{mb_buffers}MB" if with_database
           settings['puppet_enterprise::puppetdb::command_processing_threads'] = command_processing_threads if with_puppetdb
           settings['puppet_enterprise::master::jruby_max_active_instances'] = jruby_max_active_instances
           settings['puppet_enterprise::master::puppetserver::reserved_code_cache'] = "#{mb_puppetserver_code_cache}m" if mb_puppetserver_code_cache > 0
@@ -166,24 +166,24 @@ module PuppetX
         # PuppetDB Hosts in Split Infrastructures.
         # Note: Assumes that pe-puppetdb and (by default) pe-postgresql are the only services on the host.
 
-        def calculate_puppetdb_settings(resources, with_postgresql)
+        def calculate_puppetdb_settings(resources, with_database)
           percent_cpu_threads = 75
           minimum_cpu_threads = 1
           maximum_cpu_threads = [1, (resources['cpu'] - 1)].max
-          percent_mb_puppetdb = with_postgresql ? 25 : 50
-          percent_mb_buffers  = with_postgresql ? 25 : 0
+          percent_mb_puppetdb = with_database ? 25 : 50
+          percent_mb_buffers  = with_database ? 25 : 0
           minimum_mb_puppetdb = fit_to_memory(resources['ram'], 512, 1024, 2048)
           maximum_mb_puppetdb = 8192
           minimum_mb_buffers  = fit_to_memory(resources['ram'], 2048, 3072, 4096)
           maximum_mb_buffers  = 16384
           minimum_mb_os       = reserved_memory_os
 
-          minimum_mb_buffers = with_postgresql ? minimum_mb_buffers : 0
+          minimum_mb_buffers = with_database ? minimum_mb_buffers : 0
 
           settings = {}
           totals = {}
 
-          if with_postgresql
+          if with_database
             available_mb_for_buffers = resources['ram'] - minimum_mb_os
             if available_mb_for_buffers < minimum_mb_buffers
               Puppet.debug("Error: available_mb_for_buffers: #{available_mb_for_buffers} < minimum_mb_buffers: #{minimum_mb_buffers}")
@@ -220,7 +220,7 @@ module PuppetX
         # External PostgreSQL Hosts in Monolithic and Split Infrastructures.
         # Note: Assumes that pe-postgresql is the only service on the host.
 
-        def calculate_external_postgresql_settings(resources)
+        def calculate_database_settings(resources)
           percent_mb_buffers = 25
           minimum_mb_buffers = fit_to_memory(resources['ram'], 2048, 3072, 4096)
           maximum_mb_buffers = 16384

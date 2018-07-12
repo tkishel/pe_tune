@@ -35,9 +35,9 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       with_console         = true
       with_orchestrator    = true
       with_puppetdb        = true
-      with_postgresql      = true
+      with_database        = true
       expect(calculator::calculate_master_settings(resources, is_mono_master, with_jruby_9k, with_compile_masters,
-                                                   with_activemq, with_console, with_orchestrator, with_postgresql, with_puppetdb)).to eq([settings, totals])
+                                                   with_activemq, with_console, with_orchestrator, with_puppetdb, with_database)).to eq([settings, totals])
     end
   end
 
@@ -69,9 +69,9 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       with_console         = true
       with_orchestrator    = true
       with_puppetdb        = true
-      with_postgresql      = true
+      with_database        = true
       expect(calculator::calculate_master_settings(resources, is_mono_master, with_jruby_9k, with_compile_masters,
-                                                   with_activemq, with_console, with_orchestrator, with_postgresql, with_puppetdb)).to eq([settings, totals])
+                                                   with_activemq, with_console, with_orchestrator, with_puppetdb, with_database)).to eq([settings, totals])
     end
   end
 
@@ -103,9 +103,9 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       with_console         = true
       with_orchestrator    = true
       with_puppetdb        = true
-      with_postgresql      = true
+      with_database        = true
       expect(calculator::calculate_master_settings(resources, is_mono_master, with_jruby_9k, with_compile_masters,
-                                                   with_activemq, with_console, with_orchestrator, with_postgresql, with_puppetdb)).to eq([settings, totals])
+                                                   with_activemq, with_console, with_orchestrator, with_puppetdb, with_database)).to eq([settings, totals])
     end
   end
 
@@ -139,12 +139,12 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       with_console         = true
       with_orchestrator    = true
       with_puppetdb        = true
-      with_postgresql      = true
+      with_database        = true
       expect(calculator::calculate_master_settings(resources, is_mono_master, with_jruby_9k, with_compile_masters,
-                                                   with_activemq, with_console, with_orchestrator, with_postgresql, with_puppetdb)).to eq([settings, totals])
+                                                   with_activemq, with_console, with_orchestrator, with_puppetdb, with_database)).to eq([settings, totals])
     end
 
-    it 'can calculate master host settings with external postgresql' do
+    it 'can calculate master host settings with an external database' do
       resources = {
         'cpu' => 4,
         'ram' => 8192,
@@ -170,9 +170,9 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       with_console         = true
       with_orchestrator    = true
       with_puppetdb        = true
-      with_postgresql      = false
+      with_database        = false
       expect(calculator::calculate_master_settings(resources, is_mono_master, with_jruby_9k, with_compile_masters,
-                                                   with_activemq, with_console, with_orchestrator, with_postgresql, with_puppetdb)).to eq([settings, totals])
+                                                   with_activemq, with_console, with_orchestrator, with_puppetdb, with_database)).to eq([settings, totals])
     end
   end
 
@@ -199,9 +199,9 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       with_console         = false
       with_orchestrator    = true
       with_puppetdb        = false
-      with_postgresql      = false
+      with_database        = false
       expect(calculator::calculate_master_settings(resources, is_mono_master, with_jruby_9k, with_compile_masters,
-                                                   with_activemq, with_console, with_orchestrator, with_postgresql, with_puppetdb)).to eq([settings, totals])
+                                                   with_activemq, with_console, with_orchestrator, with_puppetdb, with_database)).to eq([settings, totals])
     end
 
     it 'can calculate console host settings' do
@@ -231,11 +231,11 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'CPU' => { 'total' => 4,    'used' => 3 },
         'RAM' => { 'total' => 8192, 'used' => 4096 },
       }
-      with_postgresql = true
-      expect(calculator::calculate_puppetdb_settings(resources, with_postgresql)).to eq([settings, totals])
+      with_database = true
+      expect(calculator::calculate_puppetdb_settings(resources, with_database)).to eq([settings, totals])
     end
 
-    it 'can calculate puppetdb host settings with external postgresql' do
+    it 'can calculate puppetdb host settings with an external database' do
       resources = {
         'cpu' => 4,
         'ram' => 8192,
@@ -248,13 +248,13 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'CPU' => { 'total' => 4, 'used' => 3 },
         'RAM' => { 'total' => 8192, 'used' => 4096 },
       }
-      with_postgresql = false
-      expect(calculator::calculate_puppetdb_settings(resources, with_postgresql)).to eq([settings, totals])
+      with_database = false
+      expect(calculator::calculate_puppetdb_settings(resources, with_database)).to eq([settings, totals])
     end
   end
 
   context 'with any infrastructure' do
-    it 'can calculate compile master host (master) settings' do
+    it 'can calculate compile master host settings' do
       resources = {
         'cpu' => 4,
         'ram' => 8192,
@@ -275,12 +275,12 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       with_console         = false
       with_orchestrator    = false
       with_puppetdb        = false
-      with_postgresql      = false
+      with_database        = false
       expect(calculator::calculate_master_settings(resources, is_mono_master, with_jruby_9k, with_compile_masters,
-                                                   with_activemq, with_console, with_orchestrator, with_postgresql, with_puppetdb)).to eq([settings, totals])
+                                                   with_activemq, with_console, with_orchestrator, with_puppetdb, with_database)).to eq([settings, totals])
     end
 
-    it 'can calculate compile master host (master) settings with puppetdb' do
+    it 'can calculate compile master host settings with puppetdb' do
       resources = {
         'cpu' => 4,
         'ram' => 8192,
@@ -303,12 +303,12 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       with_console         = false
       with_orchestrator    = false
       with_puppetdb        = true
-      with_postgresql      = false
+      with_database        = false
       expect(calculator::calculate_master_settings(resources, is_mono_master, with_jruby_9k, with_compile_masters,
-                                                   with_activemq, with_console, with_orchestrator, with_postgresql, with_puppetdb)).to eq([settings, totals])
+                                                   with_activemq, with_console, with_orchestrator, with_puppetdb, with_database)).to eq([settings, totals])
     end
 
-    it 'can calculate database host (external postgresql) settings' do
+    it 'can calculate database host settings' do
       resources = {
         'cpu' => 4,
         'ram' => 8192,
@@ -319,7 +319,7 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       totals = {
         'RAM' => { 'total' => 8192, 'used' => 2048 },
       }
-      expect(calculator::calculate_external_postgresql_settings(resources)).to eq([settings, totals])
+      expect(calculator::calculate_database_settings(resources)).to eq([settings, totals])
     end
   end
 
