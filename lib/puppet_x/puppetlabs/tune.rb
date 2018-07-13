@@ -63,6 +63,7 @@ module PuppetX
         @hosts_with_console                = get_nodes_with_class('Console')
         @hosts_with_puppetdb               = get_nodes_with_class('Puppetdb')
         @hosts_with_database               = get_nodes_with_class('Database')
+        @hosts_with_amq_broker             = get_nodes_with_class('Amq::Broker')
         @hosts_with_orchestrator           = get_nodes_with_class('Orchestrator')
 
         @replica_masters = @hosts_with_primary_master_replica
@@ -133,6 +134,16 @@ module PuppetX
 
       def with_database?(certname)
         @hosts_with_database.count > 0 && @hosts_with_database.include?(certname)
+      end
+
+      # See also: puppet_enterprise::mcollective: stopped
+
+      def with_activemq?(certname)
+        @hosts_with_amq_broker.count > 0 && @hosts_with_amq_broker.include?(certname)
+      end
+
+      def with_orchestrator?(certname)
+        @hosts_with_orchestrator.count > 0 && @hosts_with_orchestrator.include?(certname)
       end
 
       def jruby_9k_enabled?(certname)
@@ -214,18 +225,16 @@ module PuppetX
         @primary_masters.each do |certname|
           resources = get_resources_for_node(certname)
           output_minimum_system_requirements_error_and_exit(certname) unless meets_minimum_system_requirements?(resources)
-          with_jruby_9k = jruby_9k_enabled?(certname)
+          is_mono_master = is_monolithic
+          with_jruby_9k  = jruby_9k_enabled?(certname)
+          with_activemq  = with_activemq?(certname)
           if is_monolithic
-            is_mono_master    = true
-            with_activemq     = true
             with_console      = true
             with_orchestrator = true
             with_puppetdb     = true
           else
-            is_mono_master    = false
-            with_activemq     = true
             with_console      = false
-            with_orchestrator = true
+            with_orchestrator = with_orchestrator?(certname)
             with_puppetdb     = with_puppetdb?(certname)
           end
           with_database = with_database?(certname)
@@ -239,9 +248,9 @@ module PuppetX
         @replica_masters.each do |certname|
           resources = get_resources_for_node(certname)
           output_minimum_system_requirements_error_and_exit(certname) unless meets_minimum_system_requirements?(resources)
-          is_mono_master    = true
+          is_mono_master    = is_monolithic
           with_jruby_9k     = jruby_9k_enabled?(certname)
-          with_activemq     = true
+          with_activemq     = with_activemq?(certname)
           with_console      = true
           with_orchestrator = true
           with_puppetdb     = true
@@ -266,7 +275,8 @@ module PuppetX
           @puppetdb_hosts.each do |certname|
             resources = get_resources_for_node(certname)
             output_minimum_system_requirements_error_and_exit(certname) unless meets_minimum_system_requirements?(resources)
-            settings, totals = @calculator::calculate_puppetdb_settings(resources, with_database?(certname))
+            with_database = with_database?(certname)
+            settings, totals = @calculator::calculate_puppetdb_settings(resources, with_database)
             output_minimum_system_requirements_error_and_exit(certname) if settings.empty?
             collect_node(certname, 'PuppetDB Host', resources, settings, totals)
           end
@@ -288,9 +298,9 @@ module PuppetX
             output_minimum_system_requirements_error_and_exit(certname) unless meets_minimum_system_requirements?(resources)
             is_mono_master    = false
             with_jruby_9k     = jruby_9k_enabled?(certname)
-            with_activemq     = false
+            with_activemq     = with_activemq?(certname)
             with_console      = false
-            with_orchestrator = false
+            with_orchestrator = with_orchestrator?(certname)
             with_puppetdb     = with_puppetdb?(certname)
             with_database     = with_database?(certname)
             settings, totals = @calculator::calculate_master_settings(resources, is_mono_master, with_jruby_9k, with_compile_masters,
