@@ -77,7 +77,7 @@ For example:
 ---
 puppet_enterprise::profile::database::shared_buffers: 4096MB
 puppet_enterprise::puppetdb::command_processing_threads: 2
-puppet_enterprise::master::jruby_max_active_instances: 6
+puppet_enterprise::master::puppetserver::jruby_max_active_instances: 6
 puppet_enterprise::profile::master::java_args:
   Xms: 4608m
   Xmx: 4608m
@@ -93,7 +93,7 @@ puppet_enterprise::profile::orchestrator::java_args:
 puppet_enterprise::profile::amq::broker::heap_mb: 1024
 ```
 
-This module outputs node-specific settings by default. With a monolithic infrastructure, the output could be saved to a common.yaml file. With a split infrastructure, the output would need to be saved to node-specific YAML files included in a node-specific hierarchy.
+This module outputs node-specific settings by default. With a monolithic infrastructure, the output could be saved to a common/default yaml file. With a split infrastructure, the output would need to be saved to node-specific YAML files included in a node-specific hierarchy.
 
 For example:
 

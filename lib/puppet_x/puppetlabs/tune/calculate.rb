@@ -118,7 +118,7 @@ module PuppetX
 
           settings['puppet_enterprise::profile::database::shared_buffers'] = "#{mb_buffers}MB" if with_database
           settings['puppet_enterprise::puppetdb::command_processing_threads'] = command_processing_threads if with_puppetdb
-          settings['puppet_enterprise::master::jruby_max_active_instances'] = jruby_max_active_instances
+          settings['puppet_enterprise::master::puppetserver::jruby_max_active_instances'] = jruby_max_active_instances
           settings['puppet_enterprise::master::puppetserver::reserved_code_cache'] = "#{mb_puppetserver_code_cache}m" if mb_puppetserver_code_cache > 0
           settings['puppet_enterprise::profile::master::java_args'] = java_args_for_puppetserver
           settings['puppet_enterprise::profile::puppetdb::java_args'] = java_args_for_puppetdb if with_puppetdb

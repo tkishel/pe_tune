@@ -14,14 +14,14 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'ram' => 8192,
       }
       settings = {
-        'puppet_enterprise::profile::database::shared_buffers'    => '2048MB',
-        'puppet_enterprise::puppetdb::command_processing_threads' => 2,
-        'puppet_enterprise::master::jruby_max_active_instances'   => 2,
-        'puppet_enterprise::profile::master::java_args'           => { 'Xms' => '2048m', 'Xmx' => '2048m' },
-        'puppet_enterprise::profile::puppetdb::java_args'         => { 'Xms' => '819m',  'Xmx' => '819m' },
-        'puppet_enterprise::profile::console::java_args'          => { 'Xms' => '512m',  'Xmx' => '512m' },
-        'puppet_enterprise::profile::orchestrator::java_args'     => { 'Xms' => '512m',  'Xmx' => '512m' },
-        'puppet_enterprise::profile::amq::broker::heap_mb'        => 512,
+        'puppet_enterprise::profile::database::shared_buffers'                => '2048MB',
+        'puppet_enterprise::puppetdb::command_processing_threads'             => 2,
+        'puppet_enterprise::master::puppetserver::jruby_max_active_instances' => 2,
+        'puppet_enterprise::profile::master::java_args'                       => { 'Xms' => '2048m', 'Xmx' => '2048m' },
+        'puppet_enterprise::profile::puppetdb::java_args'                     => { 'Xms' => '819m',  'Xmx' => '819m' },
+        'puppet_enterprise::profile::console::java_args'                      => { 'Xms' => '512m',  'Xmx' => '512m' },
+        'puppet_enterprise::profile::orchestrator::java_args'                 => { 'Xms' => '512m',  'Xmx' => '512m' },
+        'puppet_enterprise::profile::amq::broker::heap_mb'                    => 512,
       }
       totals = {
         'CPU'          => { 'total' => 4,    'used' => 4 },
@@ -48,14 +48,14 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'ram' => 16384,
       }
       settings = {
-        'puppet_enterprise::profile::database::shared_buffers'    => '4096MB',
-        'puppet_enterprise::puppetdb::command_processing_threads' => 2,
-        'puppet_enterprise::master::jruby_max_active_instances'   => 5,
-        'puppet_enterprise::profile::master::java_args'           => { 'Xms' => '3840m', 'Xmx' => '3840m' },
-        'puppet_enterprise::profile::puppetdb::java_args'         => { 'Xms' => '1638m', 'Xmx' => '1638m' },
-        'puppet_enterprise::profile::console::java_args'          => { 'Xms' => '768m',  'Xmx' => '768m' },
-        'puppet_enterprise::profile::orchestrator::java_args'     => { 'Xms' => '768m',  'Xmx' => '768m' },
-        'puppet_enterprise::profile::amq::broker::heap_mb'        => 1024,
+        'puppet_enterprise::profile::database::shared_buffers'                => '4096MB',
+        'puppet_enterprise::puppetdb::command_processing_threads'             => 2,
+        'puppet_enterprise::master::puppetserver::jruby_max_active_instances' => 5,
+        'puppet_enterprise::profile::master::java_args'                       => { 'Xms' => '3840m', 'Xmx' => '3840m' },
+        'puppet_enterprise::profile::puppetdb::java_args'                     => { 'Xms' => '1638m', 'Xmx' => '1638m' },
+        'puppet_enterprise::profile::console::java_args'                      => { 'Xms' => '768m',  'Xmx' => '768m' },
+        'puppet_enterprise::profile::orchestrator::java_args'                 => { 'Xms' => '768m',  'Xmx' => '768m' },
+        'puppet_enterprise::profile::amq::broker::heap_mb'                    => 1024,
       }
       totals = {
         'CPU'          => { 'total' => 8,     'used' => 7 },
@@ -82,14 +82,14 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'ram' => 32768,
       }
       settings = {
-        'puppet_enterprise::profile::database::shared_buffers'    => '8192MB',
-        'puppet_enterprise::puppetdb::command_processing_threads' => 4,
-        'puppet_enterprise::master::jruby_max_active_instances'   => 11,
-        'puppet_enterprise::profile::master::java_args'           => { 'Xms' => '11264m', 'Xmx' => '11264m' },
-        'puppet_enterprise::profile::puppetdb::java_args'         => { 'Xms' => '3276m',  'Xmx' => '3276m' },
-        'puppet_enterprise::profile::console::java_args'          => { 'Xms' => '1024m',  'Xmx' => '1024m' },
-        'puppet_enterprise::profile::orchestrator::java_args'     => { 'Xms' => '1024m',  'Xmx' => '1024m' },
-        'puppet_enterprise::profile::amq::broker::heap_mb'        => 2048,
+        'puppet_enterprise::profile::database::shared_buffers'                => '8192MB',
+        'puppet_enterprise::puppetdb::command_processing_threads'             => 4,
+        'puppet_enterprise::master::puppetserver::jruby_max_active_instances' => 11,
+        'puppet_enterprise::profile::master::java_args'                       => { 'Xms' => '11264m', 'Xmx' => '11264m' },
+        'puppet_enterprise::profile::puppetdb::java_args'                     => { 'Xms' => '3276m',  'Xmx' => '3276m' },
+        'puppet_enterprise::profile::console::java_args'                      => { 'Xms' => '1024m',  'Xmx' => '1024m' },
+        'puppet_enterprise::profile::orchestrator::java_args'                 => { 'Xms' => '1024m',  'Xmx' => '1024m' },
+        'puppet_enterprise::profile::amq::broker::heap_mb'                    => 2048,
       }
       totals = {
         'CPU'          => { 'total' => 16,    'used' => 15 },
@@ -118,14 +118,14 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'ram' => 8192,
       }
       settings = {
-        'puppet_enterprise::profile::database::shared_buffers'    => '2048MB',
-        'puppet_enterprise::puppetdb::command_processing_threads' => 3,
-        'puppet_enterprise::master::jruby_max_active_instances'   => 2,
-        'puppet_enterprise::profile::master::java_args'           => { 'Xms' => '1024m', 'Xmx' => '1024m' },
-        'puppet_enterprise::profile::puppetdb::java_args'         => { 'Xms' => '1638m', 'Xmx' => '1638m' },
-        'puppet_enterprise::profile::console::java_args'          => { 'Xms' => '512m',  'Xmx' => '512m' },
-        'puppet_enterprise::profile::orchestrator::java_args'     => { 'Xms' => '512m',  'Xmx' => '512m' },
-        'puppet_enterprise::profile::amq::broker::heap_mb'        => 512,
+        'puppet_enterprise::profile::database::shared_buffers'                => '2048MB',
+        'puppet_enterprise::puppetdb::command_processing_threads'             => 3,
+        'puppet_enterprise::master::puppetserver::jruby_max_active_instances' => 2,
+        'puppet_enterprise::profile::master::java_args'                       => { 'Xms' => '1024m', 'Xmx' => '1024m' },
+        'puppet_enterprise::profile::puppetdb::java_args'                     => { 'Xms' => '1638m', 'Xmx' => '1638m' },
+        'puppet_enterprise::profile::console::java_args'                      => { 'Xms' => '512m',  'Xmx' => '512m' },
+        'puppet_enterprise::profile::orchestrator::java_args'                 => { 'Xms' => '512m',  'Xmx' => '512m' },
+        'puppet_enterprise::profile::amq::broker::heap_mb'                    => 512,
       }
       totals = {
         'CPU'          => { 'total' => 4,    'used' => 5 },
@@ -150,13 +150,13 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'ram' => 8192,
       }
       settings = {
-        'puppet_enterprise::puppetdb::command_processing_threads' => 2,
-        'puppet_enterprise::master::jruby_max_active_instances'   => 2,
-        'puppet_enterprise::profile::master::java_args'           => { 'Xms' => '2048m', 'Xmx' => '2048m' },
-        'puppet_enterprise::profile::puppetdb::java_args'         => { 'Xms' => '819m',  'Xmx' => '819m' },
-        'puppet_enterprise::profile::console::java_args'          => { 'Xms' => '512m',  'Xmx' => '512m' },
-        'puppet_enterprise::profile::orchestrator::java_args'     => { 'Xms' => '512m',  'Xmx' => '512m' },
-        'puppet_enterprise::profile::amq::broker::heap_mb'        => 512,
+        'puppet_enterprise::puppetdb::command_processing_threads'             => 2,
+        'puppet_enterprise::master::puppetserver::jruby_max_active_instances' => 2,
+        'puppet_enterprise::profile::master::java_args'                       => { 'Xms' => '2048m', 'Xmx' => '2048m' },
+        'puppet_enterprise::profile::puppetdb::java_args'                     => { 'Xms' => '819m',  'Xmx' => '819m' },
+        'puppet_enterprise::profile::console::java_args'                      => { 'Xms' => '512m',  'Xmx' => '512m' },
+        'puppet_enterprise::profile::orchestrator::java_args'                 => { 'Xms' => '512m',  'Xmx' => '512m' },
+        'puppet_enterprise::profile::amq::broker::heap_mb'                    => 512,
       }
       totals = {
         'CPU'          => { 'total' => 4,    'used' => 4 },
@@ -183,9 +183,9 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'ram' => 8192,
       }
       settings = {
-        'puppet_enterprise::master::jruby_max_active_instances' => 3,
-        'puppet_enterprise::profile::master::java_args'         => { 'Xms' => '1536m', 'Xmx' => '1536m' },
-        'puppet_enterprise::profile::orchestrator::java_args'   => { 'Xms' => '512m',  'Xmx' => '512m' },
+        'puppet_enterprise::master::puppetserver::jruby_max_active_instances' => 3,
+        'puppet_enterprise::profile::master::java_args'                       => { 'Xms' => '1536m', 'Xmx' => '1536m' },
+        'puppet_enterprise::profile::orchestrator::java_args'                 => { 'Xms' => '512m',  'Xmx' => '512m' },
       }
       totals = {
         'CPU'          => { 'total' => 4,    'used' => 3 },
@@ -260,8 +260,8 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'ram' => 8192,
       }
       settings = {
-        'puppet_enterprise::master::jruby_max_active_instances' => 3,
-        'puppet_enterprise::profile::master::java_args'         => { 'Xms' => '1536m', 'Xmx' => '1536m' },
+        'puppet_enterprise::master::puppetserver::jruby_max_active_instances' => 3,
+        'puppet_enterprise::profile::master::java_args'                       => { 'Xms' => '1536m', 'Xmx' => '1536m' },
       }
       totals = {
         'CPU'          => { 'total' => 4,    'used' => 3 },
@@ -286,10 +286,10 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'ram' => 8192,
       }
       settings = {
-        'puppet_enterprise::puppetdb::command_processing_threads' => 2,
-        'puppet_enterprise::profile::puppetdb::java_args'         => { 'Xms' => '819m', 'Xmx' => '819m' },
-        'puppet_enterprise::master::jruby_max_active_instances'   => 2,
-        'puppet_enterprise::profile::master::java_args'           => { 'Xms' => '1024m', 'Xmx' => '1024m' },
+        'puppet_enterprise::puppetdb::command_processing_threads'             => 2,
+        'puppet_enterprise::profile::puppetdb::java_args'                     => { 'Xms' => '819m', 'Xmx' => '819m' },
+        'puppet_enterprise::master::puppetserver::jruby_max_active_instances' => 2,
+        'puppet_enterprise::profile::master::java_args'                       => { 'Xms' => '1024m', 'Xmx' => '1024m' },
       }
       totals = {
         'CPU'          => { 'total' => 4,    'used' => 4 },
