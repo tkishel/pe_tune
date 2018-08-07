@@ -33,6 +33,7 @@ module PuppetX
           return unless @pe_conf['puppet_enterprise::puppet_master_host']
           puppet_master_host = @pe_conf['puppet_enterprise::puppet_master_host']
           Puppet.debug("Found pe.conf puppet_master_host: #{puppet_master_host}")
+          puppet_master_host = Puppet[:certname] if puppet_master_host == '%{trusted.certname}'
           puppet_master_host = Puppet[:certname] if puppet_master_host == '%{::trusted.certname}'
           Puppet.debug("Using pe.conf puppet_master_host: #{puppet_master_host}")
           puppet_master_host
