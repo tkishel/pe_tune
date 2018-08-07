@@ -128,25 +128,47 @@ module PuppetX
         @external_database_hosts.count > 0
       end
 
-      def with_puppetdb?(certname)
-        @hosts_with_puppetdb.count > 0 && @hosts_with_puppetdb.include?(certname)
-      end
-
-      def with_database?(certname)
-        @hosts_with_database.count > 0 && @hosts_with_database.include?(certname)
-      end
-
-      # See also: puppet_enterprise::mcollective: stopped
+      # Identify component(s) on node.
 
       def with_activemq?(certname)
+        return false unless certname
         @hosts_with_amq_broker.count > 0 && @hosts_with_amq_broker.include?(certname)
       end
 
+      def with_console?(certname)
+        return false unless certname
+        @hosts_with_console.count > 0 && @hosts_with_console.include?(certname)
+      end
+
+      def with_database?(certname)
+        return false unless certname
+        @hosts_with_database.count > 0 && @hosts_with_database.include?(certname)
+      end
+
       def with_orchestrator?(certname)
+        return false unless certname
         @hosts_with_orchestrator.count > 0 && @hosts_with_orchestrator.include?(certname)
       end
 
-      def jruby_9k_enabled?(certname)
+      def with_puppetdb?(certname)
+        return false unless certname
+        @hosts_with_puppetdb.count > 0 && @hosts_with_puppetdb.include?(certname)
+      end
+
+      def get_components_for_node(certname)
+        components = {
+          'activemq'     => with_activemq?(certname),
+          'console'      => with_console?(certname),
+          'database'     => with_database?(certname),
+          'orchestrator' => with_orchestrator?(certname),
+          'puppetdb'     => with_puppetdb?(certname)
+        }
+        components
+      end
+
+      # Identify configuration of node.
+
+      def with_jruby9k_enabled?(certname)
         jr9kjar = '/opt/puppetlabs/server/apps/puppetserver/jruby-9k.jar'
         available = File.exist?(jr9kjar)
         setting = 'puppet_enterprise::master::puppetserver::jruby_9k_enabled'
@@ -160,12 +182,7 @@ module PuppetX
 
       def output_current_settings
         output_pe_infrastructure_error_and_exit if unknown_pe_infrastructure?
-
-        is_monolithic = monolithic?
-        with_compile_masters = with_compile_masters?
-        with_external_database = with_external_database?
-
-        output_pe_infrastucture_summary(is_monolithic, with_compile_masters, with_external_database)
+        output_pe_infrastucture_summary(monolithic?, with_compile_masters?, with_external_database?)
 
         # Primary Master: Applicable to Monolithic and Split Infrastructures.
         @primary_masters.each do |certname|
@@ -179,7 +196,7 @@ module PuppetX
           output_node_settings('Replica Master', certname, settings, duplicates)
         end
 
-        unless is_monolithic
+        unless monolithic?
           # Console Host: Specific to Split Infrastructures. By default, a list of one.
           @console_hosts.each do |certname|
             settings, duplicates = get_settings_for_node(certname, tunable_settings)
@@ -200,7 +217,7 @@ module PuppetX
         end
 
         # Compile Masters: Applicable to Monolithic and Split Infrastructures.
-        if with_compile_masters
+        if with_compile_masters?
           @compile_masters.each do |certname|
             settings, duplicates = get_settings_for_node(certname, tunable_settings)
             output_node_settings('Compile Master', certname, settings, duplicates)
@@ -212,34 +229,20 @@ module PuppetX
 
       def output_optimized_settings
         output_pe_infrastructure_error_and_exit if unknown_pe_infrastructure?
-
-        is_monolithic = monolithic?
-        with_compile_masters = with_compile_masters?
-        with_external_database = with_external_database?
-
         create_output_directories
-
-        output_pe_infrastucture_summary(is_monolithic, with_compile_masters, with_external_database)
+        output_pe_infrastucture_summary(monolithic?, with_compile_masters?, with_external_database?)
 
         # Primary Master: Applicable to Monolithic and Split Infrastructures.
         @primary_masters.each do |certname|
           resources = get_resources_for_node(certname)
           output_minimum_system_requirements_error_and_exit(certname) unless meets_minimum_system_requirements?(resources)
-          is_mono_master = is_monolithic
-          with_jruby_9k  = jruby_9k_enabled?(certname)
-          with_activemq  = with_activemq?(certname)
-          if is_monolithic
-            with_console      = true
-            with_orchestrator = true
-            with_puppetdb     = true
-          else
-            with_console      = false
-            with_orchestrator = with_orchestrator?(certname)
-            with_puppetdb     = with_puppetdb?(certname)
-          end
-          with_database = with_database?(certname)
-          settings, totals = @calculator::calculate_master_settings(resources, is_mono_master, with_jruby_9k, with_compile_masters,
-                                                                    with_activemq, with_console, with_orchestrator, with_puppetdb, with_database)
+          configuration = {
+            'is_monolithic_master' => monolithic?,
+            'with_compile_masters' => with_compile_masters?,
+            'with_jruby9k_enabled' => with_jruby9k_enabled?(certname)
+          }
+          components = get_components_for_node(certname)
+          settings, totals = @calculator::calculate_master_settings(resources, configuration, components)
           output_minimum_system_requirements_error_and_exit(certname) if settings.empty?
           collect_node(certname, 'Primary Master', resources, settings, totals)
         end
@@ -248,20 +251,18 @@ module PuppetX
         @replica_masters.each do |certname|
           resources = get_resources_for_node(certname)
           output_minimum_system_requirements_error_and_exit(certname) unless meets_minimum_system_requirements?(resources)
-          is_mono_master    = is_monolithic
-          with_jruby_9k     = jruby_9k_enabled?(certname)
-          with_activemq     = with_activemq?(certname)
-          with_console      = true
-          with_orchestrator = true
-          with_puppetdb     = true
-          with_database     = with_database?(certname)
-          settings, totals = @calculator::calculate_master_settings(resources, is_mono_master, with_jruby_9k, with_compile_masters,
-                                                                    with_activemq, with_console, with_orchestrator, with_puppetdb, with_database)
+          configuration = {
+            'is_monolithic_master' => monolithic?,
+            'with_compile_masters' => with_compile_masters?,
+            'with_jruby9k_enabled' => with_jruby9k_enabled?(certname)
+          }
+          components = get_components_for_node(certname)
+          settings, totals = @calculator::calculate_master_settings(resources, configuration, components)
           output_minimum_system_requirements_error_and_exit(certname) if settings.empty?
           collect_node(certname, 'Replica Master', resources, settings, totals)
         end
 
-        unless is_monolithic
+        unless monolithic?
           # Console Host: Specific to Split Infrastructures. By default, a list of one.
           @console_hosts.each do |certname|
             resources = get_resources_for_node(certname)
@@ -275,8 +276,8 @@ module PuppetX
           @puppetdb_hosts.each do |certname|
             resources = get_resources_for_node(certname)
             output_minimum_system_requirements_error_and_exit(certname) unless meets_minimum_system_requirements?(resources)
-            with_database = with_database?(certname)
-            settings, totals = @calculator::calculate_puppetdb_settings(resources, with_database)
+            components = get_components_for_node(certname)
+            settings, totals = @calculator::calculate_puppetdb_settings(resources, components)
             output_minimum_system_requirements_error_and_exit(certname) if settings.empty?
             collect_node(certname, 'PuppetDB Host', resources, settings, totals)
           end
@@ -292,19 +293,17 @@ module PuppetX
         end
 
         # Compile Masters: Applicable to Monolithic and Split Infrastructures.
-        if with_compile_masters
+        if with_compile_masters?
           @compile_masters.each do |certname|
             resources = get_resources_for_node(certname)
             output_minimum_system_requirements_error_and_exit(certname) unless meets_minimum_system_requirements?(resources)
-            is_mono_master    = false
-            with_jruby_9k     = jruby_9k_enabled?(certname)
-            with_activemq     = with_activemq?(certname)
-            with_console      = false
-            with_orchestrator = with_orchestrator?(certname)
-            with_puppetdb     = with_puppetdb?(certname)
-            with_database     = with_database?(certname)
-            settings, totals = @calculator::calculate_master_settings(resources, is_mono_master, with_jruby_9k, with_compile_masters,
-                                                                      with_activemq, with_console, with_orchestrator, with_puppetdb, with_database)
+            configuration = {
+              'is_monolithic_master' => false,
+              'with_compile_masters' => true,
+              'with_jruby9k_enabled' => with_jruby9k_enabled?(certname)
+            }
+            components = get_components_for_node(certname)
+            settings, totals = @calculator::calculate_master_settings(resources, configuration, components)
             output_minimum_system_requirements_error_and_exit(certname) if settings.empty?
             collect_node(certname, 'Compile Master', resources, settings, totals)
           end

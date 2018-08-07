@@ -13,7 +13,7 @@ module PuppetX
         # Masters and Compile Masters in Monolithic or Split Infrastructures.
         # Note: Calculate the number of jrubies by the number of jrubies that will fit into RAM rather than CPU.
 
-        def calculate_master_settings(resources, is_mono_master, with_jruby_9k, with_compile_masters, with_activemq, with_console, with_orchestrator, with_puppetdb, with_database)
+        def calculate_master_settings(resources, configuration, components)
           percent_cpu_threads        = 25
           percent_cpu_jrubies        = 75
           minimum_cpu_threads        = 2
@@ -32,25 +32,25 @@ module PuppetX
           mb_activemq                = fit_to_memory(resources['ram'], 512, 1024, 2048)
           minimum_mb_os              = reserved_memory_os
 
-          if is_mono_master
-            percent_cpu_threads        = 75   if with_compile_masters
-            percent_cpu_jrubies        = 25   if with_compile_masters
-            percent_mb_puppetdb        = 20   if with_compile_masters
-            minimum_mb_puppetserver    = 1024 if with_compile_masters
+          if configuration['is_monolithic_master']
+            percent_cpu_threads        = 75   if configuration['with_compile_masters']
+            percent_cpu_jrubies        = 25   if configuration['with_compile_masters']
+            percent_mb_puppetdb        = 20   if configuration['with_compile_masters']
+            minimum_mb_puppetserver    = 1024 if configuration['with_compile_masters']
           else
-            percent_cpu_threads        = 0    unless with_puppetdb
-            percent_cpu_jrubies        = 100  unless with_puppetdb
+            percent_cpu_threads        = 0    unless components['puppetdb']
+            percent_cpu_jrubies        = 100  unless components['puppetdb']
             minimum_mb_puppetserver    = 1024
           end
 
           maximum_cpu_threads        = (resources['cpu'] * (percent_cpu_threads * 0.01)).to_i
           maximum_cpu_jrubies        = (resources['cpu'] * (percent_cpu_jrubies * 0.01) - 1).to_i
 
-          minimum_mb_buffers         = 0 unless with_database
-          mb_console                 = 0 unless with_console
-          mb_orchestrator            = 0 unless with_orchestrator
-          mb_activemq                = 0 unless with_activemq
-          mb_puppetserver_code_cache = 0 unless with_jruby_9k
+          minimum_mb_buffers         = 0 unless components['database']
+          mb_console                 = 0 unless components['console']
+          mb_orchestrator            = 0 unless components['orchestrator']
+          mb_activemq                = 0 unless components['activemq']
+          mb_puppetserver_code_cache = 0 unless configuration['with_jruby9k_enabled']
 
           # The Vegas Renormalization, AKA: the immovable vmpooler vs the unstoppable --force.
           if resources['cpu'] < 4
@@ -68,7 +68,7 @@ module PuppetX
           settings = {}
           totals = {}
 
-          if with_database
+          if components['database']
             available_mb_for_buffers = resources['ram'] - minimum_mb_os
             if available_mb_for_buffers < minimum_mb_buffers
               Puppet.debug("Error: available_mb_for_buffers: #{available_mb_for_buffers} < minimum_mb_buffers: #{minimum_mb_buffers}")
@@ -79,7 +79,7 @@ module PuppetX
             mb_buffers = 0
           end
 
-          if with_puppetdb
+          if components['puppetdb']
             command_processing_threads = clamp_percent_of_resource(resources['cpu'], percent_cpu_threads, minimum_cpu_threads, maximum_cpu_threads)
 
             available_mb_for_puppetdb = resources['ram'] - minimum_mb_os - mb_buffers
@@ -108,23 +108,23 @@ module PuppetX
           mb_puppetserver = [mb_jrubies, minimum_mb_puppetserver].max
           java_args_for_puppetserver = { 'Xms' => "#{mb_puppetserver}m", 'Xmx' => "#{mb_puppetserver}m" }
 
-          if with_console
+          if components['console']
             java_args_for_console = { 'Xms' => "#{mb_console}m", 'Xmx' => "#{mb_console}m" }
           end
 
-          if with_orchestrator
+          if components['orchestrator']
             java_args_for_orchestrator = { 'Xms' => "#{mb_orchestrator}m", 'Xmx' => "#{mb_orchestrator}m" }
           end
 
-          settings['puppet_enterprise::profile::database::shared_buffers'] = "#{mb_buffers}MB" if with_database
-          settings['puppet_enterprise::puppetdb::command_processing_threads'] = command_processing_threads if with_puppetdb
+          settings['puppet_enterprise::profile::database::shared_buffers'] = "#{mb_buffers}MB" if components['database']
+          settings['puppet_enterprise::puppetdb::command_processing_threads'] = command_processing_threads if components['puppetdb']
           settings['puppet_enterprise::master::puppetserver::jruby_max_active_instances'] = jruby_max_active_instances
           settings['puppet_enterprise::master::puppetserver::reserved_code_cache'] = "#{mb_puppetserver_code_cache}m" if mb_puppetserver_code_cache > 0
           settings['puppet_enterprise::profile::master::java_args'] = java_args_for_puppetserver
-          settings['puppet_enterprise::profile::puppetdb::java_args'] = java_args_for_puppetdb if with_puppetdb
-          settings['puppet_enterprise::profile::console::java_args'] = java_args_for_console if with_console
-          settings['puppet_enterprise::profile::orchestrator::java_args'] = java_args_for_orchestrator if with_orchestrator
-          settings['puppet_enterprise::profile::amq::broker::heap_mb'] = mb_activemq if with_activemq
+          settings['puppet_enterprise::profile::puppetdb::java_args'] = java_args_for_puppetdb if components['puppetdb']
+          settings['puppet_enterprise::profile::console::java_args'] = java_args_for_console if components['console']
+          settings['puppet_enterprise::profile::orchestrator::java_args'] = java_args_for_orchestrator if components['orchestrator']
+          settings['puppet_enterprise::profile::amq::broker::heap_mb'] = mb_activemq if components['activemq']
 
           cpu_used = command_processing_threads + jruby_max_active_instances
           ram_used = mb_buffers + mb_puppetdb + mb_puppetserver + mb_puppetserver_code_cache + mb_console + mb_orchestrator + mb_activemq
@@ -166,24 +166,24 @@ module PuppetX
         # PuppetDB Hosts in Split Infrastructures.
         # Note: Assumes that pe-puppetdb and (by default) pe-postgresql are the only services on the host.
 
-        def calculate_puppetdb_settings(resources, with_database)
+        def calculate_puppetdb_settings(resources, components)
           percent_cpu_threads = 75
           minimum_cpu_threads = 1
           maximum_cpu_threads = [1, (resources['cpu'] - 1)].max
-          percent_mb_puppetdb = with_database ? 25 : 50
-          percent_mb_buffers  = with_database ? 25 : 0
+          percent_mb_puppetdb = (components['database'] == true) ? 25 : 50
+          percent_mb_buffers  = (components['database'] == true) ? 25 : 0
           minimum_mb_puppetdb = fit_to_memory(resources['ram'], 512, 1024, 2048)
           maximum_mb_puppetdb = 8192
           minimum_mb_buffers  = fit_to_memory(resources['ram'], 2048, 3072, 4096)
           maximum_mb_buffers  = 16384
           minimum_mb_os       = reserved_memory_os
 
-          minimum_mb_buffers = with_database ? minimum_mb_buffers : 0
+          minimum_mb_buffers = (components['database'] == true) ? minimum_mb_buffers : 0
 
           settings = {}
           totals = {}
 
-          if with_database
+          if components['database']
             available_mb_for_buffers = resources['ram'] - minimum_mb_os
             if available_mb_for_buffers < minimum_mb_buffers
               Puppet.debug("Error: available_mb_for_buffers: #{available_mb_for_buffers} < minimum_mb_buffers: #{minimum_mb_buffers}")

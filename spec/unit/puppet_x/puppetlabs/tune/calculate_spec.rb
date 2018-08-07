@@ -13,6 +13,18 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'cpu' => 4,
         'ram' => 8192,
       }
+      configuration = {
+        'is_monolithic_master' => true,
+        'with_compile_masters' => false,
+        'with_jruby9k_enabled' => false,
+      }
+      components = {
+        'activemq'     => true,
+        'console'      => true,
+        'database'     => true,
+        'orchestrator' => true,
+        'puppetdb'     => true,
+      }
       settings = {
         'puppet_enterprise::profile::database::shared_buffers'                => '2048MB',
         'puppet_enterprise::puppetdb::command_processing_threads'             => 2,
@@ -28,16 +40,7 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'RAM'          => { 'total' => 8192, 'used' => 6451 },
         'MB_PER_JRUBY' => 512,
       }
-      is_mono_master       = true
-      with_jruby_9k        = false
-      with_compile_masters = false
-      with_activemq        = true
-      with_console         = true
-      with_orchestrator    = true
-      with_puppetdb        = true
-      with_database        = true
-      expect(calculator::calculate_master_settings(resources, is_mono_master, with_jruby_9k, with_compile_masters,
-                                                   with_activemq, with_console, with_orchestrator, with_puppetdb, with_database)).to eq([settings, totals])
+      expect(calculator::calculate_master_settings(resources, configuration, components)).to eq([settings, totals])
     end
   end
 
@@ -46,6 +49,18 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       resources = {
         'cpu' => 8,
         'ram' => 16384,
+      }
+      configuration = {
+        'is_monolithic_master' => true,
+        'with_compile_masters' => false,
+        'with_jruby9k_enabled' => false,
+      }
+      components = {
+        'activemq'     => true,
+        'console'      => true,
+        'database'     => true,
+        'orchestrator' => true,
+        'puppetdb'     => true,
       }
       settings = {
         'puppet_enterprise::profile::database::shared_buffers'                => '4096MB',
@@ -62,16 +77,7 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'RAM'          => { 'total' => 16384, 'used' => 12134 },
         'MB_PER_JRUBY' => 768,
       }
-      is_mono_master       = true
-      with_jruby_9k        = false
-      with_compile_masters = false
-      with_activemq        = true
-      with_console         = true
-      with_orchestrator    = true
-      with_puppetdb        = true
-      with_database        = true
-      expect(calculator::calculate_master_settings(resources, is_mono_master, with_jruby_9k, with_compile_masters,
-                                                   with_activemq, with_console, with_orchestrator, with_puppetdb, with_database)).to eq([settings, totals])
+      expect(calculator::calculate_master_settings(resources, configuration, components)).to eq([settings, totals])
     end
   end
 
@@ -80,6 +86,18 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       resources = {
         'cpu' => 16,
         'ram' => 32768,
+      }
+      configuration = {
+        'is_monolithic_master' => true,
+        'with_compile_masters' => false,
+        'with_jruby9k_enabled' => false,
+      }
+      components = {
+        'activemq'     => true,
+        'console'      => true,
+        'database'     => true,
+        'orchestrator' => true,
+        'puppetdb'     => true,
       }
       settings = {
         'puppet_enterprise::profile::database::shared_buffers'                => '8192MB',
@@ -96,16 +114,7 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'RAM'          => { 'total' => 32768, 'used' => 26828 },
         'MB_PER_JRUBY' => 1024,
       }
-      is_mono_master       = true
-      with_jruby_9k        = false
-      with_compile_masters = false
-      with_activemq        = true
-      with_console         = true
-      with_orchestrator    = true
-      with_puppetdb        = true
-      with_database        = true
-      expect(calculator::calculate_master_settings(resources, is_mono_master, with_jruby_9k, with_compile_masters,
-                                                   with_activemq, with_console, with_orchestrator, with_puppetdb, with_database)).to eq([settings, totals])
+      expect(calculator::calculate_master_settings(resources, configuration, components)).to eq([settings, totals])
     end
   end
 
@@ -116,6 +125,18 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       resources = {
         'cpu' => 4,
         'ram' => 8192,
+      }
+      configuration = {
+        'is_monolithic_master' => true,
+        'with_compile_masters' => true,
+        'with_jruby9k_enabled' => false,
+      }
+      components = {
+        'activemq'     => true,
+        'console'      => true,
+        'database'     => true,
+        'orchestrator' => true,
+        'puppetdb'     => true,
       }
       settings = {
         'puppet_enterprise::profile::database::shared_buffers'                => '2048MB',
@@ -132,22 +153,25 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'RAM'          => { 'total' => 8192, 'used' => 6246 },
         'MB_PER_JRUBY' => 512,
       }
-      is_mono_master       = true
-      with_jruby_9k        = false
-      with_compile_masters = true
-      with_activemq        = true
-      with_console         = true
-      with_orchestrator    = true
-      with_puppetdb        = true
-      with_database        = true
-      expect(calculator::calculate_master_settings(resources, is_mono_master, with_jruby_9k, with_compile_masters,
-                                                   with_activemq, with_console, with_orchestrator, with_puppetdb, with_database)).to eq([settings, totals])
+      expect(calculator::calculate_master_settings(resources, configuration, components)).to eq([settings, totals])
     end
 
     it 'can calculate master host settings with an external database' do
       resources = {
         'cpu' => 4,
         'ram' => 8192,
+      }
+      configuration = {
+        'is_monolithic_master' => true,
+        'with_compile_masters' => false,
+        'with_jruby9k_enabled' => false,
+      }
+      components = {
+        'activemq'     => true,
+        'console'      => true,
+        'database'     => false,
+        'orchestrator' => true,
+        'puppetdb'     => true,
       }
       settings = {
         'puppet_enterprise::puppetdb::command_processing_threads'             => 2,
@@ -163,16 +187,7 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'RAM'          => { 'total' => 8192, 'used' => 4403 },
         'MB_PER_JRUBY' => 512,
       }
-      is_mono_master       = true
-      with_jruby_9k        = false
-      with_compile_masters = false
-      with_activemq        = true
-      with_console         = true
-      with_orchestrator    = true
-      with_puppetdb        = true
-      with_database        = false
-      expect(calculator::calculate_master_settings(resources, is_mono_master, with_jruby_9k, with_compile_masters,
-                                                   with_activemq, with_console, with_orchestrator, with_puppetdb, with_database)).to eq([settings, totals])
+      expect(calculator::calculate_master_settings(resources, configuration, components)).to eq([settings, totals])
     end
   end
 
@@ -181,6 +196,18 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       resources = {
         'cpu' => 4,
         'ram' => 8192,
+      }
+      configuration = {
+        'is_monolithic_master' => false,
+        'with_compile_masters' => false,
+        'with_jruby9k_enabled' => false,
+      }
+      components = {
+        'activemq'     => false,
+        'console'      => false,
+        'database'     => false,
+        'orchestrator' => true,
+        'puppetdb'     => false,
       }
       settings = {
         'puppet_enterprise::master::puppetserver::jruby_max_active_instances' => 3,
@@ -192,16 +219,7 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'RAM'          => { 'total' => 8192, 'used' => 2048 },
         'MB_PER_JRUBY' => 512,
       }
-      is_mono_master       = false
-      with_jruby_9k        = false
-      with_compile_masters = false
-      with_activemq        = false
-      with_console         = false
-      with_orchestrator    = true
-      with_puppetdb        = false
-      with_database        = false
-      expect(calculator::calculate_master_settings(resources, is_mono_master, with_jruby_9k, with_compile_masters,
-                                                   with_activemq, with_console, with_orchestrator, with_puppetdb, with_database)).to eq([settings, totals])
+      expect(calculator::calculate_master_settings(resources, configuration, components)).to eq([settings, totals])
     end
 
     it 'can calculate console host settings' do
@@ -221,6 +239,9 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'cpu' => 4,
         'ram' => 8192,
       }
+      components = {
+        'database' => true,
+      }
       settings = {
         'puppet_enterprise::puppetdb::command_processing_threads' => 3,
         'puppet_enterprise::profile::puppetdb::java_args'         => { 'Xms' => '2048m', 'Xmx' => '2048m' },
@@ -231,14 +252,16 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'CPU' => { 'total' => 4,    'used' => 3 },
         'RAM' => { 'total' => 8192, 'used' => 4096 },
       }
-      with_database = true
-      expect(calculator::calculate_puppetdb_settings(resources, with_database)).to eq([settings, totals])
+      expect(calculator::calculate_puppetdb_settings(resources, components)).to eq([settings, totals])
     end
 
     it 'can calculate puppetdb host settings with an external database' do
       resources = {
         'cpu' => 4,
         'ram' => 8192,
+      }
+      components = {
+        'database' => false,
       }
       settings = {
         'puppet_enterprise::puppetdb::command_processing_threads' => 3,
@@ -248,8 +271,7 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'CPU' => { 'total' => 4, 'used' => 3 },
         'RAM' => { 'total' => 8192, 'used' => 4096 },
       }
-      with_database = false
-      expect(calculator::calculate_puppetdb_settings(resources, with_database)).to eq([settings, totals])
+      expect(calculator::calculate_puppetdb_settings(resources, components)).to eq([settings, totals])
     end
   end
 
@@ -258,6 +280,18 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       resources = {
         'cpu' => 4,
         'ram' => 8192,
+      }
+      configuration = {
+        'is_monolithic_master' => false,
+        'with_compile_masters' => true,
+        'with_jruby9k_enabled' => false,
+      }
+      components = {
+        'activemq'     => false,
+        'console'      => false,
+        'database'     => false,
+        'orchestrator' => false,
+        'puppetdb'     => false,
       }
       settings = {
         'puppet_enterprise::master::puppetserver::jruby_max_active_instances' => 3,
@@ -268,22 +302,25 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'RAM'          => { 'total' => 8192, 'used' => 1536 },
         'MB_PER_JRUBY' => 512,
       }
-      is_mono_master       = false
-      with_jruby_9k        = false
-      with_compile_masters = false
-      with_activemq        = false
-      with_console         = false
-      with_orchestrator    = false
-      with_puppetdb        = false
-      with_database        = false
-      expect(calculator::calculate_master_settings(resources, is_mono_master, with_jruby_9k, with_compile_masters,
-                                                   with_activemq, with_console, with_orchestrator, with_puppetdb, with_database)).to eq([settings, totals])
+      expect(calculator::calculate_master_settings(resources, configuration, components)).to eq([settings, totals])
     end
 
     it 'can calculate compile master host settings with puppetdb' do
       resources = {
         'cpu' => 4,
         'ram' => 8192,
+      }
+      configuration = {
+        'is_monolithic_master' => false,
+        'with_compile_masters' => true,
+        'with_jruby9k_enabled' => false,
+      }
+      components = {
+        'activemq'     => false,
+        'console'      => false,
+        'database'     => false,
+        'orchestrator' => false,
+        'puppetdb'     => true,
       }
       settings = {
         'puppet_enterprise::puppetdb::command_processing_threads'             => 2,
@@ -296,16 +333,7 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'RAM'          => { 'total' => 8192, 'used' => 1843 },
         'MB_PER_JRUBY' => 512,
       }
-      is_mono_master       = false
-      with_jruby_9k        = false
-      with_compile_masters = false
-      with_activemq        = false
-      with_console         = false
-      with_orchestrator    = false
-      with_puppetdb        = true
-      with_database        = false
-      expect(calculator::calculate_master_settings(resources, is_mono_master, with_jruby_9k, with_compile_masters,
-                                                   with_activemq, with_console, with_orchestrator, with_puppetdb, with_database)).to eq([settings, totals])
+      expect(calculator::calculate_master_settings(resources, configuration, components)).to eq([settings, totals])
     end
 
     it 'can calculate database host settings' do
