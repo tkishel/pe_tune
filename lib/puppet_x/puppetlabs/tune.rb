@@ -269,7 +269,7 @@ module PuppetX
             output_minimum_system_requirements_error_and_exit(certname) unless meets_minimum_system_requirements?(resources)
             settings, totals = @calculator::calculate_console_settings(resources)
             output_minimum_system_requirements_error_and_exit(certname) if settings.empty?
-            collect_node(certname, 'Compile Master', resources, settings, totals)
+            collect_node(certname, 'Console Host', resources, settings, totals)
           end
 
           # PuppetDB Host: Specific to Split Infrastructures. By default, a list of one.
