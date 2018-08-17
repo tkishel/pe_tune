@@ -7,7 +7,7 @@ module PuppetX
         # Calculon Compute!
 
         def initialize
-          # This (code) page left intentionally blank.
+          @fit_to_memory_percentage = 5
         end
 
         # Masters and Compile Masters in Monolithic or Split Infrastructures.
@@ -267,6 +267,12 @@ module PuppetX
         # Model https://puppet.com/docs/pe/latest/configuring/tuning_monolithic.html
 
         def fit_to_memory(memory, small, medium, large)
+          # Round up to the nearest power of two (31500 -> 32768) if within a percentage.
+          target_memory = nearest_power_of_two(memory)
+          if within_percent?(memory, target_memory, @fit_to_memory_percentage)
+            Puppet.debug("Rounding #{memory} up to #{target_memory} for fit_to_memory")
+            memory = target_memory
+          end
           return small  if memory <= 8192
           return medium if memory <= 16384
           return medium if memory <  32768
@@ -302,6 +308,12 @@ module PuppetX
             return ENV['TEST_MEM_PJR'].to_i
           end
           fit_to_memory(memory, 512, 768, 1024)
+        end
+
+        # Test if a number is within a percentage of another number.
+
+        def within_percent?(actual, target, percentage)
+          (Float(target - actual) / target * 100).ceil <= percentage
         end
 
         # Return a number as a computer-science number.
