@@ -172,9 +172,14 @@ module PuppetX
         jr9kjar = '/opt/puppetlabs/server/apps/puppetserver/jruby-9k.jar'
         available = File.exist?(jr9kjar)
         setting = 'puppet_enterprise::master::puppetserver::jruby_9k_enabled'
-        settings, _duplicates = get_settings_for_node(certname, [setting])
-        enabled = settings[setting] != 'false'
-        Puppet.debug("jruby_9k_enabled: available: #{available}, setting: '#{settings[setting]}', enabled: #{enabled}")
+        # Puppet::Util::Pe_conf::Recover.find_hiera_overrides() has issues in 2017.3.x.
+        begin
+          settings, _duplicates = get_settings_for_node(certname, [setting])
+          enabled = settings[setting] != 'false'
+        rescue Exception => e
+          enabled = false
+        end
+        Puppet.debug("jruby_9k_enabled: available: #{available} enabled: #{enabled}")
         available && enabled
       end
 
