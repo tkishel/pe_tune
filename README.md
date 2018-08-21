@@ -18,7 +18,7 @@ Install this module on the Primary Master:
 
 ```shell
 git clone https://github.com/tkishel/pe_tune.git
-chmod +x ./pe_tune/lib/puppet_x/puppetlabs/tune.rb 
+chmod +x ./pe_tune/lib/puppet_x/puppetlabs/tune.rb
 ```
 
 ## Usage
@@ -56,6 +56,14 @@ Note: Do not specify a directory in your current Hiera hierarchy, which should b
 ##### `--force`
 
 Do not enforce minimum system requirements (4 Cores, 8 GB RAM) for infrastructure hosts.
+
+##### `--memory_per_jruby MB`
+
+Amount of RAM to allocate for each PuppetServer JRuby.
+
+##### `--memory_reserved_for_os MB`
+
+Amount of RAM to reserve for the Operating System.
 
 ## Reference
 
