@@ -23,7 +23,7 @@ chmod +x ./pe_tune/lib/puppet_x/puppetlabs/tune.rb
 
 ## Usage
 
-1. Run the `./pe_tune/lib/puppet_x/puppetlabs/tune.rb` script on the Primary Master.
+1. Run the `./pe_tune/lib/puppet_x/puppetlabs/tune.rb` script as root on the Primary Master.
 1. Verify the optimized settings.
 1. Add the optimized settings to Hiera.
 1. Remove any duplicate settings from the Console.
@@ -55,15 +55,15 @@ Note: Do not specify a directory in your current Hiera hierarchy, which should b
 
 ##### `--force`
 
-Do not enforce minimum system requirements (4 Cores, 8 GB RAM) for infrastructure hosts.
+Do not enforce minimum system requirements (4 Cores, 8096 MB RAM) for infrastructure hosts.
 
 ##### `--memory_per_jruby MB`
 
-Amount of RAM to allocate for each PuppetServer JRuby.
+Amount of RAM to allocate for each Puppet Server JRuby.
 
 ##### `--memory_reserved_for_os MB`
 
-Amount of RAM to reserve for the Operating System.
+Amount of RAM to reserve for the operating system.
 
 ## Reference
 
@@ -76,29 +76,39 @@ By default, settings are output to STDOUT.
 For example:
 
 ```shell
-[root@master ~] tune.rb
+[root@master ~] ./pe_tune/lib/puppet_x/puppetlabs/tune.rb
 ### Puppet Infrastructure Summary: Found a Monolithic Infrastructure
 
-## Found: 8 Core(s) / 16384 MB RAM for Primary Master master.puppetdebug.vlan
-## Specify the following in Hiera in nodes/master.puppetdebug.vlan.yaml
+## Found: 8 CPU(s) / 16384 MB RAM for Primary Master pe-master.puppetdebug.vlan
+## Specify the following optimized settings in Hiera in nodes/pe-master.puppetdebug.vlan.yaml
 
 ---
 puppet_enterprise::profile::database::shared_buffers: 4096MB
 puppet_enterprise::puppetdb::command_processing_threads: 2
-puppet_enterprise::master::puppetserver::jruby_max_active_instances: 6
+puppet_enterprise::master::puppetserver::jruby_max_active_instances: 5
+puppet_enterprise::master::puppetserver::reserved_code_cache: 1024m
 puppet_enterprise::profile::master::java_args:
-  Xms: 4608m
-  Xmx: 4608m
+  Xms: 3840m
+  Xmx: 3840m
 puppet_enterprise::profile::puppetdb::java_args:
   Xms: 1638m
   Xmx: 1638m
 puppet_enterprise::profile::console::java_args:
-  Xms: 512m
-  Xmx: 512m
+  Xms: 768m
+  Xmx: 768m
 puppet_enterprise::profile::orchestrator::java_args:
   Xms: 768m
   Xmx: 768m
-puppet_enterprise::profile::amq::broker::heap_mb: 1024
+
+## CPU Summary: Total/Used/Free: 8/7/1 for pe-master.puppetdebug.vlan
+## RAM Summary: Total/Used/Free: 16384/12134/4250 for pe-master.puppetdebug.vlan
+## JVM Summary: Using 768 MB per Puppet Server JRuby for pe-master.puppetdebug.vlan
+
+### Puppet Infrastructure Capacity Summary: Found: Active Nodes: 2
+
+## Given: Available JRubies: 5, Agent Run Interval: 1800 Seconds, Average Compile Time: 9 Seconds
+## Estimate: a maximum of 500 Active Nodes can be served by 5 Available JRubies
+## Estimate: a minimum of 1 Available JRubies is required to serve 2 Active Nodes
 ```
 
 This module outputs node-specific settings by default. With a monolithic infrastructure, the output could be saved to a common/default yaml file. With a split infrastructure, the output would need to be saved to node-specific YAML files included in a node-specific hierarchy.
