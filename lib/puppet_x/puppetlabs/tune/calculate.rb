@@ -8,9 +8,9 @@ module PuppetX
 
         def initialize(options)
           @fit_to_memory_percentage = 5
-          @memory_per_jruby = options[:memory_per_jruby]
+          @memory_per_jruby = options[:memory_per_jruby] ? options[:memory_per_jruby].to_i : nil
           Puppet.debug("Using #{@memory_per_jruby}MB RAM per JRuby") if @memory_per_jruby
-          @memory_reserved_for_os = options[:memory_reserved_for_os]
+          @memory_reserved_for_os = options[:memory_reserved_for_os] ? options[:memory_reserved_for_os].to_i : nil
           Puppet.debug("Using #{@memory_reserved_for_os}MB RAM reserved for the operating system") if @memory_reserved_for_os
           @compile_time_factor = 2
         end
@@ -52,9 +52,9 @@ module PuppetX
           maximum_cpu_jrubies        = (resources['cpu'] * (percent_cpu_jrubies * 0.01) - 1).to_i
 
           minimum_mb_buffers         = 0 unless components['database']
+          mb_activemq                = 0 unless components['activemq']
           mb_console                 = 0 unless components['console']
           mb_orchestrator            = 0 unless components['orchestrator']
-          mb_activemq                = 0 unless components['activemq']
           mb_puppetserver_code_cache = 0 unless configuration['with_jruby9k_enabled']
 
           # The Vegas Renormalization, AKA: the immovable vmpooler vs the unstoppable --force.
