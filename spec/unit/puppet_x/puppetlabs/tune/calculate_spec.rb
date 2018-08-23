@@ -3,7 +3,8 @@ require 'spec_helper'
 require 'puppet_x/puppetlabs/tune/calculate.rb'
 
 describe PuppetX::Puppetlabs::Tune::Calculate do
-  subject(:calculator) { described_class.new }
+  options = {}
+  subject(:calculator) { described_class.new(options) }
 
   context 'with a monolithic infrastructure, server size small' do
     Facter.add(:pe_server_version) { setcode { '2017.1.1' } }

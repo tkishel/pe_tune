@@ -66,6 +66,56 @@ module PuppetX
           results.map { |resource| resource.fetch('certname') }
         end
 
+        def read_active_nodes
+          Puppet.debug('Querying PuppetDB for Active Nodes')
+          pql = ['from', 'nodes',
+                ['and',
+                  ['=', ['node', 'active'], true],
+                ]
+              ]
+          results = Puppet::Util::Puppetdb.query_puppetdb(pql)
+          Puppet.debug(results)
+          results.count
+        end
+
+        # "name" => "catalog_application",
+        # "name" => "config_retrieval",
+        # "name" => "convert_catalog",
+        # "name" => "fact_generation",
+        # "name" => "node_retrieval",
+        # "name" => "plugin_sync",
+        # "name" => "transaction_evaluation",
+        # "name" => "total",
+
+        def read_average_compile_time(query_limit = 1000)
+          Puppet.debug('Querying PuppetDB for Average Compile Time')
+          pql = ['from', 'reports',
+                ['extract',
+                  ['hash', 'start_time', 'end_time', 'metrics'],
+                ],
+                ['limit', query_limit]
+              ]
+          results = Puppet::Util::Puppetdb.query_puppetdb(pql)
+          random_report_hash = results.sample['hash']
+          Puppet.debug("Random report: #{random_report_hash}")
+          # run_times = results.map do |report|
+          #   Time.parse(report['end_time']) - Time.parse(report['start_time'])
+          # end
+          # avg_run_time = (run_times.inject(0.0) { |sum, element| sum + element } / run_times.size).ceil
+          # Filter out reports that do not contain metric data.
+          results.delete_if { |report| report['metrics']['data'].empty? }
+          # Collect config_retrieval time or if absent, total time.
+          config_retrieval_times = results.map do |report|
+            begin
+              report['metrics']['data'].select { |h| (h['name'] == 'config_retrieval' && h['category'] == 'time') }.first.fetch('value')
+            rescue StandardError
+              report['metrics']['data'].select { |h| (h['name'] == 'total' && h['category'] == 'time') }.first.fetch('value')
+            end
+          end
+          avg_config_retrieval_time = config_retrieval_times.reduce(0.0) { |sum, element| sum + element } / config_retrieval_times.size
+          avg_config_retrieval_time.ceil
+        end
+
         def read_node_facts(certname, environment)
           node_facts = {}
           if recover_with_instance_method?

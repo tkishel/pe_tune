@@ -8,8 +8,8 @@
 # It does not optimize the following settings in puppetlabs-puppet_enterprise:
 #   autovacuum_max_workers, autovacuum_work_mem, effective_cache_size, maintenance_work_mem, work_mem
 
-# It accepts the following overrides (for all hosts) via ENV for testing:
-#   export TEST_CPU=8; export TEST_RAM=16384; export TEST_MEM_ROS=512; export TEST_MEM_PJR=768
+# It accepts the following overrides (for the primary master) via ENV for testing:
+#   export TUNE_CPU=8; export TUNE_RAM=16384;
 
 module PuppetX
   module Puppetlabs
@@ -41,11 +41,15 @@ module PuppetX
         @option_no_minimum_system_requirements = options[:force]
         @option_output_path = options[:hiera]
 
+        calculate_options = {}
+        calculate_options[:memory_per_jruby] = options[:memory_per_jruby]
+        calculate_options[:memory_reserved_for_os] = options[:memory_reserved_for_os]
+
         # PE-15116 overrides environment and environmentpath in the infrastructure face.
         @environment = Puppet::Util::Execution.execute('/opt/puppetlabs/puppet/bin/puppet config print environment --section master').chomp
         @environmentpath = Puppet::Util::Execution.execute('/opt/puppetlabs/puppet/bin/puppet config print environmentpath --section master').chomp
 
-        @calculator = PuppetX::Puppetlabs::Tune::Calculate.new
+        @calculator = PuppetX::Puppetlabs::Tune::Calculate.new(calculate_options)
         @configurator = PuppetX::Puppetlabs::Tune::Configuration.new
 
         if Puppet[:certname] != @configurator::find_pe_conf_puppet_master_host
@@ -84,21 +88,11 @@ module PuppetX
         @configurator::read_hiera_classifier_overrides(certname, settings, @environment, @environmentpath)
       end
 
-      # Note: Allow override via ENV for testing.
-
       def get_resources_for_node(certname)
         resources = {}
         node_facts = @configurator::read_node_facts(certname, @environment)
         resources['cpu'] = node_facts['processors']['count'].to_i
         resources['ram'] = (node_facts['memory']['system']['total_bytes'].to_i / 1024 / 1024).to_i
-        if ENV['TEST_CPU']
-          Puppet.debug("Using TEST_CPU=#{ENV['TEST_CPU']} for #{certname}")
-          resources['cpu'] = ENV['TEST_CPU'].to_i
-        end
-        if ENV['TEST_RAM']
-          Puppet.debug("Using TEST_RAM=#{ENV['TEST_RAM']} for #{certname}")
-          resources['ram'] = ENV['TEST_RAM'].to_i
-        end
         unless meets_minimum_system_requirements?(resources)
           output_node_resources(certname, 'this', resources)
           output_minimum_system_requirements_error_and_exit
@@ -176,7 +170,7 @@ module PuppetX
         begin
           settings, _duplicates = get_settings_for_node(certname, [setting])
           enabled = settings[setting] != 'false'
-        rescue Exception => e
+        rescue StandardError
           enabled = false
         end
         Puppet.debug("jruby_9k_enabled: available: #{available} enabled: #{enabled}")
@@ -189,10 +183,22 @@ module PuppetX
         output_pe_infrastructure_error_and_exit if unknown_pe_infrastructure?
         output_pe_infrastucture_summary(monolithic?, with_compile_masters?, with_external_database?)
 
+        available_jrubies = 0
+
         # Primary Master: Applicable to Monolithic and Split Infrastructures.
         @primary_masters.each do |certname|
+          resources = get_resources_for_node(certname)
+          if ENV['TUNE_CPU']
+            Puppet.debug("Using TUNE_CPU=#{ENV['TUNE_CPU']} for #{certname}")
+            resources['cpu'] = ENV['TUNE_CPU'].to_i
+          end
+          if ENV['TUNE_RAM']
+            Puppet.debug("Using TUNE_RAM=#{ENV['TUNE_RAM']} for #{certname}")
+            resources['ram'] = ENV['TUNE_RAM'].to_i
+          end
           settings, duplicates = get_settings_for_node(certname, tunable_settings)
           output_node_settings('Primary Master', certname, settings, duplicates)
+          available_jrubies += (settings['puppet_enterprise::master::puppetserver::jruby_max_active_instances'] || [resources['cpu'] - 1, 4].min)
         end
 
         # Replica Master: Applicable to Monolithic Infrastructures.
@@ -223,11 +229,16 @@ module PuppetX
 
         # Compile Masters: Applicable to Monolithic and Split Infrastructures.
         if with_compile_masters?
+          available_jrubies = 0
           @compile_masters.each do |certname|
+            resources = get_resources_for_node(certname)
             settings, duplicates = get_settings_for_node(certname, tunable_settings)
             output_node_settings('Compile Master', certname, settings, duplicates)
+            available_jrubies += (settings['puppet_enterprise::master::puppetserver::jruby_max_active_instances'] || [resources['CPU'] - 1, 4].min)
           end
         end
+
+        output_capacity_summary(available_jrubies)
       end
 
       # Calculate optimized settings based upon each node's set of services.
@@ -237,6 +248,8 @@ module PuppetX
         create_output_directories
         output_pe_infrastucture_summary(monolithic?, with_compile_masters?, with_external_database?)
 
+        available_jrubies = 0
+
         # Primary Master: Applicable to Monolithic and Split Infrastructures.
         @primary_masters.each do |certname|
           resources = get_resources_for_node(certname)
@@ -244,12 +257,13 @@ module PuppetX
           configuration = {
             'is_monolithic_master' => monolithic?,
             'with_compile_masters' => with_compile_masters?,
-            'with_jruby9k_enabled' => with_jruby9k_enabled?(certname)
+            'with_jruby9k_enabled' => with_jruby9k_enabled?(certname),
           }
           components = get_components_for_node(certname)
           settings, totals = @calculator::calculate_master_settings(resources, configuration, components)
           output_minimum_system_requirements_error_and_exit(certname) if settings.empty?
           collect_node(certname, 'Primary Master', resources, settings, totals)
+          available_jrubies += (settings['puppet_enterprise::master::puppetserver::jruby_max_active_instances'] || [resources['cpu'] - 1, 4].min)
         end
 
         # Replica Master: Applicable to Monolithic Infrastructures.
@@ -259,7 +273,7 @@ module PuppetX
           configuration = {
             'is_monolithic_master' => monolithic?,
             'with_compile_masters' => with_compile_masters?,
-            'with_jruby9k_enabled' => with_jruby9k_enabled?(certname)
+            'with_jruby9k_enabled' => with_jruby9k_enabled?(certname),
           }
           components = get_components_for_node(certname)
           settings, totals = @calculator::calculate_master_settings(resources, configuration, components)
@@ -305,12 +319,13 @@ module PuppetX
             configuration = {
               'is_monolithic_master' => false,
               'with_compile_masters' => true,
-              'with_jruby9k_enabled' => with_jruby9k_enabled?(certname)
+              'with_jruby9k_enabled' => with_jruby9k_enabled?(certname),
             }
             components = get_components_for_node(certname)
             settings, totals = @calculator::calculate_master_settings(resources, configuration, components)
             output_minimum_system_requirements_error_and_exit(certname) if settings.empty?
             collect_node(certname, 'Compile Master', resources, settings, totals)
+            available_jrubies += (settings['puppet_enterprise::master::puppetserver::jruby_max_active_instances'] || [resources['cpu'] - 1, 4].min)
           end
         end
 
@@ -325,7 +340,7 @@ module PuppetX
         end
 
         output_common_optimized_settings
-
+        output_capacity_summary(available_jrubies)
         create_output_files
       end
 
@@ -480,6 +495,19 @@ module PuppetX
         output("\n")
       end
 
+      def output_capacity_summary(available_jrubies)
+        run_interval = Puppet[:runinterval]
+        active_nodes = @configurator::read_active_nodes
+        report_limit = @calculator::calculate_run_sample(active_nodes, run_interval)
+        average_compile_time = @configurator::read_average_compile_time(report_limit)
+        maximum_nodes = @calculator::calculate_maximum_nodes(average_compile_time, available_jrubies, run_interval)
+        minimum_jrubies = @calculator::calculate_minimum_jrubies(active_nodes, average_compile_time, run_interval)
+        output("### Puppet Infrastructure Capacity Summary: Found: Active Nodes: #{active_nodes}\n\n")
+        output("## Given: Available JRubies: #{available_jrubies}, Agent Run Interval: #{run_interval} Seconds, Average Compile Time: #{average_compile_time} Seconds")
+        output("## Estimate: a maximum of #{maximum_nodes} Active Nodes can be served by #{available_jrubies} Available JRubies")
+        output("## Estimate: a minimum of #{minimum_jrubies} Available JRubies is required to serve #{active_nodes} Active Nodes\n\n")
+      end
+
       # Output errors and exit.
 
       def output_not_primary_master_and_exit
@@ -544,6 +572,12 @@ if File.expand_path(__FILE__) == File.expand_path($PROGRAM_NAME)
     end
     opts.on('--hiera DIRECTORY', 'Output Hiera YAML files to the specified directory') do |hi|
       options[:hiera] = hi
+    end
+    opts.on('--memory_per_jruby MB', 'Amount of RAM to allocate for each PuppetServer JRuby') do |me|
+      options[:memory_per_jruby] = me.to_i
+    end
+    opts.on('--memory_reserved_for_os MB', 'Amount of RAM to reserve for the Operating System') do |mo|
+      options[:memory_reserved_for_os] = mo.to_i
     end
     opts.on('-h', '--help', 'Display help') do
       puts opts
