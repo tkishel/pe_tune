@@ -10,7 +10,7 @@
 
 ## Description
 
-This module provides a script that outputs optimized settings for Puppet Enterprise services based upon hardware resources.
+This module provides a script that outputs optimized settings for Puppet Enterprise services based upon available hardware resources.
 
 ## Setup
 
@@ -37,9 +37,9 @@ Extract common settings from node-specific settings when outputting optimized se
 
 ##### `--current`
 
-Output current settings and exit.
+Output currently defined settings in JSON format and exit.
 
-Settings may be defined either in the Classifier (Console) or in Hiera, with Classifier settings taking precedence over Hiera settings. Define settings in Hiera (preferred) or the Classifier, but not both.
+Settings may be defined either in the Classifier (the Console) or in Hiera, with Classifier settings taking precedence over Hiera settings. Best practice is to define settings in Hiera (preferred) or the Classifier, but not both.
 
 The output of this option also identifies duplicate settings found in both the Classifier and Hiera.
 
@@ -67,7 +67,7 @@ Amount of RAM to reserve for the operating system.
 
 ## Reference
 
-This module reads infrastructure settings on the Primary Master, queries PuppetDB for node group membership to identify infrastructure hosts, queries PuppetDB for processor and memory facts for each infrastructure host, and outputs optimizing settings for each infrastructure host as Hiera YAML data.
+This module reads the configuration files on the Primary Master, queries PuppetDB for node group membership to identify PE Infrastructure hosts, queries PuppetDB for processor and memory facts for each PE Infrastructure host, and outputs optimized settings in YAML format use in Hiera.
 
 ### Output
 
@@ -111,7 +111,7 @@ puppet_enterprise::profile::orchestrator::java_args:
 ## Estimate: a minimum of 1 Available JRubies is required to serve 2 Active Nodes
 ```
 
-This module outputs node-specific settings by default. With a monolithic infrastructure, the output could be saved to a common/default yaml file. With a split infrastructure, the output would need to be saved to node-specific YAML files included in a node-specific hierarchy.
+This module outputs node-specific settings by default. With a monolithic infrastructure, the output could be saved to a common/default YAML file. With a split infrastructure, the output would need to be saved to node-specific YAML files included in a node-specific hierarchy.
 
 For example:
 
