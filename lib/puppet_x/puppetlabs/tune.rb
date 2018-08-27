@@ -93,10 +93,6 @@ module PuppetX
         node_facts = @configurator::read_node_facts(certname, @environment)
         resources['cpu'] = node_facts['processors']['count'].to_i
         resources['ram'] = (node_facts['memory']['system']['total_bytes'].to_i / 1024 / 1024).to_i
-        unless meets_minimum_system_requirements?(resources)
-          output_node_resources(certname, 'this', resources)
-          output_minimum_system_requirements_error_and_exit
-        end
         resources
       end
 
@@ -187,15 +183,6 @@ module PuppetX
 
         # Primary Master: Applicable to Monolithic and Split Infrastructures.
         @primary_masters.each do |certname|
-          resources = get_resources_for_node(certname)
-          if ENV['TUNE_CPU']
-            Puppet.debug("Using TUNE_CPU=#{ENV['TUNE_CPU']} for #{certname}")
-            resources['cpu'] = ENV['TUNE_CPU'].to_i
-          end
-          if ENV['TUNE_RAM']
-            Puppet.debug("Using TUNE_RAM=#{ENV['TUNE_RAM']} for #{certname}")
-            resources['ram'] = ENV['TUNE_RAM'].to_i
-          end
           settings, duplicates = get_settings_for_node(certname, tunable_settings)
           output_node_settings('Primary Master', certname, settings, duplicates)
           available_jrubies += (settings['puppet_enterprise::master::puppetserver::jruby_max_active_instances'] || [resources['cpu'] - 1, 4].min)
@@ -253,6 +240,14 @@ module PuppetX
         # Primary Master: Applicable to Monolithic and Split Infrastructures.
         @primary_masters.each do |certname|
           resources = get_resources_for_node(certname)
+          if ENV['TUNE_CPU']
+            Puppet.debug("Using TUNE_CPU=#{ENV['TUNE_CPU']} for #{certname}")
+            resources['cpu'] = ENV['TUNE_CPU'].to_i
+          end
+          if ENV['TUNE_RAM']
+            Puppet.debug("Using TUNE_RAM=#{ENV['TUNE_RAM']} for #{certname}")
+            resources['ram'] = ENV['TUNE_RAM'].to_i
+          end
           output_minimum_system_requirements_error_and_exit(certname) unless meets_minimum_system_requirements?(resources)
           configuration = {
             'is_monolithic_master' => monolithic?,
@@ -573,10 +568,10 @@ if File.expand_path(__FILE__) == File.expand_path($PROGRAM_NAME)
     opts.on('--hiera DIRECTORY', 'Output Hiera YAML files to the specified directory') do |hi|
       options[:hiera] = hi
     end
-    opts.on('--memory_per_jruby MB', 'Amount of RAM to allocate for each PuppetServer JRuby') do |me|
+    opts.on('--memory_per_jruby MB', 'Amount of RAM to allocate for each Puppet Server JRuby') do |me|
       options[:memory_per_jruby] = me.to_i
     end
-    opts.on('--memory_reserved_for_os MB', 'Amount of RAM to reserve for the Operating System') do |mo|
+    opts.on('--memory_reserved_for_os MB', 'Amount of RAM to reserve for the operating system') do |mo|
       options[:memory_reserved_for_os] = mo.to_i
     end
     opts.on('-h', '--help', 'Display help') do
