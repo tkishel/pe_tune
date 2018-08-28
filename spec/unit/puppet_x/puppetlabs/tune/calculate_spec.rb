@@ -352,7 +352,7 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
     end
   end
 
-  context 'its supporting methods' do
+  context 'with its supporting methods' do
     it 'can calculate a setting based upon number of processors' do
       expect((calculator.send :fit_to_processors, 1,  'S', 'M', 'L')).to eq('S')
       expect((calculator.send :fit_to_processors, 4,  'S', 'M', 'L')).to eq('S')

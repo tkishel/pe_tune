@@ -13,7 +13,7 @@ describe PuppetX::Puppetlabs::Tune do
     suppress_standard_output
   end
 
-  context 'its supporting methods' do
+  context 'with its supporting methods' do
     it 'can detect an unknown infrastructure' do
       tune.instance_variable_set(:@primary_masters,  [])
       expect(tune::unknown_pe_infrastructure?).to eq(true)
@@ -65,7 +65,7 @@ describe PuppetX::Puppetlabs::Tune do
     # end
 
     it 'can extract common settings' do
-      tune.instance_variable_set(:@option_common_settings, true)
+      tune.instance_variable_set(:@tune_options, :common => true)
       tune.instance_variable_set(:@common_settings, {})
       collected_nodes = {
         'node_1' => { 'settings' => { 'a' => 1, 'b' => 'b' } },
@@ -77,6 +77,7 @@ describe PuppetX::Puppetlabs::Tune do
     end
 
     it 'can enforce minimum system requirements' do
+      tune.instance_variable_set(:@tune_options, :force => false)
       resources = { 'cpu' => 3, 'ram' => 8191 }
       expect(tune::meets_minimum_system_requirements?(resources)).to eq(false)
       resources = { 'cpu' => 3, 'ram' => 8192 }
@@ -88,7 +89,7 @@ describe PuppetX::Puppetlabs::Tune do
     end
 
     it 'can disable minimum system requirements' do
-      tune.instance_variable_set(:@option_no_minimum_system_requirements, true)
+      tune.instance_variable_set(:@tune_options, :force => true)
       resources = { 'cpu' => 3, 'ram' => 8191 }
       expect(tune::meets_minimum_system_requirements?(resources)).to eq(true)
     end

@@ -37,9 +37,10 @@ module PuppetX
         @collected_nodes = {}
         @common_settings = {}
 
-        @option_common_settings = options[:common]
-        @option_no_minimum_system_requirements = options[:force]
-        @option_output_path = options[:hiera]
+        @tune_options = {}
+        @tune_options[:common] = options[:common]
+        @tune_options[:force] = options[:force]
+        @tune_options[:output_path] = options[:hiera]
 
         calculate_options = {}
         calculate_options[:memory_per_jruby] = options[:memory_per_jruby]
@@ -225,7 +226,7 @@ module PuppetX
           end
         end
 
-        output_capacity_summary(available_jrubies)
+        output_estimated_capacity(available_jrubies)
       end
 
       # Calculate optimized settings based upon each node's set of services.
@@ -335,7 +336,7 @@ module PuppetX
         end
 
         output_common_optimized_settings
-        output_capacity_summary(available_jrubies)
+        output_estimated_capacity(available_jrubies)
         create_output_files
       end
 
@@ -354,7 +355,7 @@ module PuppetX
       # Extract common settings for common.yaml from <certname>.yaml.
 
       def extract_common_optimized_settings
-        return unless @option_common_settings
+        return unless @tune_options[:common]
         nodes_with_setting = {}
         @collected_nodes.each do |certname, properties|
           properties['settings'].each do |setting, value|
@@ -375,36 +376,36 @@ module PuppetX
       # Create the directories for output to Hiera YAML files.
 
       def create_output_directories
-        return unless @option_output_path
-        subdirectory = "#{@option_output_path}/nodes"
-        return @option_output_path if File.directory?(@option_output_path) && File.directory?(subdirectory)
-        Dir.mkdir(@option_output_path)
-        output_path_error_and_exit(@option_output_path) unless File.directory?(@option_output_path)
+        return unless @tune_options[:output_path]
+        subdirectory = "#{@tune_options[:output_path]}/nodes"
+        return @tune_options[:output_path] if File.directory?(@tune_options[:output_path]) && File.directory?(subdirectory)
+        Dir.mkdir(@tune_options[:output_path])
+        output_path_error_and_exit(@tune_options[:output_path]) unless File.directory?(@tune_options[:output_path])
         Dir.mkdir(subdirectory)
         output_path_error_and_exit(subdirectory) unless File.directory?(subdirectory)
-        @option_output_path
+        @tune_options[:output_path]
       end
 
       # Output Hiera YAML files.
 
       def create_output_files
-        return unless @option_output_path
+        return unless @tune_options[:output_path]
         return if @collected_nodes.empty?
         @collected_nodes.each do |certname, properties|
           next if properties['settings'].empty?
-          output_file = "#{@option_output_path}/nodes/#{certname}.yaml"
+          output_file = "#{@tune_options[:output_path]}/nodes/#{certname}.yaml"
           File.write(output_file, properties['settings'].to_yaml)
           output("## Wrote Hiera YAML file: #{output_file}\n\n")
         end
         return if @common_settings.empty?
-        output_file = "#{@option_output_path}/common.yaml"
+        output_file = "#{@tune_options[:output_path]}/common.yaml"
         File.write(output_file, @common_settings.to_yaml)
       end
 
       # Verify minimum system requirements.
 
       def meets_minimum_system_requirements?(resources)
-        return true if @option_no_minimum_system_requirements
+        return true if @tune_options[:force]
         (resources['cpu'] >= 4 && resources['ram'] >= 8192)
       end
 
@@ -483,14 +484,14 @@ module PuppetX
       end
 
       def output_common_optimized_settings
-        return unless @option_common_settings
+        return unless @tune_options[:common]
         return if @common_settings.empty?
         output("## Specify the following optimized settings in Hiera in common.yaml\n\n")
         output(@common_settings.to_yaml)
         output("\n")
       end
 
-      def output_capacity_summary(available_jrubies)
+      def output_estimated_capacity(available_jrubies)
         run_interval = Puppet[:runinterval]
         active_nodes = @configurator::read_active_nodes
         report_limit = @calculator::calculate_run_sample(active_nodes, run_interval)
@@ -560,6 +561,10 @@ if File.expand_path(__FILE__) == File.expand_path($PROGRAM_NAME)
     options[:debug] = false
     opts.on('--debug', 'Enable logging of debug information') do
       options[:debug] = true
+    end
+    options[:estimate] = false
+    opts.on('--estimate', 'Output estimated capacity summary') do
+      options[:estimate] = true
     end
     options[:force] = false
     opts.on('--force', 'Do not enforce minimum system requirements') do

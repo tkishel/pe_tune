@@ -7,12 +7,13 @@ module PuppetX
         # Calculon Compute!
 
         def initialize(options)
-          @fit_to_memory_percentage = 5
-          @memory_per_jruby = options[:memory_per_jruby] ? options[:memory_per_jruby].to_i : nil
-          Puppet.debug("Using #{@memory_per_jruby}MB RAM per JRuby") if @memory_per_jruby
-          @memory_reserved_for_os = options[:memory_reserved_for_os] ? options[:memory_reserved_for_os].to_i : nil
-          Puppet.debug("Using #{@memory_reserved_for_os}MB RAM reserved for the operating system") if @memory_reserved_for_os
-          @compile_time_factor = 2
+          @calculate_options = {}
+          @calculate_options[:compile_time_factor]      = 2
+          @calculate_options[:fit_to_memory_percentage] = 5
+          @calculate_options[:memory_per_jruby] = options[:memory_per_jruby] ? options[:memory_per_jruby].to_i : nil
+          Puppet.debug("Using #{@calculate_options[:memory_per_jruby]}MB RAM per JRuby") if @calculate_options[:memory_per_jruby]
+          @calculate_options[:memory_reserved_for_os] = options[:memory_reserved_for_os] ? options[:memory_reserved_for_os].to_i : nil
+          Puppet.debug("Using #{@calculate_options[:memory_reserved_for_os]}MB RAM reserved for the operating system") if @calculate_options[:memory_reserved_for_os]
         end
 
         # Masters and Compile Masters in Monolithic or Split Infrastructures.
@@ -24,7 +25,7 @@ module PuppetX
           minimum_cpu_threads        = 2
           minimum_cpu_jrubies        = 2
           minimum_mb_puppetserver    = 2048
-          mb_per_puppetserver_jruby  = fit_to_memory(resources['ram'], 512, 768, 1024, @memory_per_jruby)
+          mb_per_puppetserver_jruby  = fit_to_memory(resources['ram'], 512, 768, 1024, @calculate_options[:memory_per_jruby])
           mb_puppetserver_code_cache = fit_to_memory(resources['ram'], 512, 1024, 2048)
           percent_mb_puppetdb        = 10
           minimum_mb_puppetdb        = fit_to_memory(resources['ram'], 512, 1024, 2048)
@@ -35,7 +36,7 @@ module PuppetX
           mb_console                 = fit_to_memory(resources['ram'], 512, 768, 1024)
           mb_orchestrator            = fit_to_memory(resources['ram'], 512, 768, 1024)
           mb_activemq                = fit_to_memory(resources['ram'], 512, 1024, 2048)
-          minimum_mb_os              = fit_to_memory(resources['ram'], 1024, 1024, 1024, @memory_reserved_for_os)
+          minimum_mb_os              = fit_to_memory(resources['ram'], 1024, 1024, 1024, @calculate_options[:memory_reserved_for_os])
 
           if configuration['is_monolithic_master']
             percent_cpu_threads        = 75   if configuration['with_compile_masters']
@@ -147,7 +148,7 @@ module PuppetX
           percent_mb_console = 75
           minimum_mb_console = fit_to_memory(resources['ram'], 512, 768, 1024)
           maximum_mb_console = 4096
-          minimum_mb_os      = fit_to_memory(resources['ram'], 1024, 1024, 1024, @memory_reserved_for_os)
+          minimum_mb_os      = fit_to_memory(resources['ram'], 1024, 1024, 1024, @calculate_options[:memory_reserved_for_os])
 
           settings = {}
           totals = {}
@@ -181,7 +182,7 @@ module PuppetX
           maximum_mb_puppetdb = 8192
           minimum_mb_buffers  = fit_to_memory(resources['ram'], 2048, 3072, 4096)
           maximum_mb_buffers  = 16384
-          minimum_mb_os       = fit_to_memory(resources['ram'], 1024, 1024, 1024, @memory_reserved_for_os)
+          minimum_mb_os       = fit_to_memory(resources['ram'], 1024, 1024, 1024, @calculate_options[:memory_reserved_for_os])
 
           minimum_mb_buffers = (components['database'] == true) ? minimum_mb_buffers : 0
 
@@ -229,7 +230,7 @@ module PuppetX
           percent_mb_buffers = 25
           minimum_mb_buffers = fit_to_memory(resources['ram'], 2048, 3072, 4096)
           maximum_mb_buffers = 16384
-          minimum_mb_os      = fit_to_memory(resources['ram'], 1024, 1024, 1024, @memory_reserved_for_os)
+          minimum_mb_os      = fit_to_memory(resources['ram'], 1024, 1024, 1024, @calculate_options[:memory_reserved_for_os])
 
           settings = {}
           totals = {}
@@ -265,14 +266,14 @@ module PuppetX
         # Estimate the theoretical maximum number of nodes that can managed by an infrastructure.
 
         def calculate_maximum_nodes(average_compile_time, available_jrubies, run_interval)
-          jruby_lock_time = average_compile_time.to_f * @compile_time_factor
+          jruby_lock_time = average_compile_time.to_f * @calculate_options[:compile_time_factor]
           ((run_interval.to_f * available_jrubies.to_f) / jruby_lock_time.to_f).ceil
         end
 
         # Estimate the theoretical minimum number of jrubies required to manage an infrastructure.
 
         def calculate_minimum_jrubies(active_nodes, average_compile_time, run_interval)
-          jruby_lock_time = average_compile_time.to_f * @compile_time_factor
+          jruby_lock_time = average_compile_time.to_f * @calculate_options[:compile_time_factor]
           ((active_nodes.to_f * jruby_lock_time.to_f) / run_interval.to_f).ceil
         end
 
@@ -302,7 +303,7 @@ module PuppetX
           return override if override && override > 0
           # Round up to the nearest power of two (31500 -> 32768) if within a percentage.
           target_memory = nearest_power_of_two(memory)
-          if within_percent?(memory, target_memory, @fit_to_memory_percentage)
+          if within_percent?(memory, target_memory, @calculate_options[:fit_to_memory_percentage])
             Puppet.debug("Rounding #{memory} up to #{target_memory} for fit_to_memory")
             memory = target_memory
           end
