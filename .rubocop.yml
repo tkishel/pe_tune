@@ -125,6 +125,8 @@ Style/MixinUsage:
   Enabled: false
 Style/NumericLiterals:
   Enabled: false
+Style/TrailingCommaInLiteral:
+  Enabled: false
 Style/TrailingCommaInArrayLiteral:
   Enabled: false
 Style/TrailingCommaInHashLiteral:

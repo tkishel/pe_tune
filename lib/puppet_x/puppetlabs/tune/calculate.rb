@@ -10,9 +10,9 @@ module PuppetX
           @calculate_options = {}
           @calculate_options[:compile_time_factor]      = 2
           @calculate_options[:fit_to_memory_percentage] = 5
-          @calculate_options[:memory_per_jruby] = options[:memory_per_jruby] ? options[:memory_per_jruby].to_i : nil
+          @calculate_options[:memory_per_jruby] = (options[:memory_per_jruby]) ? options[:memory_per_jruby].to_i : nil
           Puppet.debug("Using #{@calculate_options[:memory_per_jruby]}MB RAM per JRuby") if @calculate_options[:memory_per_jruby]
-          @calculate_options[:memory_reserved_for_os] = options[:memory_reserved_for_os] ? options[:memory_reserved_for_os].to_i : nil
+          @calculate_options[:memory_reserved_for_os] = (options[:memory_reserved_for_os]) ? options[:memory_reserved_for_os].to_i : nil
           Puppet.debug("Using #{@calculate_options[:memory_reserved_for_os]}MB RAM reserved for the operating system") if @calculate_options[:memory_reserved_for_os]
         end
 
