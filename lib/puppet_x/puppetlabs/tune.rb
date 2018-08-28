@@ -39,6 +39,7 @@ module PuppetX
 
         @tune_options = {}
         @tune_options[:common] = options[:common]
+        @tune_options[:estimate] = options[:estimate]
         @tune_options[:force] = options[:force]
         @tune_options[:output_path] = options[:hiera]
 
@@ -492,13 +493,14 @@ module PuppetX
       end
 
       def output_estimated_capacity(available_jrubies)
+        return unless @tune_options[:estimate]
         run_interval = Puppet[:runinterval]
         active_nodes = @configurator::read_active_nodes
         report_limit = @calculator::calculate_run_sample(active_nodes, run_interval)
         average_compile_time = @configurator::read_average_compile_time(report_limit)
         maximum_nodes = @calculator::calculate_maximum_nodes(average_compile_time, available_jrubies, run_interval)
         minimum_jrubies = @calculator::calculate_minimum_jrubies(active_nodes, average_compile_time, run_interval)
-        output("### Puppet Infrastructure Capacity Summary: Found: Active Nodes: #{active_nodes}\n\n")
+        output("### Puppet Infrastructure Estimated Capacity Summary: Found: Active Nodes: #{active_nodes}\n\n")
         output("## Given: Available JRubies: #{available_jrubies}, Agent Run Interval: #{run_interval} Seconds, Average Compile Time: #{average_compile_time} Seconds")
         output("## Estimate: a maximum of #{maximum_nodes} Active Nodes can be served by #{available_jrubies} Available JRubies")
         output("## Estimate: a minimum of #{minimum_jrubies} Available JRubies is required to serve #{active_nodes} Active Nodes\n\n")
