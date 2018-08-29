@@ -263,6 +263,16 @@ module PuppetX
           [active_nodes * runs_per_day, maximum].min
         end
 
+        # Little's Law
+        #
+        #   L = λ * W
+        #
+        # Where:
+        #
+        #   L = Number of requests in the queue.
+        #   λ = Average effective arrival rate of requests.
+        #   W = Average time spent processing a request.
+
         # Estimate the theoretical maximum number of nodes that can managed by an infrastructure.
 
         def calculate_maximum_nodes(average_compile_time, available_jrubies, run_interval)
