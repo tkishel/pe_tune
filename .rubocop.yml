@@ -4,16 +4,18 @@ AllCops:
   DisplayCopNames: true
   TargetRubyVersion: '2.2'
   Include:
-  - "lib/**/*.rb"
-  - "spec/**/*.rb"
+  - "./**/*.rb"
   Exclude:
   - bin/*
   - ".vendor/**/*"
-  - Gemfile
-  - Rakefile
+  - "**/Gemfile"
+  - "**/Rakefile"
   - pkg/**/*
   - spec/fixtures/**/*
   - vendor/**/*
+  - "**/Puppetfile"
+  - "**/Vagrantfile"
+  - "**/Guardfile"
 Metrics/LineLength:
   Description: People have wide screens, use them.
   Max: 200
@@ -57,11 +59,21 @@ Style/TrailingCommaInArguments:
   Description: Prefer always trailing comma on multiline argument lists. This makes
     diffs, and re-ordering nicer.
   EnforcedStyleForMultiline: comma
+Style/TrailingCommaInLiteral:
+  Description: Prefer always trailing comma on multiline literals. This makes diffs,
+    and re-ordering nicer.
+  EnforcedStyleForMultiline: comma
 Style/SymbolArray:
   Description: Using percent style obscures symbolic intent of array's contents.
   EnforcedStyle: brackets
 RSpec/MessageSpies:
   EnforcedStyle: receive
+Style/Documentation:
+  Exclude:
+  - lib/puppet/parser/functions/**/*
+  - spec/**/*
+Style/WordArray:
+  EnforcedStyle: brackets
 Style/CollectionMethods:
   Enabled: true
 Style/MethodCalledOnDoEndBlock:
@@ -69,6 +81,8 @@ Style/MethodCalledOnDoEndBlock:
 Style/StringMethods:
   Enabled: true
 Layout/EndOfLine:
+  Enabled: false
+Layout/IndentHeredoc:
   Enabled: false
 Metrics/AbcSize:
   Enabled: false
@@ -102,7 +116,14 @@ Style/IfUnlessModifier:
   Enabled: false
 Style/SymbolProc:
   Enabled: false
-# TJK
+# TJK Overridden
+Style/ClassAndModuleChildren:
+  Enabled: false
+Style/TrailingCommaInLiteral:
+  Enabled: false
+Style/WordArray:
+  Enabled: false
+# TJK New
 Layout/AlignArray:
   Enabled: false
 Layout/ExtraSpacing:
@@ -112,8 +133,6 @@ Layout/MultilineArrayBraceLayout:
 Naming/ClassAndModuleCamelCase:
   Enabled: false
 RSpec/FilePath:
-  Enabled: false
-Style/ClassAndModuleChildren:
   Enabled: false
 Style/ColonMethodCall:
   Enabled: false
@@ -125,12 +144,7 @@ Style/MixinUsage:
   Enabled: false
 Style/NumericLiterals:
   Enabled: false
-Style/TrailingCommaInLiteral:
-  Enabled: false
 Style/TrailingCommaInArrayLiteral:
   Enabled: false
 Style/TrailingCommaInHashLiteral:
   Enabled: false
-Style/WordArray:
-  Enabled: false
-
