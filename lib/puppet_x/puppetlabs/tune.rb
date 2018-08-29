@@ -194,6 +194,7 @@ module PuppetX
 
         # Primary Master: Applicable to Monolithic and Split Infrastructures.
         @primary_masters.each do |certname|
+          resources = get_resources_for_node(certname)
           settings, duplicates = get_settings_for_node(certname, tunable_settings)
           output_node_settings('Primary Master', certname, settings, duplicates)
           available_jrubies += (settings['puppet_enterprise::master::puppetserver::jruby_max_active_instances'] || [resources['cpu'] - 1, 4].min)
