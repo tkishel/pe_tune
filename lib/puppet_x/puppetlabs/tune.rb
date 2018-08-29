@@ -7,9 +7,10 @@
 #
 # It does not optimize the following settings in puppetlabs-puppet_enterprise:
 #   autovacuum_max_workers, autovacuum_work_mem, effective_cache_size, maintenance_work_mem, work_mem
-
-# It accepts the following overrides (for the primary master) via ENV for testing:
-#   export TUNE_CPU=8; export TUNE_RAM=16384;
+#
+# It accepts the following overrides via ENV:
+#   export TEST_CPU=8; export TEST_RAM=16384;
+# These are necessary to accomodate manual testing and pe_acceptance_tests/acceptance/tests/faces/infrastructure/tune.rb.
 
 module PuppetX
   module Puppetlabs
@@ -95,6 +96,14 @@ module PuppetX
         node_facts = @configurator::read_node_facts(certname, @environment)
         resources['cpu'] = node_facts['processors']['count'].to_i
         resources['ram'] = (node_facts['memory']['system']['total_bytes'].to_i / 1024 / 1024).to_i
+        if ENV['TEST_CPU']
+          Puppet.debug("Using TEST_CPU=#{ENV['TEST_CPU']} for #{certname}")
+          resources['cpu'] = ENV['TEST_CPU'].to_i
+        end
+        if ENV['TEST_RAM']
+          Puppet.debug("Using TEST_RAM=#{ENV['TEST_RAM']} for #{certname}")
+          resources['ram'] = ENV['TEST_RAM'].to_i
+        end
         resources
       end
 
@@ -242,14 +251,6 @@ module PuppetX
         # Primary Master: Applicable to Monolithic and Split Infrastructures.
         @primary_masters.each do |certname|
           resources = get_resources_for_node(certname)
-          if ENV['TUNE_CPU']
-            Puppet.debug("Using TUNE_CPU=#{ENV['TUNE_CPU']} for #{certname}")
-            resources['cpu'] = ENV['TUNE_CPU'].to_i
-          end
-          if ENV['TUNE_RAM']
-            Puppet.debug("Using TUNE_RAM=#{ENV['TUNE_RAM']} for #{certname}")
-            resources['ram'] = ENV['TUNE_RAM'].to_i
-          end
           output_minimum_system_requirements_error_and_exit(certname) unless meets_minimum_system_requirements?(resources)
           configuration = {
             'is_monolithic_master' => monolithic?,
