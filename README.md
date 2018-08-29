@@ -103,12 +103,6 @@ puppet_enterprise::profile::orchestrator::java_args:
 ## CPU Summary: Total/Used/Free: 8/7/1 for pe-master.puppetdebug.vlan
 ## RAM Summary: Total/Used/Free: 16384/12134/4250 for pe-master.puppetdebug.vlan
 ## JVM Summary: Using 768 MB per Puppet Server JRuby for pe-master.puppetdebug.vlan
-
-### Puppet Infrastructure Capacity Summary: Found: Active Nodes: 2
-
-## Given: Available JRubies: 5, Agent Run Interval: 1800 Seconds, Average Compile Time: 9 Seconds
-## Estimate: a maximum of 500 Active Nodes can be served by 5 Available JRubies
-## Estimate: a minimum of 1 Available JRubies is required to serve 2 Active Nodes
 ```
 
 This module outputs node-specific settings by default. With a monolithic infrastructure, the output could be saved to a common/default YAML file. With a split infrastructure, the output would need to be saved to node-specific YAML files included in a node-specific hierarchy.
