@@ -57,6 +57,22 @@ Note: Do not specify a directory in your current Hiera hierarchy, which should b
 
 Do not enforce minimum system requirements (4 Cores, 8096 MB RAM) for infrastructure hosts.
 
+##### `--inventory FILE`
+
+Use a YAML file to define infrastructure nodes.
+
+This eliminates the dependency upon PuppetDB to query node resources and classes.
+
+Nodes can be defined by `pe.conf` 'roles', or by infrastructure 'profiles'.
+
+Refer to the [examples](examples) directory for details.
+
+##### `--local`
+
+Query the local system to define a monolithic infrastructure master node.
+
+This eliminates the dependency upon PuppetDB to query node resources and classes.
+
 ##### `--memory_per_jruby MB`
 
 Amount of RAM to allocate for each Puppet Server JRuby.

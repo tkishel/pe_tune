@@ -1,0 +1,55 @@
+---
+# Use lowercase for all nodes, roles, and profiles keys and values.
+
+nodes:
+  split-master.example.com:
+    resources:
+      cpu: 16
+      ram: 32768
+  split-console.example.com:
+    resources:
+      cpu: 4
+      ram: 8192
+  split-db.example.com:
+    resources:
+      cpu: 4
+      ram: 8192
+  compile-master.example.com:
+    resources:
+      cpu: 4
+      ram: 8192
+  external-database.example.com:
+    resources:
+      cpu: 8
+      ram: 16384
+
+# Valid pe.conf 'roles' include:
+#
+#  puppet_master_host:
+#  console_host:
+#  puppetdb_host:
+#  database_host:
+#
+# These roles are automatically converted to the default profiles for the role.
+
+roles:
+  puppet_master_host: split-master.example.com
+  console_host:       split-console.example.com
+  puppetdb_host:      split-db.example.com
+  database_host:      external-database.example.com
+
+# Valid infrastructure 'profiles' include:
+#
+#  primary_master_replica:
+#  certificate_authority:
+#  master:
+#  compile_master:
+#  console:
+#  puppetdb:
+#  database:
+#  orchestrator:
+#  amq::broker: # Deprecated in PE 2018+
+
+profiles:
+  compile_master:
+    - compile-master.example.com

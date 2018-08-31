@@ -337,6 +337,7 @@ module PuppetX
         # Test if a number is within a percentage of another number.
 
         def within_percent?(actual, target, percentage)
+          return false if actual == target
           (Float(target - actual) / target * 100).ceil <= percentage
         end
 

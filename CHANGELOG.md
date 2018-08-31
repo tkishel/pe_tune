@@ -2,12 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
-## Release 1.1.1
+## 1.1.2
 
-**Features**
+- Allow use of the local system or an inventory file instead of PuppetDB.
 
-Update to PDK 1.7.0
+## 1.1.1
 
-**Bugfixes**
-
-**Known Issues**
+- Update to PDK 1.7.0
