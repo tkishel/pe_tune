@@ -82,7 +82,7 @@ module PuppetX
           @environmentpath = Puppet::Util::Execution.execute('/opt/puppetlabs/puppet/bin/puppet config print environmentpath --section master').chomp
           @configurator = PuppetX::Puppetlabs::Tune::Configuration.new
           if @configurator::find_pe_conf_puppet_master_host != Puppet[:certname]
-            output_not_primary_master_and_exit
+            output_error_and_exit('This command must be run on the Primary Master')
           end
           @pe_puppet_master_host = Puppet[:certname]
           @pe_database_host      = @configurator::find_pe_conf_database_host || Puppet[:certname]
@@ -542,13 +542,14 @@ module PuppetX
 
       def create_output_directories
         return unless @tune_options[:output_path]
-        subdirectory = "#{@tune_options[:output_path]}/nodes"
-        return @tune_options[:output_path] if File.directory?(@tune_options[:output_path]) && File.directory?(subdirectory)
-        Dir.mkdir(@tune_options[:output_path])
-        output_path_error_and_exit(@tune_options[:output_path]) unless File.directory?(@tune_options[:output_path])
+        directory = @tune_options[:output_path]
+        subdirectory = "#{directory}/nodes"
+        return directory if File.directory?(directory) && File.directory?(subdirectory)
+        Dir.mkdir(directory)
+        output_error_and_exit("Unable to create output directory: #{directory}") unless File.directory?(directory)
         Dir.mkdir(subdirectory)
-        output_path_error_and_exit(subdirectory) unless File.directory?(subdirectory)
-        @tune_options[:output_path]
+        output_error_and_exit("Unable to create output directory: #{subdirectory}") unless File.directory?(subdirectory)
+        directory
       end
 
       # Output Hiera YAML files.
@@ -671,32 +672,22 @@ module PuppetX
         output("## Estimate: a minimum of #{minimum_jrubies} Available JRubies is required to serve #{active_nodes} Active Nodes\n\n")
       end
 
-      # Output errors and exit.
+      # Output error and exit.
 
-      def output_error_and_exit(datum)
-        Puppet.err(datum)
-        exit 1
-      end
-
-      def output_not_primary_master_and_exit
-        Puppet.err('This command must be run on the Primary Master')
-        exit 1
-      end
-
-      def output_path_error_and_exit(directory)
-        Puppet.err("Error: Unable to create output directory: #{directory}")
+      def output_error_and_exit(message)
+        Puppet.err(message)
         exit 1
       end
 
       def output_pe_infrastructure_error_and_exit
         Puppet.err('Puppet Infrastructure Summary: Unknown Infrastructure')
-        Puppet.err('Error: Unable to find a Primary Master via a PuppetDB query')
+        Puppet.err('Unable to find a Primary Master via a PuppetDB query')
         Puppet.err('Verify PE Infrastructure node groups in the Console')
         Puppet.err('Rerun this command with --debug for more information')
         exit 1
       end
 
-      def output_minimum_system_requirements_error_and_exit(certname = 'This')
+      def output_minimum_system_requirements_error_and_exit(certname)
         Puppet.err("#{certname} does not meet the minimum system requirements to optimize its settings")
         exit 1
       end
