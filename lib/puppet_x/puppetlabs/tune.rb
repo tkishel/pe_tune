@@ -51,12 +51,12 @@ module PuppetX
         @inventory = {}
 
         @tune_options = {}
-        @tune_options[:common]         = options[:common]
-        @tune_options[:estimate]       = options[:estimate]
-        @tune_options[:force]          = options[:force]
-        @tune_options[:local]          = options[:local]
-        @tune_options[:inventory_file] = options[:inventory]
-        @tune_options[:output_path]    = options[:hiera]
+        @tune_options[:common]    = options[:common]
+        @tune_options[:estimate]  = options[:estimate]
+        @tune_options[:force]     = options[:force]
+        @tune_options[:hiera]     = options[:hiera]
+        @tune_options[:inventory] = options[:inventory]
+        @tune_options[:local]     = options[:local]
 
         calculate_options = {}
         calculate_options[:memory_per_jruby]       = options[:memory_per_jruby]
@@ -68,15 +68,11 @@ module PuppetX
           @inventory = read_inventory_local
           @pe_puppet_master_host = @inventory['roles']['puppet_master_host']
           @pe_database_host      = @inventory['profiles']['database'].first
-        end
-
-        if @tune_options[:inventory_file]
+        elsif @tune_options[:inventory]
           @inventory = read_inventory_file
           @pe_puppet_master_host = @inventory['roles']['puppet_master_host']
           @pe_database_host      = @inventory['profiles']['database'].first
-        end
-
-        unless @tune_options[:inventory_file] || @tune_options[:local]
+        else
           # PE-15116 overrides environment and environmentpath in the infrastructure face.
           @environment = Puppet::Util::Execution.execute('/opt/puppetlabs/puppet/bin/puppet config print environment --section master').chomp
           @environmentpath = Puppet::Util::Execution.execute('/opt/puppetlabs/puppet/bin/puppet config print environmentpath --section master').chomp
@@ -87,8 +83,6 @@ module PuppetX
           @pe_puppet_master_host = Puppet[:certname]
           @pe_database_host      = @configurator::find_pe_conf_database_host || Puppet[:certname]
         end
-
-        # https://github.com/puppetlabs/puppetlabs-pe_infrastructure/blob/irving/lib/puppet_x/puppetlabs/meep/defaults.rb
 
         @hosts_with_primary_master_replica = get_nodes_with_class('primary_master_replica')
         @hosts_with_certificate_authority  = get_nodes_with_class('certificate_authority')
@@ -108,7 +102,8 @@ module PuppetX
         @external_database_hosts = @hosts_with_database - @primary_masters - @replica_masters - @compile_masters - @puppetdb_hosts
       end
 
-      # Valid pe.conf 'roles' and infrastructure 'profiles' for use in get_nodes_with_class.
+      # Valid pe.conf 'roles' and infrastructure 'profiles'.
+      # https://github.com/puppetlabs/puppetlabs-pe_infrastructure/blob/irving/lib/puppet_x/puppetlabs/meep/defaults.rb
 
       def default_inventory_roles
         {
@@ -195,12 +190,13 @@ module PuppetX
       # This eliminates the dependency upon PuppetDB to query node resources and classes.
 
       def read_inventory_file
-        Puppet.debug("Using the inventory file #{@tune_options[:inventory_file]} to define infrastructure nodes")
+        yaml_file = @tune_options[:inventory]
+        Puppet.debug("Using the inventory file #{yaml_file} to define infrastructure nodes")
         roles = default_inventory_roles
         profiles = default_inventory_profiles
-        output_error_and_exit("The inventory file #{@tune_options[:inventory_file]} does not exist") unless File.exist?(@tune_options[:inventory_file])
+        output_error_and_exit("The inventory file #{yaml_file} does not exist") unless File.exist?(yaml_file)
         begin
-          yaml_inventory = YAML.load_file(@tune_options[:inventory_file])
+          yaml_inventory = YAML.load_file(yaml_file)
         rescue StandardError
           yaml_inventory = {}
         end
@@ -541,30 +537,29 @@ module PuppetX
       # Create the directories for output to Hiera YAML files.
 
       def create_output_directories
-        return unless @tune_options[:output_path]
-        directory = @tune_options[:output_path]
-        subdirectory = "#{directory}/nodes"
-        return directory if File.directory?(directory) && File.directory?(subdirectory)
-        Dir.mkdir(directory)
-        output_error_and_exit("Unable to create output directory: #{directory}") unless File.directory?(directory)
-        Dir.mkdir(subdirectory)
-        output_error_and_exit("Unable to create output directory: #{subdirectory}") unless File.directory?(subdirectory)
-        directory
+        return unless @tune_options[:hiera]
+        hiera_directory = @tune_options[:hiera]
+        hiera_subdirectory = "#{hiera_directory}/nodes"
+        return directory if File.directory?(hiera_directory) && File.directory?(hiera_subdirectory)
+        Dir.mkdir(hiera_directory)
+        output_error_and_exit("Unable to create output directory: #{hiera_directory}") unless File.directory?(hiera_directory)
+        Dir.mkdir(hiera_subdirectory)
+        output_error_and_exit("Unable to create output directory: #{hiera_subdirectory}") unless File.directory?(hiera_subdirectory)
       end
 
       # Output Hiera YAML files.
 
       def create_output_files
-        return unless @tune_options[:output_path]
+        return unless @tune_options[:hiera]
         return if @collected_nodes.empty?
         @collected_nodes.each do |certname, properties|
           next if properties['settings'].empty?
-          output_file = "#{@tune_options[:output_path]}/nodes/#{certname}.yaml"
+          output_file = "#{@tune_options[:hiera]}/nodes/#{certname}.yaml"
           File.write(output_file, properties['settings'].to_yaml)
           output("## Wrote Hiera YAML file: #{output_file}\n\n")
         end
         return if @common_settings.empty?
-        output_file = "#{@tune_options[:output_path]}/common.yaml"
+        output_file = "#{@tune_options[:hiera]}/common.yaml"
         File.write(output_file, @common_settings.to_yaml)
       end
 
