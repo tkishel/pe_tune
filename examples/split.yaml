@@ -1,28 +1,28 @@
 ---
 # Use lowercase for all nodes, roles, and profiles keys and values.
-# Use MB for RAM values.
+# Use 'g' for GB (the default) and 'm' for MB for ram values.
 
 nodes:
   split-master.example.com:
     resources:
       cpu: 16
-      ram: 32768
+      ram: 16
   split-console.example.com:
     resources:
       cpu: 4
-      ram: 8192
+      ram: 8
   split-db.example.com:
     resources:
       cpu: 8
-      ram: 16384
+      ram: 16
   external-database.example.com:
     resources:
       cpu: 8
-      ram: 16384
+      ram: 16
   compile-master.example.com:
     resources:
       cpu: 4
-      ram: 8192
+      ram: 8
 
 # Valid split infrastructure 'roles' include:
 #

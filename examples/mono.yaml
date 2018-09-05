@@ -1,24 +1,24 @@
 ---
 # Use lowercase for all nodes, roles, and profiles keys and values.
-# Use MB for RAM values.
+# Use 'g' for GB (the default) and 'm' for MB for ram values.
 
 nodes:
   mono-master.example.com:
     resources:
       cpu: 16
-      ram: 32768
+      ram: 32
   replica-master.example.com:
     resources:
       cpu: 16
-      ram: 32768
+      ram: 32
   compile-master1.example.com:
     resources:
       cpu: 4
-      ram: 8192
+      ram: 8
   compile-master2.example.com:
     resources:
       cpu: 4
-      ram: 8192
+      ram: 8
 
 # Valid monolithic infrastructure 'roles' include:
 #

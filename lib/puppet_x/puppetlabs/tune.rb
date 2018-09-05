@@ -171,11 +171,14 @@ module PuppetX
       def read_inventory_local
         Puppet.debug('Querying the local system to define a monolithic infrastructure master node')
         hostname = Puppet::Util::Execution.execute('hostname -f').chomp
+        cpu = Puppet::Util::Execution.execute('nproc --all').chomp
+        ram = Puppet::Util::Execution.execute('free -b| grep Mem').chomp.split(' ')[1]
+        ram << 'b'
         nodes = {
           hostname => {
             'resources' => {
-              'cpu' => Puppet::Util::Execution.execute('nproc --all').chomp,
-              'ram' => Puppet::Util::Execution.execute('free -b| grep Mem').chomp.split(' ')[1],
+              'cpu' => cpu,
+              'ram' => ram,
             }
           }
         }
@@ -243,7 +246,7 @@ module PuppetX
           if @inventory['nodes'][certname] && @inventory['nodes'][certname]['resources']
             node_facts = @inventory['nodes'][certname]['resources']
             resources['cpu'] = node_facts['cpu'].to_i
-            resources['ram'] = (node_facts['ram'].to_i / 1024 / 1024).to_i
+            resources['ram'] = (string_to_bytes(node_facts['ram']).to_i / 1024 / 1024).to_i
             Puppet.debug("Found node in inventory: #{certname} with CPU: #{resources['cpu']} and RAM: #{resources['ram']}")
           else
             output_error_and_exit("Inventory file does not contain resources for node #{certname}")
@@ -268,6 +271,23 @@ module PuppetX
 
       def get_settings_for_node(certname, settings)
         @configurator::read_hiera_classifier_overrides(certname, settings, @environment, @environmentpath)
+      end
+
+      # Convert (for example) 16, 16g, 16384m, 16777216k, or 17179869184b to 17179869184.
+
+      def string_to_bytes(s)
+        value, units = /(\d+)\s*(\w?)/.match(s.to_s)[1, 2]
+        unless value.empty?
+          value = value.to_f
+          units = units.empty? ? 'g' : units.downcase
+          case units
+            when 'b' then return value.to_i
+            when 'k' then return (value * (1<<10)).to_i
+            when 'm' then return (value * (1<<20)).to_i
+            when 'g' then return (value * (1<<30)).to_i
+          end
+        end
+        output_error_and_exit("Unable to convert #{s} to bytes, valid units are: b, k, m, g")
       end
 
       # Identify this infrastructure.
