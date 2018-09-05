@@ -175,7 +175,7 @@ module PuppetX
           hostname => {
             'resources' => {
               'cpu' => Puppet::Util::Execution.execute('nproc --all').chomp,
-              'ram' => Puppet::Util::Execution.execute('free -k| grep Mem').chomp.split(' ')[1],
+              'ram' => Puppet::Util::Execution.execute('free -b| grep Mem').chomp.split(' ')[1],
             }
           }
         }
@@ -241,10 +241,10 @@ module PuppetX
         resources = {}
         if @inventory['nodes']
           if @inventory['nodes'][certname] && @inventory['nodes'][certname]['resources']
-            Puppet.debug("Found node in inventory: #{certname}: #{@inventory['nodes'][certname]['resources']}")
             node_facts = @inventory['nodes'][certname]['resources']
             resources['cpu'] = node_facts['cpu'].to_i
-            resources['ram'] = node_facts['ram'].to_i
+            resources['ram'] = (node_facts['ram'].to_i / 1024 / 1024).to_i
+            Puppet.debug("Found node in inventory: #{certname} with CPU: #{resources['cpu']} and RAM: #{resources['ram']}")
           else
             output_error_and_exit("Inventory file does not contain resources for node #{certname}")
           end
@@ -545,10 +545,10 @@ module PuppetX
         return unless @tune_options[:hiera]
         hiera_directory = @tune_options[:hiera]
         hiera_subdirectory = "#{hiera_directory}/nodes"
-        return directory if File.directory?(hiera_directory) && File.directory?(hiera_subdirectory)
-        Dir.mkdir(hiera_directory)
+        return if File.directory?(hiera_directory) && File.directory?(hiera_subdirectory)
+        Dir.mkdir(hiera_directory) unless File.directory?(hiera_directory)
         output_error_and_exit("Unable to create output directory: #{hiera_directory}") unless File.directory?(hiera_directory)
-        Dir.mkdir(hiera_subdirectory)
+        Dir.mkdir(hiera_subdirectory) unless File.directory?(hiera_subdirectory)
         output_error_and_exit("Unable to create output directory: #{hiera_subdirectory}") unless File.directory?(hiera_subdirectory)
       end
 

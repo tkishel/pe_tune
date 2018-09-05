@@ -1,5 +1,6 @@
 ---
 # Use lowercase for all nodes, roles, and profiles keys and values.
+# Use MB for RAM values.
 
 nodes:
   split-master.example.com:
