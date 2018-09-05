@@ -12,18 +12,18 @@ nodes:
       ram: 8192
   split-db.example.com:
     resources:
-      cpu: 4
-      ram: 8192
-  compile-master.example.com:
-    resources:
-      cpu: 4
-      ram: 8192
+      cpu: 8
+      ram: 16384
   external-database.example.com:
     resources:
       cpu: 8
       ram: 16384
+  compile-master.example.com:
+    resources:
+      cpu: 4
+      ram: 8192
 
-# Valid pe.conf 'roles' include:
+# Valid infrastructure 'roles' include:
 #
 #  puppet_master_host:
 #  console_host:

@@ -6,12 +6,20 @@ nodes:
     resources:
       cpu: 16
       ram: 32768
-  compile-master.example.com:
+  replica-master.example.com:
+    resources:
+      cpu: 16
+      ram: 32768
+  compile-master1.example.com:
+    resources:
+      cpu: 4
+      ram: 8192
+  compile-master2.example.com:
     resources:
       cpu: 4
       ram: 8192
 
-# Valid pe.conf 'roles' include:
+# Valid infrastructure 'roles' include:
 #
 #  puppet_master_host:
 #  console_host:
@@ -36,5 +44,8 @@ roles:
 #  amq::broker: # Deprecated in PE 2018+
 
 profiles:
+  primary_master_replica:
+    - replica-master.example.com
   compile_master:
-    - compile-master.example.com
+    - compile-master1.example.com
+    - compile-master2.example.com

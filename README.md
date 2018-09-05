@@ -63,7 +63,7 @@ Use a YAML file to define infrastructure nodes.
 
 This eliminates the dependency upon PuppetDB to query node resources and classes.
 
-Nodes can be defined by `pe.conf` 'roles', or by infrastructure 'profiles'.
+Nodes can be defined by infrastructure 'roles' or 'profiles'.
 
 Refer to the [examples](examples) directory for details.
 
