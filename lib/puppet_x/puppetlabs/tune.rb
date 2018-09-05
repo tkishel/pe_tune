@@ -94,9 +94,11 @@ module PuppetX
         @hosts_with_amq_broker             = get_nodes_with_class('amq::broker')
         @hosts_with_orchestrator           = get_nodes_with_class('orchestrator')
 
+        @hosts_with_mcm = (@hosts_with_master + @hosts_with_compile_master).uniq
+
         @primary_masters         = [@pe_puppet_master_host]
         @replica_masters         = @hosts_with_primary_master_replica
-        @compile_masters         = @hosts_with_master   - @primary_masters - @replica_masters
+        @compile_masters         = @hosts_with_mcm      - @primary_masters - @replica_masters
         @console_hosts           = @hosts_with_console  - @primary_masters - @replica_masters
         @puppetdb_hosts          = @hosts_with_puppetdb - @primary_masters - @replica_masters - @compile_masters
         @external_database_hosts = @hosts_with_database - @primary_masters - @replica_masters - @compile_masters - @puppetdb_hosts
@@ -128,7 +130,7 @@ module PuppetX
         }
       end
 
-      # Convert pe.conf 'roles' to infrastructure 'profiles' using sets to eliminate duplicates.
+      # Convert infrastructure 'roles' to infrastructure 'profiles' using sets to eliminate duplicates.
 
       def convert_inventory_roles_to_profiles(inventory)
         if inventory['roles']['puppet_master_host']
@@ -338,7 +340,7 @@ module PuppetX
         rescue StandardError
           enabled = false
         end
-        Puppet.debug("jruby_9k_enabled: available: #{available} enabled: #{enabled}")
+        Puppet.debug("jruby_9k_enabled: available: #{available}, enabled: #{enabled}")
         available && enabled
       end
 
