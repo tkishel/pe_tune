@@ -1,7 +1,5 @@
 #!/opt/puppetlabs/puppet/bin/ruby
 
-require 'set'
-
 # Notes:
 #
 # This script optimizes the settings documented in tuning_monolithic:
@@ -142,7 +140,7 @@ module PuppetX
           inventory['profiles']['master']                << inventory['roles']['puppet_master_host']
           inventory['profiles']['console']               << inventory['roles']['puppet_master_host'] unless inventory['roles']['console_host']
           inventory['profiles']['puppetdb']              << inventory['roles']['puppet_master_host'] unless inventory['roles']['puppetdb_host']
-          inventory['profiles']['database']              << inventory['roles']['puppet_master_host'] unless inventory['roles']['database_host']
+          inventory['profiles']['database']              << inventory['roles']['puppet_master_host'] unless inventory['roles']['puppetdb_host'] || inventory['roles']['database_host']
           inventory['profiles']['amq::broker']           << inventory['roles']['puppet_master_host'] # Deprecated in PE 2018+
           inventory['profiles']['orchestrator']          << inventory['roles']['puppet_master_host']
         end

@@ -93,5 +93,66 @@ describe PuppetX::Puppetlabs::Tune do
       resources = { 'cpu' => 3, 'ram' => 8191 }
       expect(tune::meets_minimum_system_requirements?(resources)).to eq(true)
     end
+
+    it 'can convert a string to bytes with a unit' do
+      bytes_string = '16g'
+      bytes = 17179869184
+      expect(tune::string_to_bytes(bytes_string)).to eq(bytes)
+    end
+
+    it 'can convert a string to bytes without a unit' do
+      bytes_string = '16'
+      bytes = 17179869184
+      expect(tune::string_to_bytes(bytes_string)).to eq(bytes)
+    end
+
+    it 'can read node resources from an inventory' do
+      nodes = {
+        'master' => { 'resources' => { 'cpu' => 8, 'ram' => '16g' } },
+      }
+      resources = { 'cpu' => 8, 'ram' => 16384 }
+      tune.instance_variable_set(:@inventory, 'nodes' => nodes)
+      expect(tune::get_resources_for_node('master')).to eq(resources)
+    end
+
+    it 'can convert inventory roles to profiles' do
+      inventory = {
+        'roles' => {
+          'puppet_master_host' => 'master',
+          'console_host'       => 'console',
+          'puppetdb_host'      => 'puppetdb',
+          'database_host'      => nil,
+        },
+        'profiles' => {
+          'primary_master_replica' => [],
+          'certificate_authority'  => [],
+          'master'                 => [],
+          'console'                => [],
+          'puppetdb'               => [],
+          'database'               => [],
+          'amq::broker'            => [],
+          'orchestrator'           => []
+        }
+      }
+      result = {
+        'roles' => {
+          'puppet_master_host' => 'master',
+          'console_host'       => 'console',
+          'puppetdb_host'      => 'puppetdb',
+          'database_host'      => nil,
+        },
+        'profiles' => {
+          'primary_master_replica' => [],
+          'certificate_authority'  => ['master'],
+          'master'                 => ['master'],
+          'console'                => ['console'],
+          'puppetdb'               => ['puppetdb'],
+          'database'               => ['puppetdb'],
+          'amq::broker'            => ['master'],
+          'orchestrator'           => ['master']
+        }
+      }
+      expect(tune::convert_inventory_roles_to_profiles(inventory)).to eq(result)
+    end
   end
 end
