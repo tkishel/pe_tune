@@ -19,12 +19,14 @@ nodes:
       cpu: 4
       ram: 8192
 
-# Valid infrastructure 'roles' include:
+# Valid monolithic infrastructure 'roles' include:
 #
 #  puppet_master_host:
-#  console_host:
-#  puppetdb_host:
 #  database_host:
+#
+# It is invalid for a node to be defined to more than one role.
+# The puppet_master_host role must be defined.
+# The database_host role is specific to an infrastructure with an external database.
 #
 # These roles are automatically converted to the default profiles for the role.
 

@@ -84,6 +84,9 @@ module PuppetX
           @pe_database_host      = @configurator::find_pe_conf_database_host || Puppet[:certname]
         end
 
+        # TODO: Reconcile primary_master and puppet_master_host.
+        @hosts_with_primary_master         = get_nodes_with_class('primary_master')
+
         @hosts_with_primary_master_replica = get_nodes_with_class('primary_master_replica')
         @hosts_with_certificate_authority  = get_nodes_with_class('certificate_authority')
         @hosts_with_master                 = get_nodes_with_class('master')
@@ -94,17 +97,17 @@ module PuppetX
         @hosts_with_amq_broker             = get_nodes_with_class('amq::broker')
         @hosts_with_orchestrator           = get_nodes_with_class('orchestrator')
 
-        @hosts_with_mcm = (@hosts_with_master + @hosts_with_compile_master).uniq
+        @hosts_with_m_or_cm = (@hosts_with_master + @hosts_with_compile_master).uniq
 
         @primary_masters         = [@pe_puppet_master_host]
         @replica_masters         = @hosts_with_primary_master_replica
-        @compile_masters         = @hosts_with_mcm      - @primary_masters - @replica_masters
+        @compile_masters         = @hosts_with_m_or_cm  - @primary_masters - @replica_masters
         @console_hosts           = @hosts_with_console  - @primary_masters - @replica_masters
         @puppetdb_hosts          = @hosts_with_puppetdb - @primary_masters - @replica_masters - @compile_masters
         @external_database_hosts = @hosts_with_database - @primary_masters - @replica_masters - @compile_masters - @puppetdb_hosts
       end
 
-      # Valid pe.conf 'roles' and infrastructure 'profiles'.
+      # Valid infrastructure 'roles' and 'profiles'.
       # https://github.com/puppetlabs/puppetlabs-pe_infrastructure/blob/irving/lib/puppet_x/puppetlabs/meep/defaults.rb
 
       def default_inventory_roles
