@@ -276,15 +276,15 @@ module PuppetX
       # Convert (for example) 16, 16g, 16384m, 16777216k, or 17179869184b to 17179869184.
 
       def string_to_bytes(s)
-        value, units = /(\d+)\s*(\w?)/.match(s.to_s)[1, 2]
+        value, units = %r{(\d+)\s*(\w?)}.match(s.to_s)[1, 2]
         unless value.empty?
           value = value.to_f
           units = units.empty? ? 'g' : units.downcase
           case units
-            when 'b' then return value.to_i
-            when 'k' then return (value * (1<<10)).to_i
-            when 'm' then return (value * (1<<20)).to_i
-            when 'g' then return (value * (1<<30)).to_i
+          when 'b' then return value.to_i
+          when 'k' then return (value * (1 << 10)).to_i
+          when 'm' then return (value * (1 << 20)).to_i
+          when 'g' then return (value * (1 << 30)).to_i
           end
         end
         output_error_and_exit("Unable to convert #{s} to bytes, valid units are: b, k, m, g")
