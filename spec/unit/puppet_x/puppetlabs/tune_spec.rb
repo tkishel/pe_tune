@@ -52,12 +52,12 @@ describe PuppetX::Puppetlabs::Tune do
     end
 
     it 'can detect the puppetdb service on a host' do
-      tune.instance_variable_set(:@hosts_with_puppetdb, ['compile_master'])
+      tune.instance_variable_set(:@nodes_with_puppetdb, ['compile_master'])
       expect(tune::with_puppetdb?('compile_master')).to eq(true)
     end
 
     it 'can detect the database service on a host' do
-      tune.instance_variable_set(:@hosts_with_database, ['master'])
+      tune.instance_variable_set(:@nodes_with_database, ['master'])
       expect(tune::with_database?('master')).to eq(true)
     end
 
@@ -123,9 +123,8 @@ describe PuppetX::Puppetlabs::Tune do
           'puppetdb_host'      => 'puppetdb',
           'database_host'      => nil,
         },
-        'profiles' => {
+        'components' => {
           'primary_master_replica' => [],
-          'certificate_authority'  => [],
           'master'                 => [],
           'console'                => [],
           'puppetdb'               => [],
@@ -141,9 +140,8 @@ describe PuppetX::Puppetlabs::Tune do
           'puppetdb_host'      => 'puppetdb',
           'database_host'      => nil,
         },
-        'profiles' => {
+        'components' => {
           'primary_master_replica' => [],
-          'certificate_authority'  => ['master'],
           'master'                 => ['master'],
           'console'                => ['console'],
           'puppetdb'               => ['puppetdb'],
@@ -152,7 +150,7 @@ describe PuppetX::Puppetlabs::Tune do
           'orchestrator'           => ['master']
         }
       }
-      expect(tune::convert_inventory_roles_to_profiles(inventory)).to eq(result)
+      expect(tune::convert_inventory_roles_to_components(inventory)).to eq(result)
     end
   end
 end

@@ -47,6 +47,7 @@ module PuppetX
         @collected_nodes = {}
         @common_settings = {}
         @inventory = {}
+        @pe_conf_nodes = {}
 
         @tune_options = {}
         @tune_options[:common]    = options[:common]
@@ -60,64 +61,74 @@ module PuppetX
         calculate_options[:memory_per_jruby]       = options[:memory_per_jruby]
         calculate_options[:memory_reserved_for_os] = options[:memory_reserved_for_os]
 
-        @calculator = PuppetX::Puppetlabs::Tune::Calculate.new(calculate_options)
+        @calculator   = PuppetX::Puppetlabs::Tune::Calculate.new(calculate_options)
+        @configurator = PuppetX::Puppetlabs::Tune::Configuration.new
+
+        # PE-15116 overrides environment and environmentpath in the infrastructure face.
+        @environment     = Puppet::Util::Execution.execute('/opt/puppetlabs/puppet/bin/puppet config print environment --section master').chomp
+        @environmentpath = Puppet::Util::Execution.execute('/opt/puppetlabs/puppet/bin/puppet config print environmentpath --section master').chomp
 
         if @tune_options[:local]
           @inventory = read_inventory_local
-          @pe_puppet_master_host = @inventory['roles']['puppet_master_host']
-          @pe_database_host      = @inventory['profiles']['database'].first
         elsif @tune_options[:inventory]
           @inventory = read_inventory_file
-          @pe_puppet_master_host = @inventory['roles']['puppet_master_host']
-          @pe_database_host      = @inventory['profiles']['database'].first
-        else
-          # PE-15116 overrides environment and environmentpath in the infrastructure face.
-          @environment = Puppet::Util::Execution.execute('/opt/puppetlabs/puppet/bin/puppet config print environment --section master').chomp
-          @environmentpath = Puppet::Util::Execution.execute('/opt/puppetlabs/puppet/bin/puppet config print environmentpath --section master').chomp
-          @configurator = PuppetX::Puppetlabs::Tune::Configuration.new
-          if @configurator::find_pe_conf_puppet_master_host != Puppet[:certname]
-            output_error_and_exit('This command must be run on the Primary Master')
-          end
-          @pe_puppet_master_host = Puppet[:certname]
-          @pe_database_host      = @configurator::find_pe_conf_database_host || Puppet[:certname]
+        end
+
+        @pe_conf_nodes['puppet_master_host'] = @configurator::find_pe_conf_host('puppet_master_host')
+
+        if @pe_conf_nodes['puppet_master_host'] != Puppet[:certname]
+          output_error_and_exit('This command must be run on the Primary Master with a pe.conf')
+        end
+
+        unless @inventory.empty?
+          # Use puppet_master_host from inventory instead of pe.conf, if defined in inventory.
+          @pe_conf_nodes['puppet_master_host'] = @inventory['roles']['puppet_master_host'] if @inventory['roles']['puppet_master_host']
+          # Add hosts from pe.conf to inventory, if defined.
+          @inventory['roles']['puppet_master_host'] = @pe_conf_nodes['puppet_master_host'] if @pe_conf_nodes['puppet_master_host']
+          @inventory['roles']['console_host']       = @pe_conf_nodes['console_host']       if @pe_conf_nodes['console_host']
+          @inventory['roles']['puppetdb_host']      = @pe_conf_nodes['puppetdb_host']      if @pe_conf_nodes['puppetdb_host']
+          @inventory['roles']['database_host']      = @pe_conf_nodes['database_host']      if @pe_conf_nodes['database_host']
+
+          @inventory = convert_inventory_roles_to_components(@inventory)
         end
 
         # TODO: Reconcile primary_master and puppet_master_host.
-        @hosts_with_primary_master         = get_nodes_with_class('primary_master')
+        @nodes_with_primary_master         = get_nodes_with('primary_master')
 
-        @hosts_with_primary_master_replica = get_nodes_with_class('primary_master_replica')
-        @hosts_with_certificate_authority  = get_nodes_with_class('certificate_authority')
-        @hosts_with_master                 = get_nodes_with_class('master')
-        @hosts_with_compile_master         = get_nodes_with_class('compile_master')
-        @hosts_with_console                = get_nodes_with_class('console')
-        @hosts_with_puppetdb               = get_nodes_with_class('puppetdb')
-        @hosts_with_database               = get_nodes_with_class('database')
-        @hosts_with_amq_broker             = get_nodes_with_class('amq::broker')
-        @hosts_with_orchestrator           = get_nodes_with_class('orchestrator')
+        @nodes_with_primary_master_replica = get_nodes_with('primary_master_replica')
+        @nodes_with_certificate_authority  = get_nodes_with('certificate_authority')
+        @nodes_with_master                 = get_nodes_with('master')
+        @nodes_with_compile_master         = get_nodes_with('compile_master')
+        @nodes_with_console                = get_nodes_with('console')
+        @nodes_with_puppetdb               = get_nodes_with('puppetdb')
+        @nodes_with_database               = get_nodes_with('database')
+        @nodes_with_amq_broker             = get_nodes_with('amq::broker')
+        @nodes_with_orchestrator           = get_nodes_with('orchestrator')
 
-        @hosts_with_m_or_cm = (@hosts_with_master + @hosts_with_compile_master).uniq
+        @nodes_with_m_or_cm = (@nodes_with_master + @nodes_with_compile_master).uniq
 
-        @primary_masters         = [@pe_puppet_master_host]
-        @replica_masters         = @hosts_with_primary_master_replica
-        @compile_masters         = @hosts_with_m_or_cm  - @primary_masters - @replica_masters
-        @console_hosts           = @hosts_with_console  - @primary_masters - @replica_masters
-        @puppetdb_hosts          = @hosts_with_puppetdb - @primary_masters - @replica_masters - @compile_masters
-        @external_database_hosts = @hosts_with_database - @primary_masters - @replica_masters - @compile_masters - @puppetdb_hosts
+        @primary_masters         = [@pe_conf_nodes['puppet_master_host']]
+        @replica_masters         = @nodes_with_primary_master_replica
+        @compile_masters         = @nodes_with_m_or_cm  - @primary_masters - @replica_masters
+        @console_hosts           = @nodes_with_console  - @primary_masters - @replica_masters
+        @puppetdb_hosts          = @nodes_with_puppetdb - @primary_masters - @replica_masters - @compile_masters
+        @external_database_hosts = @nodes_with_database - @primary_masters - @replica_masters - @compile_masters - @puppetdb_hosts
       end
 
-      # Valid infrastructure 'roles' and 'profiles'.
+      # Valid infrastructure 'roles' and 'components'.
       # https://github.com/puppetlabs/puppetlabs-pe_infrastructure/blob/irving/lib/puppet_x/puppetlabs/meep/defaults.rb
 
       def default_inventory_roles
         {
-          'puppet_master_host' => nil,
-          'console_host'       => nil,
-          'puppetdb_host'      => nil,
-          'database_host'      => nil,
+          'puppet_master_host'     => nil,
+          'console_host'           => nil,
+          'puppetdb_host'          => nil,
+          'database_host'          => nil,
+          'primary_master_replica' => nil,
         }
       end
 
-      def default_inventory_profiles
+      def default_inventory_components
         {
           'primary_master_replica' => [].to_set,
           'certificate_authority'  => [].to_set,
@@ -131,35 +142,41 @@ module PuppetX
         }
       end
 
-      # Convert infrastructure 'roles' to infrastructure 'profiles' using sets to eliminate duplicates.
+      # Convert infrastructure 'roles' to infrastructure 'components' using sets to eliminate duplicates.
 
-      def convert_inventory_roles_to_profiles(inventory)
+      def convert_inventory_roles_to_components(inventory)
         if inventory['roles']['puppet_master_host']
-          Puppet.debug("Converting puppet_master_host role to profiles for: #{inventory['roles']['puppet_master_host']}")
-          inventory['profiles']['certificate_authority'] << inventory['roles']['puppet_master_host'] if inventory['profiles']['certificate_authority'].count.zero?
-          inventory['profiles']['master']                << inventory['roles']['puppet_master_host']
-          inventory['profiles']['console']               << inventory['roles']['puppet_master_host'] unless inventory['roles']['console_host']
-          inventory['profiles']['puppetdb']              << inventory['roles']['puppet_master_host'] unless inventory['roles']['puppetdb_host']
-          inventory['profiles']['database']              << inventory['roles']['puppet_master_host'] unless inventory['roles']['puppetdb_host'] || inventory['roles']['database_host']
-          inventory['profiles']['amq::broker']           << inventory['roles']['puppet_master_host'] # Deprecated in PE 2018+
-          inventory['profiles']['orchestrator']          << inventory['roles']['puppet_master_host']
+          Puppet.debug("Converting puppet_master_host role to components for: #{inventory['roles']['puppet_master_host']}")
+          inventory['components']['master']                << inventory['roles']['puppet_master_host']
+          inventory['components']['console']               << inventory['roles']['puppet_master_host'] unless inventory['roles']['console_host']
+          inventory['components']['puppetdb']              << inventory['roles']['puppet_master_host'] unless inventory['roles']['puppetdb_host']
+          inventory['components']['database']              << inventory['roles']['puppet_master_host'] unless inventory['roles']['puppetdb_host'] || inventory['roles']['database_host']
+          inventory['components']['amq::broker']           << inventory['roles']['puppet_master_host'] # Deprecated in PE 2018+
+          inventory['components']['orchestrator']          << inventory['roles']['puppet_master_host']
         end
         if inventory['roles']['console_host']
-          Puppet.debug("Converting console_host role to profiles for: #{inventory['roles']['console_host']}")
-          inventory['profiles']['console'] << inventory['roles']['console_host']
+          Puppet.debug("Converting console_host role to components for: #{inventory['roles']['console_host']}")
+          inventory['components']['console'] << inventory['roles']['console_host']
         end
         if inventory['roles']['puppetdb_host']
-          Puppet.debug("Converting puppetdb_host role to profiles for: #{inventory['roles']['puppetdb_host']}")
-          inventory['profiles']['puppetdb'] << inventory['roles']['puppetdb_host']
-          inventory['profiles']['database'] << inventory['roles']['puppetdb_host'] unless inventory['roles']['database_host']
+          Puppet.debug("Converting puppetdb_host role to components for: #{inventory['roles']['puppetdb_host']}")
+          inventory['components']['puppetdb'] << inventory['roles']['puppetdb_host']
+          inventory['components']['database'] << inventory['roles']['puppetdb_host'] unless inventory['roles']['database_host']
         end
         if inventory['roles']['database_host']
-          Puppet.debug("Converting ['roles']['database_host'] to profiles for: #{inventory['roles']['database_host']}")
-          inventory['profiles']['database'] << inventory['roles']['database_host']
+          Puppet.debug("Converting ['roles']['database_host'] to components for: #{inventory['roles']['database_host']}")
+          inventory['components']['database'] << inventory['roles']['database_host']
         end
-        output_error_and_exit('The inventory file is limited to one primary_master_replica') if inventory['profiles']['primary_master_replica'].count > 1
-        output_error_and_exit('The inventory file is limited to one certificate_authority')  if inventory['profiles']['certificate_authority'].count > 1
-        output_error_and_exit('The inventory file is limited to one console')                if inventory['profiles']['console'].count > 1
+        if inventory['roles']['primary_master_replica']
+          Puppet.debug("Converting primary_master_replica role to components for: #{inventory['roles']['primary_master_replica']}")
+          inventory['components']['primary_master_replica'] << inventory['roles']['primary_master_replica']
+          inventory['components']['master']                 << inventory['roles']['primary_master_replica']
+          inventory['components']['console']                << inventory['roles']['primary_master_replica']
+          inventory['components']['puppetdb']               << inventory['roles']['primary_master_replica']
+          inventory['components']['database']               << inventory['roles']['primary_master_replica']
+          inventory['components']['amq::broker']            << inventory['roles']['primary_master_replica'] # Deprecated in PE 2018+
+          inventory['components']['orchestrator']           << inventory['roles']['primary_master_replica']
+        end
         inventory
       end
 
@@ -181,15 +198,14 @@ module PuppetX
           }
         }
         Puppet.debug("Found resources on the local system: #{nodes}")
-        roles = default_inventory_roles
-        profiles = default_inventory_profiles
+        roles = {}
         roles['puppet_master_host'] = hostname
         inventory = {
-          'nodes'    => nodes,
-          'roles'    => roles,
-          'profiles' => profiles,
+          'nodes'      => nodes,
+          'roles'      => roles,
+          'components' => default_inventory_components,
         }
-        convert_inventory_roles_to_profiles(inventory)
+        inventory
       end
 
       # Use an inventory file to define infrastructure nodes.
@@ -197,39 +213,43 @@ module PuppetX
 
       def read_inventory_file
         yaml_file = @tune_options[:inventory]
-        Puppet.debug("Using the inventory file #{yaml_file} to define infrastructure nodes")
-        roles = default_inventory_roles
-        profiles = default_inventory_profiles
         output_error_and_exit("The inventory file #{yaml_file} does not exist") unless File.exist?(yaml_file)
+        Puppet.debug("Using the inventory file #{yaml_file} to define infrastructure nodes")
         begin
           yaml_inventory = YAML.load_file(yaml_file)
         rescue StandardError
           yaml_inventory = {}
         end
         output_error_and_exit('The inventory file does not contain a nodes hash') unless yaml_inventory['nodes']
-        output_error_and_exit('The inventory file does not contain a roles hash') unless yaml_inventory['roles']
-        output_error_and_exit('The inventory file does not contain a roles hash with a puppet_master_host key/value') unless yaml_inventory['roles']['puppet_master_host']
-        yaml_inventory['profiles'] = [] unless yaml_inventory['profiles']
+        yaml_inventory['roles'] = {} unless yaml_inventory['roles']
+        yaml_inventory['components'] = {} unless yaml_inventory['components']
         inventory = {
-          'nodes'    => yaml_inventory['nodes'],
-          'roles'    => roles.merge(yaml_inventory['roles']),
-          'profiles' => profiles.merge(yaml_inventory['profiles']),
+          'nodes'      => yaml_inventory['nodes'],
+          'roles'      => default_inventory_roles.merge(yaml_inventory['roles']),
+          'components' => default_inventory_components.merge(yaml_inventory['components']),
         }
-        convert_inventory_roles_to_profiles(inventory)
+        inventory
       end
 
       # Interface to Puppet::Util::Pe_conf and Puppet::Util::Pe_conf::Recover
       # Override when using an inventory file.
 
-      def get_nodes_with_class(classname)
-        if @inventory['profiles']
-          # Profile key names are downcased in inventory.
+      def get_nodes_with(classname)
+        if @inventory['components']
+          # Key names are downcased in inventory.
           class_name = classname.downcase
-          nodes_with_class = @inventory['profiles'][class_name].to_a
-          Puppet.debug("Found class in inventory: #{class_name}: #{nodes_with_class}")
-          nodes_with_class
+          if @inventory['components'][class_name]
+            nodes_with_class = @inventory['components'][class_name].to_a
+            Puppet.debug("Found class in inventory: #{class_name}: #{nodes_with_class}")
+            nodes_with_class
+          else
+            # Key names are capitalized in PuppetDB.
+            class_name = classname.split('::').map(&:capitalize).join('::')
+            @configurator::get_infra_nodes_with_class(class_name, @environment)
+            # output_error_and_exit("Inventory file does not contain class: #{class_name}")
+          end
         else
-          # Profile key names are capitalized in PuppetDB.
+          # Key names are capitalized in PuppetDB.
           class_name = classname.split('::').map(&:capitalize).join('::')
           @configurator::get_infra_nodes_with_class(class_name, @environment)
         end
@@ -241,13 +261,16 @@ module PuppetX
       def get_resources_for_node(certname)
         resources = {}
         if @inventory['nodes']
-          if @inventory['nodes'][certname] && @inventory['nodes'][certname]['resources']
+          if @inventory['nodes'][certname]
             node_facts = @inventory['nodes'][certname]['resources']
             resources['cpu'] = node_facts['cpu'].to_i
             resources['ram'] = (string_to_bytes(node_facts['ram']).to_i / 1024 / 1024).to_i
             Puppet.debug("Found node in inventory: #{certname} with CPU: #{resources['cpu']} and RAM: #{resources['ram']}")
           else
-            output_error_and_exit("Inventory file does not contain resources for node #{certname}")
+            node_facts = @configurator::read_node_facts(certname, @environment)
+            resources['cpu'] = node_facts['processors']['count'].to_i
+            resources['ram'] = (node_facts['memory']['system']['total_bytes'].to_i / 1024 / 1024).to_i
+            # output_error_and_exit("Inventory file does not contain resources for node: #{certname}")
           end
         else
           node_facts = @configurator::read_node_facts(certname, @environment)
@@ -291,7 +314,7 @@ module PuppetX
       # Identify this infrastructure.
 
       def unknown_pe_infrastructure?
-        @primary_masters.count.zero? || @pe_database_host.empty?
+        @primary_masters.count.zero?
       end
 
       def monolithic?
@@ -314,27 +337,27 @@ module PuppetX
 
       def with_activemq?(certname)
         return false unless certname
-        @hosts_with_amq_broker.count > 0 && @hosts_with_amq_broker.include?(certname)
+        @nodes_with_amq_broker.count > 0 && @nodes_with_amq_broker.include?(certname)
       end
 
       def with_console?(certname)
         return false unless certname
-        @hosts_with_console.count > 0 && @hosts_with_console.include?(certname)
+        @nodes_with_console.count > 0 && @nodes_with_console.include?(certname)
       end
 
       def with_database?(certname)
         return false unless certname
-        @hosts_with_database.count > 0 && @hosts_with_database.include?(certname)
+        @nodes_with_database.count > 0 && @nodes_with_database.include?(certname)
       end
 
       def with_orchestrator?(certname)
         return false unless certname
-        @hosts_with_orchestrator.count > 0 && @hosts_with_orchestrator.include?(certname)
+        @nodes_with_orchestrator.count > 0 && @nodes_with_orchestrator.include?(certname)
       end
 
       def with_puppetdb?(certname)
         return false unless certname
-        @hosts_with_puppetdb.count > 0 && @hosts_with_puppetdb.include?(certname)
+        @nodes_with_puppetdb.count > 0 && @nodes_with_puppetdb.include?(certname)
       end
 
       def get_components_for_node(certname)
@@ -514,7 +537,7 @@ module PuppetX
         extract_common_optimized_settings
 
         @collected_nodes.each do |certname, properties|
-          output_node_resources(certname, properties['profile'], properties['resources'])
+          output_node_resources(certname, properties['role'], properties['resources'])
           output_node_optimized_settings(certname, properties['settings'])
           output_node_optimized_settings_summary(certname, properties['totals'])
         end
@@ -526,9 +549,9 @@ module PuppetX
 
       # Collect node for output.
 
-      def collect_node(certname, profile, resources, settings, totals)
+      def collect_node(certname, role, resources, settings, totals)
         properties = {
-          'profile'   => profile,
+          'role'      => role,
           'resources' => resources,
           'settings'  => settings,
           'totals'    => totals,
@@ -616,12 +639,12 @@ module PuppetX
 
       # Output current information.
 
-      def output_node_settings(profile, certname, settings, duplicates)
+      def output_node_settings(role, certname, settings, duplicates)
         if settings.empty?
-          output("## Default settings found for #{profile} #{certname}\n\n")
+          output("## Default settings found for #{role} #{certname}\n\n")
           return
         end
-        output("## Current settings for #{profile} #{certname}\n\n")
+        output("## Current settings for #{role} #{certname}\n\n")
         output_data(JSON.pretty_generate(settings))
         output("\n")
         output_node_duplicate_settings(duplicates)
@@ -643,8 +666,8 @@ module PuppetX
         output_data(settings.to_yaml)
       end
 
-      def output_node_resources(certname, profile, resources)
-        output("## Found: #{resources['cpu']} CPU(s) / #{resources['ram']} MB RAM for #{profile} #{certname}")
+      def output_node_resources(certname, role, resources)
+        output("## Found: #{resources['cpu']} CPU(s) / #{resources['ram']} MB RAM for #{role} #{certname}")
       end
 
       def output_node_optimized_settings_summary(certname, totals)

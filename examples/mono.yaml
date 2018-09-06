@@ -1,5 +1,5 @@
 ---
-# Use lowercase for all nodes, roles, and profiles keys and values.
+# Use lowercase for all nodes, roles, and components keys and values.
 # Use 'g' for GB (the default) and 'm' for MB for ram values.
 
 nodes:
@@ -20,35 +20,26 @@ nodes:
       cpu: 4
       ram: 8
 
-# Valid monolithic infrastructure 'roles' include:
+# Infrastructure roles include:
 #
-#  puppet_master_host:
-#  database_host:
-#
-# It is invalid for a node to be defined to more than one role.
-# The puppet_master_host role must be defined.
-# The database_host role is specific to an infrastructure with an external database.
-#
-# These roles are automatically converted to the default profiles for the role.
+#  puppet_master_host
+#  console_host
+#  puppetdb_host
+#  database_host
+#  primary_master_replica
 
 roles:
-  puppet_master_host: mono-master.example.com
+  puppet_master_host:     mono-master.example.com
+  primary_master_replica: replica-master.example.com
 
-# Valid infrastructure 'profiles' include:
+# Tunable infrastructure components include:
 #
-#  primary_master_replica:
-#  certificate_authority:
-#  master:
-#  compile_master:
-#  console:
-#  puppetdb:
-#  database:
-#  orchestrator:
-#  amq::broker: # Deprecated in PE 2018+
+#  compile_master
+#  puppetdb
+#  database
+#  orchestrator
 
-profiles:
-  primary_master_replica:
-    - replica-master.example.com
+components:
   compile_master:
     - compile-master1.example.com
     - compile-master2.example.com

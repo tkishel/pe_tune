@@ -1,16 +1,16 @@
 ---
-# Use lowercase for all nodes, roles, and profiles keys and values.
+# Use lowercase for all nodes, roles, and components keys and values.
 # Use 'g' for GB (the default) and 'm' for MB for ram values.
 
 nodes:
   split-master.example.com:
     resources:
       cpu: 16
-      ram: 16
+      ram: 32
   split-console.example.com:
     resources:
-      cpu: 4
-      ram: 8
+      cpu: 8
+      ram: 16
   split-db.example.com:
     resources:
       cpu: 8
@@ -19,24 +19,22 @@ nodes:
     resources:
       cpu: 8
       ram: 16
-  compile-master.example.com:
+  compile-master1.example.com:
+    resources:
+      cpu: 4
+      ram: 8
+  compile-master2.example.com:
     resources:
       cpu: 4
       ram: 8
 
-# Valid split infrastructure 'roles' include:
+# Infrastructure roles include:
 #
-#  puppet_master_host:
-#  console_host:
-#  puppetdb_host:
-#  database_host:
-#
-# It is invalid for a node to be defined to more than one role.
-# The puppet_master_host role must be defined.
-# The console_host and puppetdb_host roles are specific to a split infrastructure.
-# The database_host role is specific to an infrastructure with an external database.
-#
-# These roles are automatically converted to the default profiles for the role.
+#  puppet_master_host
+#  console_host
+#  puppetdb_host
+#  database_host
+#  primary_master_replica
 
 roles:
   puppet_master_host: split-master.example.com
@@ -44,18 +42,14 @@ roles:
   puppetdb_host:      split-db.example.com
   database_host:      external-database.example.com
 
-# Valid infrastructure 'profiles' include:
+# Tunable infrastructure components include:
 #
-#  primary_master_replica:
-#  certificate_authority:
-#  master:
-#  compile_master:
-#  console:
-#  puppetdb:
-#  database:
-#  orchestrator:
-#  amq::broker: # Deprecated in PE 2018+
+#  compile_master
+#  puppetdb
+#  database
+#  orchestrator
 
-profiles:
+components:
   compile_master:
     - compile-master.example.com
+    - compile-master2.example.com

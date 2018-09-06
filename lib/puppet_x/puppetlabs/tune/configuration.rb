@@ -29,25 +29,14 @@ module PuppetX
           pe_conf
         end
 
-        def find_pe_conf_puppet_master_host
+        def find_pe_conf_host(pe_role)
           return if @pe_conf.empty?
-          return unless @pe_conf['puppet_enterprise::puppet_master_host']
-          puppet_master_host = @pe_conf['puppet_enterprise::puppet_master_host']
-          Puppet.debug("Found pe.conf puppet_master_host: #{puppet_master_host}")
-          puppet_master_host = Puppet[:certname] if puppet_master_host == '%{trusted.certname}'
-          puppet_master_host = Puppet[:certname] if puppet_master_host == '%{::trusted.certname}'
-          Puppet.debug("Using pe.conf puppet_master_host: #{puppet_master_host}")
-          puppet_master_host
-        end
-
-        def find_pe_conf_database_host
-          return if @pe_conf.empty?
-          puppet_master_host = find_pe_conf_puppet_master_host
-          puppetdb_host = @pe_conf['puppet_enterprise::puppetdb_host'] || puppet_master_host
-          Puppet.debug("Found pe.conf pe_puppetdb_host: #{puppetdb_host}")
-          database_host = @pe_conf['puppet_enterprise::database_host'] || puppetdb_host
-          Puppet.debug("Using pe.conf pe_database_host: #{database_host}")
-          database_host
+          host = @pe_conf["puppet_enterprise::#{pe_role}"]
+          return if host.nil? || host.empty?
+          Puppet.debug("Found pe.conf #{pe_role}: #{host}")
+          host = Puppet[:certname] if ['%{trusted.certname}', '%{::trusted.certname}'].include?(host)
+          Puppet.debug("Using pe.conf #{pe_role}: #{host}")
+          host
         end
 
         def get_infra_nodes_with_class(classname, environment)
