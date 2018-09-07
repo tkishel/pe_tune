@@ -32,7 +32,7 @@ module PuppetX
       end
 
       def initialize(options)
-        # TODO: Replace/remove this unit test workaround.
+        # Disable the initialize method when unit testing the supporting methods.
         return if options[:unit_test]
 
         if options[:current] && (options[:inventory] || options[:local])
@@ -44,11 +44,19 @@ module PuppetX
           output_error_and_exit('The --inventory and --local options are mutually exclusive')
         end
 
+        # Resources and settings for all nodes.
         @collected_nodes = {}
+
+        # Settings common to all nodes.
         @common_settings = {}
+
+        # Alternative to PuppetDB, populated by either the local system or an inventory file.
         @inventory = {}
+
+        # Populated by pe.conf.
         @pe_conf_nodes = {}
 
+        # Options specific to this Tune class.
         @tune_options = {}
         @tune_options[:common]    = options[:common]
         @tune_options[:estimate]  = options[:estimate]
@@ -57,6 +65,7 @@ module PuppetX
         @tune_options[:inventory] = options[:inventory]
         @tune_options[:local]     = options[:local]
 
+        # Options specific to the Calculate class.
         calculate_options = {}
         calculate_options[:memory_per_jruby]       = options[:memory_per_jruby]
         calculate_options[:memory_reserved_for_os] = options[:memory_reserved_for_os]
@@ -64,50 +73,52 @@ module PuppetX
         @calculator   = PuppetX::Puppetlabs::Tune::Calculate.new(calculate_options)
         @configurator = PuppetX::Puppetlabs::Tune::Configuration.new
 
-        # PE-15116 overrides environment and environmentpath in the infrastructure face.
+        # PE-15116 overrides environment and environmentpath in the 'puppet infrastructure' face.
         @environment     = Puppet::Util::Execution.execute('/opt/puppetlabs/puppet/bin/puppet config print environment --section master').chomp
         @environmentpath = Puppet::Util::Execution.execute('/opt/puppetlabs/puppet/bin/puppet config print environmentpath --section master').chomp
 
         if @tune_options[:local]
-          @inventory = read_inventory_local
+          @inventory = use_local_system_as_inventory
         elsif @tune_options[:inventory]
-          @inventory = read_inventory_file
+          @inventory = use_inventory_file_as_inventory
         end
 
         @pe_conf_nodes['puppet_master_host'] = @configurator::find_pe_conf_host('puppet_master_host')
-
         if @pe_conf_nodes['puppet_master_host'] != Puppet[:certname]
-          output_error_and_exit('This command must be run on the Primary Master with a pe.conf')
+          output_error_and_exit('This command must be run on the Primary Master with a puppet_master_host defined in pe.conf')
         end
 
-        unless @inventory.empty?
+        if @tune_options[:local] || @tune_options[:inventory]
           # Use puppet_master_host from inventory instead of pe.conf, if defined in inventory.
           @pe_conf_nodes['puppet_master_host'] = @inventory['roles']['puppet_master_host']   if @inventory['roles']['puppet_master_host']
-          # Add hosts from pe.conf to inventory, if defined.
-          @inventory['roles']['puppet_master_host'] = @pe_conf_nodes['puppet_master_host']   if @pe_conf_nodes['puppet_master_host']
-          @inventory['roles']['console_host']       = @pe_conf_nodes['console_host']         if @pe_conf_nodes['console_host']
-          # Note: puppetdb_host can be a string or an array.
-          @inventory['roles']['puppetdb_host']      = Array(@pe_conf_nodes['puppetdb_host']) if @pe_conf_nodes['puppetdb_host']
-          @inventory['roles']['database_host']      = @pe_conf_nodes['database_host']        if @pe_conf_nodes['database_host']
+
+          # Use hosts from pe.conf in inventory, if defined in pe.conf.
+          # Note: the compile_master and puppetdb_host roles can be a string or an array.
+          @inventory['roles']['puppet_master_host'] = @pe_conf_nodes['puppet_master_host']   unless nil_or_empty?(@pe_conf_nodes['puppet_master_host'])
+          @inventory['roles']['console_host']       = @pe_conf_nodes['console_host']         unless nil_or_empty?(@pe_conf_nodes['console_host'])
+          @inventory['roles']['puppetdb_host']      = Array(@pe_conf_nodes['puppetdb_host']) unless nil_or_empty?(@pe_conf_nodes['puppetdb_host'])
+          @inventory['roles']['database_host']      = @pe_conf_nodes['database_host']        unless nil_or_empty?(@pe_conf_nodes['database_host'])
+
+          # @inventory['roles']['primary_master_replica'] = @pe_conf_nodes['primary_master_replica'] unless nil_or_empty?(@pe_conf_nodes['primary_master_replica'])
+          # @inventory['roles']['compile_master']         = Array(@pe_conf_nodes['compile_master'])  unless nil_or_empty?(@pe_conf_nodes['compile_master'])
 
           @inventory = convert_inventory_roles_to_components(@inventory)
         end
 
-        # TODO: Reconcile primary_master and puppet_master_host.
-        @nodes_with_primary_master         = get_nodes_with('primary_master')
-
-        @nodes_with_primary_master_replica = get_nodes_with('primary_master_replica')
         @nodes_with_master                 = get_nodes_with('master')
-        @nodes_with_compile_master         = get_nodes_with('compile_master')
         @nodes_with_console                = get_nodes_with('console')
         @nodes_with_puppetdb               = get_nodes_with('puppetdb')
         @nodes_with_database               = get_nodes_with('database')
         @nodes_with_amq_broker             = get_nodes_with('amq::broker')
         @nodes_with_orchestrator           = get_nodes_with('orchestrator')
+        @nodes_with_primary_master         = get_nodes_with('primary_master')
+        @nodes_with_primary_master_replica = get_nodes_with('primary_master_replica')
+        @nodes_with_compile_master         = get_nodes_with('compile_master')
 
+        @nodes_with_m_or_pm = (@nodes_with_master + @nodes_with_primary_master).uniq
         @nodes_with_m_or_cm = (@nodes_with_master + @nodes_with_compile_master).uniq
 
-        @primary_masters         = [@pe_conf_nodes['puppet_master_host']]
+        @primary_masters         = [@pe_conf_nodes['puppet_master_host']] # Highlander.
         @replica_masters         = @nodes_with_primary_master_replica
         @compile_masters         = @nodes_with_m_or_cm  - @primary_masters - @replica_masters
         @console_hosts           = @nodes_with_console  - @primary_masters - @replica_masters
@@ -115,8 +126,10 @@ module PuppetX
         @external_database_hosts = @nodes_with_database - @primary_masters - @replica_masters - @compile_masters - @puppetdb_hosts
       end
 
-      # Valid infrastructure 'roles' and 'components'.
       # https://github.com/puppetlabs/puppetlabs-pe_infrastructure/blob/irving/lib/puppet_x/puppetlabs/meep/defaults.rb
+      # There is variation between pe.conf, pe_role, roles, secondary roles, profiles, and classes.
+
+      # Tunable infrastructure 'roles'.
 
       def default_inventory_roles
         {
@@ -125,36 +138,47 @@ module PuppetX
           'puppetdb_host'          => [],
           'database_host'          => nil,
           'primary_master_replica' => nil,
+          'compile_master'         => []
         }
       end
+
+      # Tunable infrastructure 'components'.
 
       def default_inventory_components
         {
-          'primary_master_replica' => [].to_set,
           'master'                 => [].to_set,
-          'compile_master'         => [].to_set,
           'console'                => [].to_set,
           'puppetdb'               => [].to_set,
           'database'               => [].to_set,
-          'amq::broker'            => [].to_set, # Deprecated in PE 2018+
+          'amq::broker'            => [].to_set,
           'orchestrator'           => [].to_set,
+          'primary_master'         => [].to_set,
+          'primary_master_replica' => [].to_set,
+          'compile_master'         => [].to_set
         }
       end
 
-      # Convert infrastructure 'roles' to infrastructure 'components' using sets to eliminate duplicates.
+      # Convert infrastructure 'roles' to infrastructure 'components' using sets instead of arrays to eliminate duplicates.
 
       def convert_inventory_roles_to_components(inventory)
         if inventory['roles']['database_host']
-          Puppet.debug("Converting ['roles']['database_host'] to components for: #{inventory['roles']['database_host']}")
+          Puppet.debug("Converting database_host role to components for: #{inventory['roles']['database_host']}")
           inventory['components']['database'] << inventory['roles']['database_host']
         end
         if inventory['roles']['puppet_master_host']
           Puppet.debug("Converting puppet_master_host role to components for: #{inventory['roles']['puppet_master_host']}")
+          inventory['components']['primary_master']        << inventory['roles']['puppet_master_host']
           inventory['components']['master']                << inventory['roles']['puppet_master_host']
-          inventory['components']['console']               << inventory['roles']['puppet_master_host'] unless inventory['roles']['console_host']
-          inventory['components']['puppetdb']              << inventory['roles']['puppet_master_host'] unless inventory['roles']['puppetdb_host']
-          inventory['components']['database']              << inventory['roles']['puppet_master_host'] unless inventory['roles']['puppetdb_host'] || inventory['roles']['database_host']
-          inventory['components']['amq::broker']           << inventory['roles']['puppet_master_host'] # Deprecated in PE 2018+
+          if nil_or_empty?(inventory['roles']['console_host'])
+            inventory['components']['console']             << inventory['roles']['puppet_master_host']
+          end
+          if nil_or_empty?(inventory['roles']['puppetdb_host'])
+            inventory['components']['puppetdb']            << inventory['roles']['puppet_master_host']
+          end
+          if nil_or_empty?(inventory['roles']['puppetdb_host']) && nil_or_empty?(inventory['roles']['database_host'])
+            inventory['components']['database']            << inventory['roles']['puppet_master_host']
+          end
+          inventory['components']['amq::broker']           << inventory['roles']['puppet_master_host']
           inventory['components']['orchestrator']          << inventory['roles']['puppet_master_host']
         end
         if inventory['roles']['console_host']
@@ -165,7 +189,9 @@ module PuppetX
           inventory['roles']['puppetdb_host'].each do |host|
             Puppet.debug("Converting puppetdb_host role to components for: #{host}")
             inventory['components']['puppetdb'] << host
-            inventory['components']['database'] << inventory['roles']['puppetdb_host'].first unless inventory['roles']['database_host']
+            if nil_or_empty?(inventory['roles']['database_host'])
+              inventory['components']['database'] << inventory['roles']['puppetdb_host'].first
+            end
           end
         end
         if inventory['roles']['primary_master_replica']
@@ -175,8 +201,15 @@ module PuppetX
           inventory['components']['console']                << inventory['roles']['primary_master_replica']
           inventory['components']['puppetdb']               << inventory['roles']['primary_master_replica']
           inventory['components']['database']               << inventory['roles']['primary_master_replica']
-          inventory['components']['amq::broker']            << inventory['roles']['primary_master_replica'] # Deprecated in PE 2018+
+          inventory['components']['amq::broker']            << inventory['roles']['primary_master_replica']
           inventory['components']['orchestrator']           << inventory['roles']['primary_master_replica']
+        end
+        if inventory['roles']['compile_master']
+          inventory['roles']['compile_master'].each do |host|
+            Puppet.debug("Converting compile_master role to components for: #{host}")
+            inventory['components']['compile_master'] << host
+            inventory['components']['master'] << host
+          end
         end
         inventory
       end
@@ -184,7 +217,7 @@ module PuppetX
       # Use the local system to define a monolithic infrastructure master node.
       # This eliminates the dependency upon PuppetDB to query node resources and classes.
 
-      def read_inventory_local
+      def use_local_system_as_inventory
         Puppet.debug('Querying the local system to define a monolithic infrastructure master node')
         hostname = Puppet::Util::Execution.execute('hostname -f').chomp
         cpu = Puppet::Util::Execution.execute('nproc --all').chomp
@@ -212,7 +245,7 @@ module PuppetX
       # Use an inventory file to define infrastructure nodes.
       # This eliminates the dependency upon PuppetDB to query node resources and classes.
 
-      def read_inventory_file
+      def use_inventory_file_as_inventory
         yaml_file = @tune_options[:inventory]
         output_error_and_exit("The inventory file #{yaml_file} does not exist") unless File.exist?(yaml_file)
         Puppet.debug("Using the inventory file #{yaml_file} to define infrastructure nodes")
@@ -223,15 +256,39 @@ module PuppetX
         end
         output_error_and_exit('The inventory file does not contain a nodes hash') unless yaml_inventory['nodes']
         yaml_inventory['roles'] = {} unless yaml_inventory['roles']
-        # Note: puppetdb_host can be a string or an array.
-        yaml_inventory['roles']['puppetdb_host'] = Array(yaml_inventory['roles']['puppetdb_host'])
-        yaml_inventory['components'] = {} unless yaml_inventory['components']
+        # The compile_master and puppetdb_host roles can be a string or an array.
+        yaml_inventory['roles']['compile_master'] = Array(yaml_inventory['roles']['compile_master'])
+        yaml_inventory['roles']['puppetdb_host']  = Array(yaml_inventory['roles']['puppetdb_host'])
         inventory = {
           'nodes'      => yaml_inventory['nodes'],
           'roles'      => default_inventory_roles.merge(yaml_inventory['roles']),
-          'components' => default_inventory_components.merge(yaml_inventory['components']),
+          'components' => default_inventory_components,
         }
         inventory
+      end
+
+      # Sigh
+
+      def nil_or_empty?(variable)
+        return true if (variable.nil? || variable.empty?)
+        false
+      end
+
+      # Convert (for example) 16, 16g, 16384m, 16777216k, or 17179869184b to 17179869184.
+
+      def string_to_bytes(s)
+        value, units = %r{(\d+)\s*(\w?)}.match(s.to_s)[1, 2]
+        unless value.empty?
+          value = value.to_f
+          units = units.empty? ? 'g' : units.downcase
+          case units
+          when 'b' then return value.to_i
+          when 'k' then return (value * (1 << 10)).to_i
+          when 'm' then return (value * (1 << 20)).to_i
+          when 'g' then return (value * (1 << 30)).to_i
+          end
+        end
+        output_error_and_exit("Unable to convert #{s} to bytes, valid units are: b, k, m, g")
       end
 
       # Interface to Puppet::Util::Pe_conf and Puppet::Util::Pe_conf::Recover
@@ -298,23 +355,6 @@ module PuppetX
         @configurator::read_hiera_classifier_overrides(certname, settings, @environment, @environmentpath)
       end
 
-      # Convert (for example) 16, 16g, 16384m, 16777216k, or 17179869184b to 17179869184.
-
-      def string_to_bytes(s)
-        value, units = %r{(\d+)\s*(\w?)}.match(s.to_s)[1, 2]
-        unless value.empty?
-          value = value.to_f
-          units = units.empty? ? 'g' : units.downcase
-          case units
-          when 'b' then return value.to_i
-          when 'k' then return (value * (1 << 10)).to_i
-          when 'm' then return (value * (1 << 20)).to_i
-          when 'g' then return (value * (1 << 30)).to_i
-          end
-        end
-        output_error_and_exit("Unable to convert #{s} to bytes, valid units are: b, k, m, g")
-      end
-
       # Identify this infrastructure.
 
       def unknown_pe_infrastructure?
@@ -337,7 +377,7 @@ module PuppetX
         @external_database_hosts.count > 0
       end
 
-      # Identify component(s) on node.
+      # Identify components on node.
 
       def with_activemq?(certname)
         return false unless certname
