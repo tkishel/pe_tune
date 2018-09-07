@@ -267,7 +267,7 @@ module PuppetX
         inventory
       end
 
-      # Sigh
+      # Array or String
 
       def nil_or_empty?(variable)
         return true if variable.nil? || variable.empty?
@@ -276,36 +276,36 @@ module PuppetX
 
       # Convert (for example) 16, 16g, 16384m, 16777216k, or 17179869184b to 17179869184.
 
-      def string_to_bytes(s, default_unit = 'g')
-        return 0 if nil_or_empty?(s)
-        value, units = %r{(\d+)\s*(\w?)}.match(s.to_s)[1, 2]
-        unless value.empty?
-          value = value.to_f
-          units = units.empty? ? default_unit : units.downcase
-          case units
-          when 'b' then return value.to_i
-          when 'k' then return (value * (1 << 10)).to_i
-          when 'm' then return (value * (1 << 20)).to_i
-          when 'g' then return (value * (1 << 30)).to_i
-          end
+      def string_to_bytes(s, default_units = 'g')
+        return 0 if s.nil?
+        matches = %r{(\d+)\s*(\w?)}.match(s.to_s)
+        output_error_and_exit("Unable to convert #{s} to bytes") if matches.nil?
+        value = matches[1].to_f
+        units = matches[2].empty? ? default_units : matches[2].downcase
+        case units
+        when 'b' then return value.to_i
+        when 'k' then return (value * (1 << 10)).to_i
+        when 'm' then return (value * (1 << 20)).to_i
+        when 'g' then return (value * (1 << 30)).to_i
+        else
+          output_error_and_exit("Unable to convert #{s} to bytes, valid units are: b, k, m, g")
         end
-        output_error_and_exit("Unable to convert #{s} to bytes, valid units are: b, k, m, g")
       end
 
       # Convert (for example) 1g, 1024, 1024m to 1024.
 
-      def string_to_megabytes(s, default_unit = 'm')
-        return 0 if nil_or_empty?(s)
-        value, units = %r{(\d+)\s*(\w?)}.match(s.to_s)[1, 2]
-        unless value.empty?
-          value = value.to_f
-          units = units.empty? ? default_unit : units.downcase
-          case units
-          when 'm' then return value.to_i
-          when 'g' then return (value * (1 << 10)).to_i
-          end
+      def string_to_megabytes(s, default_units = 'm')
+        return 0 if s.nil?
+        matches = %r{(\d+)\s*(\w?)}.match(s.to_s)
+        output_error_and_exit("Unable to convert #{s} to megabytes") if matches.nil?
+        value = matches[1].to_f
+        units = matches[2].empty? ? default_units : matches[2].downcase
+        case units
+        when 'm' then return value.to_i
+        when 'g' then return (value * (1 << 10)).to_i
+        else
+          output_error_and_exit("Unable to convert #{s} to megabytes, valid units are: m, g")
         end
-        output_error_and_exit("Unable to convert #{s} to megabytes, valid units are: m, g")
       end
 
       # Interface to Puppet::Util::Pe_conf and Puppet::Util::Pe_conf::Recover
