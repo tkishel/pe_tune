@@ -107,6 +107,18 @@ describe PuppetX::Puppetlabs::Tune do
       expect(tune::string_to_bytes(bytes_string)).to eq(bytes)
     end
 
+    it 'can convert a string to megabytes with a unit' do
+      bytes_string = '1g'
+      bytes = 1024
+      expect(tune::string_to_megabytes(bytes_string)).to eq(bytes)
+    end
+
+    it 'can convert a string to megabytes without a unit' do
+      bytes_string = '1024'
+      bytes = 1024
+      expect(tune::string_to_megabytes(bytes_string)).to eq(bytes)
+    end
+
     it 'can read node resources from an inventory' do
       nodes = {
         'master' => { 'resources' => { 'cpu' => 8, 'ram' => '16g' } },

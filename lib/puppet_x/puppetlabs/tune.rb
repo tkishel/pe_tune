@@ -67,8 +67,8 @@ module PuppetX
 
         # Options specific to the Calculate class.
         calculate_options = {}
-        calculate_options[:memory_per_jruby]       = options[:memory_per_jruby]
-        calculate_options[:memory_reserved_for_os] = options[:memory_reserved_for_os]
+        calculate_options[:memory_per_jruby]       = string_to_megabytes(options[:memory_per_jruby])
+        calculate_options[:memory_reserved_for_os] = string_to_megabytes(options[:memory_reserved_for_os])
 
         @calculator   = PuppetX::Puppetlabs::Tune::Calculate.new(calculate_options)
         @configurator = PuppetX::Puppetlabs::Tune::Configuration.new
@@ -270,17 +270,18 @@ module PuppetX
       # Sigh
 
       def nil_or_empty?(variable)
-        return true if (variable.nil? || variable.empty?)
+        return true if variable.nil? || variable.empty?
         false
       end
 
       # Convert (for example) 16, 16g, 16384m, 16777216k, or 17179869184b to 17179869184.
 
-      def string_to_bytes(s)
+      def string_to_bytes(s, default_unit = 'g')
+        return 0 if nil_or_empty?(s)
         value, units = %r{(\d+)\s*(\w?)}.match(s.to_s)[1, 2]
         unless value.empty?
           value = value.to_f
-          units = units.empty? ? 'g' : units.downcase
+          units = units.empty? ? default_unit : units.downcase
           case units
           when 'b' then return value.to_i
           when 'k' then return (value * (1 << 10)).to_i
@@ -289,6 +290,22 @@ module PuppetX
           end
         end
         output_error_and_exit("Unable to convert #{s} to bytes, valid units are: b, k, m, g")
+      end
+
+      # Convert (for example) 1g, 1024, 1024m to 1024.
+
+      def string_to_megabytes(s, default_unit = 'm')
+        return 0 if nil_or_empty?(s)
+        value, units = %r{(\d+)\s*(\w?)}.match(s.to_s)[1, 2]
+        unless value.empty?
+          value = value.to_f
+          units = units.empty? ? default_unit : units.downcase
+          case units
+          when 'm' then return value.to_i
+          when 'g' then return (value * (1 << 10)).to_i
+          end
+        end
+        output_error_and_exit("Unable to convert #{s} to megabytes, valid units are: m, g")
       end
 
       # Interface to Puppet::Util::Pe_conf and Puppet::Util::Pe_conf::Recover
@@ -830,10 +847,10 @@ if File.expand_path(__FILE__) == File.expand_path($PROGRAM_NAME)
       options[:local] = true
     end
     opts.on('--memory_per_jruby MB', 'Amount of RAM to allocate for each Puppet Server JRuby') do |me|
-      options[:memory_per_jruby] = me.to_i
+      options[:memory_per_jruby] = me
     end
     opts.on('--memory_reserved_for_os MB', 'Amount of RAM to reserve for the operating system') do |mo|
-      options[:memory_reserved_for_os] = mo.to_i
+      options[:memory_reserved_for_os] = mo
     end
     opts.on('-h', '--help', 'Display help') do
       puts opts
