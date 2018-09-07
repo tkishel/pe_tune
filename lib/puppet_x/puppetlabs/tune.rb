@@ -82,12 +82,13 @@ module PuppetX
 
         unless @inventory.empty?
           # Use puppet_master_host from inventory instead of pe.conf, if defined in inventory.
-          @pe_conf_nodes['puppet_master_host'] = @inventory['roles']['puppet_master_host'] if @inventory['roles']['puppet_master_host']
+          @pe_conf_nodes['puppet_master_host'] = @inventory['roles']['puppet_master_host']   if @inventory['roles']['puppet_master_host']
           # Add hosts from pe.conf to inventory, if defined.
-          @inventory['roles']['puppet_master_host'] = @pe_conf_nodes['puppet_master_host'] if @pe_conf_nodes['puppet_master_host']
-          @inventory['roles']['console_host']       = @pe_conf_nodes['console_host']       if @pe_conf_nodes['console_host']
-          @inventory['roles']['puppetdb_host']      = @pe_conf_nodes['puppetdb_host']      if @pe_conf_nodes['puppetdb_host']
-          @inventory['roles']['database_host']      = @pe_conf_nodes['database_host']      if @pe_conf_nodes['database_host']
+          @inventory['roles']['puppet_master_host'] = @pe_conf_nodes['puppet_master_host']   if @pe_conf_nodes['puppet_master_host']
+          @inventory['roles']['console_host']       = @pe_conf_nodes['console_host']         if @pe_conf_nodes['console_host']
+          # Note: puppetdb_host can be a string or an array.
+          @inventory['roles']['puppetdb_host']      = Array(@pe_conf_nodes['puppetdb_host']) if @pe_conf_nodes['puppetdb_host']
+          @inventory['roles']['database_host']      = @pe_conf_nodes['database_host']        if @pe_conf_nodes['database_host']
 
           @inventory = convert_inventory_roles_to_components(@inventory)
         end
@@ -96,7 +97,6 @@ module PuppetX
         @nodes_with_primary_master         = get_nodes_with('primary_master')
 
         @nodes_with_primary_master_replica = get_nodes_with('primary_master_replica')
-        @nodes_with_certificate_authority  = get_nodes_with('certificate_authority')
         @nodes_with_master                 = get_nodes_with('master')
         @nodes_with_compile_master         = get_nodes_with('compile_master')
         @nodes_with_console                = get_nodes_with('console')
@@ -122,7 +122,7 @@ module PuppetX
         {
           'puppet_master_host'     => nil,
           'console_host'           => nil,
-          'puppetdb_host'          => nil,
+          'puppetdb_host'          => [],
           'database_host'          => nil,
           'primary_master_replica' => nil,
         }
@@ -131,7 +131,6 @@ module PuppetX
       def default_inventory_components
         {
           'primary_master_replica' => [].to_set,
-          'certificate_authority'  => [].to_set,
           'master'                 => [].to_set,
           'compile_master'         => [].to_set,
           'console'                => [].to_set,
@@ -145,6 +144,10 @@ module PuppetX
       # Convert infrastructure 'roles' to infrastructure 'components' using sets to eliminate duplicates.
 
       def convert_inventory_roles_to_components(inventory)
+        if inventory['roles']['database_host']
+          Puppet.debug("Converting ['roles']['database_host'] to components for: #{inventory['roles']['database_host']}")
+          inventory['components']['database'] << inventory['roles']['database_host']
+        end
         if inventory['roles']['puppet_master_host']
           Puppet.debug("Converting puppet_master_host role to components for: #{inventory['roles']['puppet_master_host']}")
           inventory['components']['master']                << inventory['roles']['puppet_master_host']
@@ -159,13 +162,11 @@ module PuppetX
           inventory['components']['console'] << inventory['roles']['console_host']
         end
         if inventory['roles']['puppetdb_host']
-          Puppet.debug("Converting puppetdb_host role to components for: #{inventory['roles']['puppetdb_host']}")
-          inventory['components']['puppetdb'] << inventory['roles']['puppetdb_host']
-          inventory['components']['database'] << inventory['roles']['puppetdb_host'] unless inventory['roles']['database_host']
-        end
-        if inventory['roles']['database_host']
-          Puppet.debug("Converting ['roles']['database_host'] to components for: #{inventory['roles']['database_host']}")
-          inventory['components']['database'] << inventory['roles']['database_host']
+          inventory['roles']['puppetdb_host'].each do |host|
+            Puppet.debug("Converting puppetdb_host role to components for: #{host}")
+            inventory['components']['puppetdb'] << host
+            inventory['components']['database'] << inventory['roles']['puppetdb_host'].first unless inventory['roles']['database_host']
+          end
         end
         if inventory['roles']['primary_master_replica']
           Puppet.debug("Converting primary_master_replica role to components for: #{inventory['roles']['primary_master_replica']}")
@@ -222,6 +223,8 @@ module PuppetX
         end
         output_error_and_exit('The inventory file does not contain a nodes hash') unless yaml_inventory['nodes']
         yaml_inventory['roles'] = {} unless yaml_inventory['roles']
+        # Note: puppetdb_host can be a string or an array.
+        yaml_inventory['roles']['puppetdb_host'] = Array(yaml_inventory['roles']['puppetdb_host'])
         yaml_inventory['components'] = {} unless yaml_inventory['components']
         inventory = {
           'nodes'      => yaml_inventory['nodes'],
@@ -246,7 +249,6 @@ module PuppetX
             # Key names are capitalized in PuppetDB.
             class_name = classname.split('::').map(&:capitalize).join('::')
             @configurator::get_infra_nodes_with_class(class_name, @environment)
-            # output_error_and_exit("Inventory file does not contain class: #{class_name}")
           end
         else
           # Key names are capitalized in PuppetDB.
@@ -263,17 +265,19 @@ module PuppetX
         if @inventory['nodes']
           if @inventory['nodes'][certname]
             node_facts = @inventory['nodes'][certname]['resources']
+            output_error_and_exit("Cannot read resources for node: #{certname}") unless node_facts['cpu'] || node_facts['ram']
             resources['cpu'] = node_facts['cpu'].to_i
             resources['ram'] = (string_to_bytes(node_facts['ram']).to_i / 1024 / 1024).to_i
             Puppet.debug("Found node in inventory: #{certname} with CPU: #{resources['cpu']} and RAM: #{resources['ram']}")
           else
             node_facts = @configurator::read_node_facts(certname, @environment)
+            output_error_and_exit("Cannot query resources for node: #{certname}") unless node_facts['processors'] || node_facts['memory']
             resources['cpu'] = node_facts['processors']['count'].to_i
             resources['ram'] = (node_facts['memory']['system']['total_bytes'].to_i / 1024 / 1024).to_i
-            # output_error_and_exit("Inventory file does not contain resources for node: #{certname}")
           end
         else
           node_facts = @configurator::read_node_facts(certname, @environment)
+          output_error_and_exit("Cannot query resources for node: #{certname}") unless node_facts['processors'] || node_facts['memory']
           resources['cpu'] = node_facts['processors']['count'].to_i
           resources['ram'] = (node_facts['memory']['system']['total_bytes'].to_i / 1024 / 1024).to_i
         end

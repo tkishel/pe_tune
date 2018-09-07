@@ -115,39 +115,201 @@ describe PuppetX::Puppetlabs::Tune do
       expect(tune::get_resources_for_node('master')).to eq(resources)
     end
 
-    it 'can convert inventory roles to profiles' do
+    it 'can convert mono inventory roles to profiles' do
       inventory = {
         'roles' => {
-          'puppet_master_host' => 'master',
-          'console_host'       => 'console',
-          'puppetdb_host'      => 'puppetdb',
-          'database_host'      => nil,
+          'puppet_master_host'     => 'master',
+          'console_host'           => nil,
+          'puppetdb_host'          => nil,
+          'database_host'          => nil,
+          'primary_master_replica' => nil
         },
         'components' => {
-          'primary_master_replica' => [],
-          'master'                 => [],
-          'console'                => [],
-          'puppetdb'               => [],
-          'database'               => [],
-          'amq::broker'            => [],
-          'orchestrator'           => []
+          'primary_master_replica' => [].to_set,
+          'master'                 => [].to_set,
+          'console'                => [].to_set,
+          'puppetdb'               => [].to_set,
+          'database'               => [].to_set,
+          'amq::broker'            => [].to_set,
+          'orchestrator'           => [].to_set
         }
       }
       result = {
         'roles' => {
-          'puppet_master_host' => 'master',
-          'console_host'       => 'console',
-          'puppetdb_host'      => 'puppetdb',
-          'database_host'      => nil,
+          'puppet_master_host'     => 'master',
+          'console_host'           => nil,
+          'puppetdb_host'          => nil,
+          'database_host'          => nil,
+          'primary_master_replica' => nil
         },
         'components' => {
-          'primary_master_replica' => [],
-          'master'                 => ['master'],
-          'console'                => ['console'],
-          'puppetdb'               => ['puppetdb'],
-          'database'               => ['puppetdb'],
-          'amq::broker'            => ['master'],
-          'orchestrator'           => ['master']
+          'primary_master_replica' => [].to_set,
+          'master'                 => ['master'].to_set,
+          'console'                => ['master'].to_set,
+          'puppetdb'               => ['master'].to_set,
+          'database'               => ['master'].to_set,
+          'amq::broker'            => ['master'].to_set,
+          'orchestrator'           => ['master'].to_set
+        }
+      }
+      expect(tune::convert_inventory_roles_to_components(inventory)).to eq(result)
+    end
+
+    it 'can convert split inventory roles to profiles' do
+      inventory = {
+        'roles' => {
+          'puppet_master_host'     => 'master',
+          'console_host'           => 'console',
+          'puppetdb_host'          => ['puppetdb'],
+          'database_host'          => nil,
+          'primary_master_replica' => nil
+        },
+        'components' => {
+          'primary_master_replica' => [].to_set,
+          'master'                 => [].to_set,
+          'console'                => [].to_set,
+          'puppetdb'               => [].to_set,
+          'database'               => [].to_set,
+          'amq::broker'            => [].to_set,
+          'orchestrator'           => [].to_set
+        }
+      }
+      result = {
+        'roles' => {
+          'puppet_master_host'     => 'master',
+          'console_host'           => 'console',
+          'puppetdb_host'          => ['puppetdb'],
+          'database_host'          => nil,
+          'primary_master_replica' => nil
+        },
+        'components' => {
+          'primary_master_replica' => [].to_set,
+          'master'                 => ['master'].to_set,
+          'console'                => ['console'].to_set,
+          'puppetdb'               => ['puppetdb'].to_set,
+          'database'               => ['puppetdb'].to_set,
+          'amq::broker'            => ['master'].to_set,
+          'orchestrator'           => ['master'].to_set
+        }
+      }
+      expect(tune::convert_inventory_roles_to_components(inventory)).to eq(result)
+    end
+
+    it 'can convert split inventory roles to profiles with a database host' do
+      inventory = {
+        'roles' => {
+          'puppet_master_host'     => 'master',
+          'console_host'           => 'console',
+          'puppetdb_host'          => ['puppetdb'],
+          'database_host'          => 'database',
+          'primary_master_replica' => nil
+        },
+        'components' => {
+          'primary_master_replica' => [].to_set,
+          'master'                 => [].to_set,
+          'console'                => [].to_set,
+          'puppetdb'               => [].to_set,
+          'database'               => [].to_set,
+          'amq::broker'            => [].to_set,
+          'orchestrator'           => [].to_set
+        }
+      }
+      result = {
+        'roles' => {
+          'puppet_master_host'     => 'master',
+          'console_host'           => 'console',
+          'puppetdb_host'          => ['puppetdb'],
+          'database_host'          => 'database',
+          'primary_master_replica' => nil
+        },
+        'components' => {
+          'primary_master_replica' => [].to_set,
+          'master'                 => ['master'].to_set,
+          'console'                => ['console'].to_set,
+          'puppetdb'               => ['puppetdb'].to_set,
+          'database'               => ['database'].to_set,
+          'amq::broker'            => ['master'].to_set,
+          'orchestrator'           => ['master'].to_set
+        }
+      }
+      expect(tune::convert_inventory_roles_to_components(inventory)).to eq(result)
+    end
+
+    it 'can convert split inventory roles to profiles with an array of puppetdb hosts' do
+      inventory = {
+        'roles' => {
+          'puppet_master_host'     => 'master',
+          'console_host'           => 'console',
+          'puppetdb_host'          => ['puppetdb1', 'puppetdb2'],
+          'database_host'          => nil,
+          'primary_master_replica' => nil
+        },
+        'components' => {
+          'primary_master_replica' => [].to_set,
+          'master'                 => [].to_set,
+          'console'                => [].to_set,
+          'puppetdb'               => [].to_set,
+          'database'               => [].to_set,
+          'amq::broker'            => [].to_set,
+          'orchestrator'           => [].to_set
+        }
+      }
+      result = {
+        'roles' => {
+          'puppet_master_host'     => 'master',
+          'console_host'           => 'console',
+          'puppetdb_host'          => ['puppetdb1', 'puppetdb2'],
+          'database_host'          => nil,
+          'primary_master_replica' => nil
+        },
+        'components' => {
+          'primary_master_replica' => [].to_set,
+          'master'                 => ['master'].to_set,
+          'console'                => ['console'].to_set,
+          'puppetdb'               => ['puppetdb1', 'puppetdb2'].to_set,
+          'database'               => ['puppetdb1'].to_set,
+          'amq::broker'            => ['master'].to_set,
+          'orchestrator'           => ['master'].to_set
+        }
+      }
+      expect(tune::convert_inventory_roles_to_components(inventory)).to eq(result)
+    end
+
+    it 'can convert split inventory roles to profiles with database host and an array of puppetdb hosts' do
+      inventory = {
+        'roles' => {
+          'puppet_master_host'     => 'master',
+          'console_host'           => 'console',
+          'puppetdb_host'          => ['puppetdb1', 'puppetdb2'],
+          'database_host'          => 'database',
+          'primary_master_replica' => nil
+        },
+        'components' => {
+          'primary_master_replica' => [].to_set,
+          'master'                 => [].to_set,
+          'console'                => [].to_set,
+          'puppetdb'               => [].to_set,
+          'database'               => [].to_set,
+          'amq::broker'            => [].to_set,
+          'orchestrator'           => [].to_set
+        }
+      }
+      result = {
+        'roles' => {
+          'puppet_master_host'     => 'master',
+          'console_host'           => 'console',
+          'puppetdb_host'          => ['puppetdb1', 'puppetdb2'],
+          'database_host'          => 'database',
+          'primary_master_replica' => nil
+        },
+        'components' => {
+          'primary_master_replica' => [].to_set,
+          'master'                 => ['master'].to_set,
+          'console'                => ['console'].to_set,
+          'puppetdb'               => ['puppetdb1', 'puppetdb2'].to_set,
+          'database'               => ['database'].to_set,
+          'amq::broker'            => ['master'].to_set,
+          'orchestrator'           => ['master'].to_set
         }
       }
       expect(tune::convert_inventory_roles_to_components(inventory)).to eq(result)

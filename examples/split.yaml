@@ -51,5 +51,5 @@ roles:
 
 components:
   compile_master:
-    - compile-master.example.com
+    - compile-master1.example.com
     - compile-master2.example.com
