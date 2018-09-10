@@ -15,6 +15,20 @@ describe PuppetX::Puppetlabs::Tune do
   end
 
   context 'with its supporting methods' do
+    let(:empty_components) do
+      {
+        'master'                 => [].to_set,
+        'console'                => [].to_set,
+        'puppetdb'               => [].to_set,
+        'database'               => [].to_set,
+        'amq::broker'            => [].to_set,
+        'orchestrator'           => [].to_set,
+        'primary_master'         => [].to_set,
+        'primary_master_replica' => [].to_set,
+        'compile_master'         => [].to_set
+      }
+    end
+
     it 'can detect an unknown infrastructure' do
       tune.instance_variable_set(:@primary_masters,  [])
       expect(tune::unknown_pe_infrastructure?).to eq(true)
@@ -23,9 +37,7 @@ describe PuppetX::Puppetlabs::Tune do
     it 'can detect a monolithic infrastructure' do
       tune.instance_variable_set(:@console_hosts,  [])
       tune.instance_variable_set(:@puppetdb_hosts, [])
-      tune.instance_variable_set(:@external_database_hosts, [])
       expect(tune::monolithic?).to eq(true)
-      expect(tune::with_external_database?).to eq(false)
     end
 
     it 'can detect a split infrastructure' do
@@ -35,11 +47,11 @@ describe PuppetX::Puppetlabs::Tune do
     end
 
     it 'can detect a replica master' do
-      tune.instance_variable_set(:@replica_masters, ['HA1'])
+      tune.instance_variable_set(:@replica_masters, ['replica'])
       expect(tune::with_ha?).to eq(true)
     end
 
-    it 'can detect a compile master' do
+    it 'can detect compile masters' do
       tune.instance_variable_set(:@compile_masters, ['compile'])
       expect(tune::with_compile_masters?).to eq(true)
     end
@@ -52,14 +64,24 @@ describe PuppetX::Puppetlabs::Tune do
       expect(tune::with_external_database?).to eq(true)
     end
 
-    it 'can detect the puppetdb service on a host' do
-      tune.instance_variable_set(:@nodes_with_puppetdb, ['puppetdb'])
-      expect(tune::with_puppetdb?('puppetdb')).to eq(true)
+    it 'can detect the console service on a host' do
+      tune.instance_variable_set(:@nodes_with_console, ['console'])
+      expect(tune::with_console?('console')).to eq(true)
     end
 
     it 'can detect the database service on a host' do
-      tune.instance_variable_set(:@nodes_with_database, ['master'])
-      expect(tune::with_database?('master')).to eq(true)
+      tune.instance_variable_set(:@nodes_with_database, ['database'])
+      expect(tune::with_database?('database')).to eq(true)
+    end
+
+    it 'can detect the orchestrator service on a host' do
+      tune.instance_variable_set(:@nodes_with_orchestrator, ['orchestrator'])
+      expect(tune::with_orchestrator?('orchestrator')).to eq(true)
+    end
+
+    it 'can detect the puppetdb service on a host' do
+      tune.instance_variable_set(:@nodes_with_puppetdb, ['puppetdb'])
+      expect(tune::with_puppetdb?('puppetdb')).to eq(true)
     end
 
     # it 'can detect that JRuby9K is enabled for the puppetsever service' do
@@ -128,6 +150,27 @@ describe PuppetX::Puppetlabs::Tune do
       expect(tune::get_resources_for_node('master')).to eq(resources)
     end
 
+    it 'can use the local system as inventory' do
+      allow(Puppet::Util::Execution).to receive(:execute).with('hostname -f').and_return('master.example.com')
+      allow(Puppet::Util::Execution).to receive(:execute).with('nproc --all').and_return('4')
+      allow(Puppet::Util::Execution).to receive(:execute).with('free -b | grep Mem').and_return('Mem: 8589934592')
+      inventory = {
+        'nodes' => {
+          'master.example.com' => {
+            'resources' => {
+              'cpu' => '4',
+              'ram' => '8589934592b',
+            }
+          }
+        },
+        'roles' => {
+          'puppet_master_host' => 'master.example.com',
+        },
+        'components' => empty_components
+      }
+      expect(tune::use_local_system_as_inventory).to eq(inventory)
+    end
+
     it 'can convert mono inventory roles to profiles' do
       inventory = {
         'roles' => {
@@ -138,17 +181,7 @@ describe PuppetX::Puppetlabs::Tune do
           'primary_master_replica' => nil,
           'compile_master'         => nil
         },
-        'components' => {
-          'master'                 => [].to_set,
-          'console'                => [].to_set,
-          'puppetdb'               => [].to_set,
-          'database'               => [].to_set,
-          'amq::broker'            => [].to_set,
-          'orchestrator'           => [].to_set,
-          'primary_master'         => [].to_set,
-          'primary_master_replica' => [].to_set,
-          'compile_master'         => [].to_set
-        }
+        'components' => empty_components
       }
       result = {
         'roles' => {
@@ -184,17 +217,7 @@ describe PuppetX::Puppetlabs::Tune do
           'primary_master_replica' => nil,
           'compile_master'         => ['compile']
         },
-        'components' => {
-          'master'                 => [].to_set,
-          'console'                => [].to_set,
-          'puppetdb'               => [].to_set,
-          'database'               => [].to_set,
-          'amq::broker'            => [].to_set,
-          'orchestrator'           => [].to_set,
-          'primary_master'         => [].to_set,
-          'primary_master_replica' => [].to_set,
-          'compile_master'         => [].to_set
-        }
+        'components' => empty_components
       }
       result = {
         'roles' => {
@@ -230,17 +253,7 @@ describe PuppetX::Puppetlabs::Tune do
           'primary_master_replica' => nil,
           'compile_master'         => nil
         },
-        'components' => {
-          'master'                 => [].to_set,
-          'console'                => [].to_set,
-          'puppetdb'               => [].to_set,
-          'database'               => [].to_set,
-          'amq::broker'            => [].to_set,
-          'orchestrator'           => [].to_set,
-          'primary_master'         => [].to_set,
-          'primary_master_replica' => [].to_set,
-          'compile_master'         => [].to_set
-        }
+        'components' => empty_components
       }
       result = {
         'roles' => {
@@ -276,17 +289,7 @@ describe PuppetX::Puppetlabs::Tune do
           'primary_master_replica' => nil,
           'compile_master'         => nil
         },
-        'components' => {
-          'master'                 => [].to_set,
-          'console'                => [].to_set,
-          'puppetdb'               => [].to_set,
-          'database'               => [].to_set,
-          'amq::broker'            => [].to_set,
-          'orchestrator'           => [].to_set,
-          'primary_master'         => [].to_set,
-          'primary_master_replica' => [].to_set,
-          'compile_master'         => [].to_set
-        }
+        'components' => empty_components
       }
       result = {
         'roles' => {
@@ -322,17 +325,7 @@ describe PuppetX::Puppetlabs::Tune do
           'primary_master_replica' => nil,
           'compile_master'         => nil
         },
-        'components' => {
-          'master'                 => [].to_set,
-          'console'                => [].to_set,
-          'puppetdb'               => [].to_set,
-          'database'               => [].to_set,
-          'amq::broker'            => [].to_set,
-          'orchestrator'           => [].to_set,
-          'primary_master'         => [].to_set,
-          'primary_master_replica' => [].to_set,
-          'compile_master'         => [].to_set
-        }
+        'components' => empty_components
       }
       result = {
         'roles' => {
@@ -368,17 +361,7 @@ describe PuppetX::Puppetlabs::Tune do
           'primary_master_replica' => nil,
           'compile_master'         => nil
         },
-        'components' => {
-          'master'                 => [].to_set,
-          'console'                => [].to_set,
-          'puppetdb'               => [].to_set,
-          'database'               => [].to_set,
-          'amq::broker'            => [].to_set,
-          'orchestrator'           => [].to_set,
-          'primary_master'         => [].to_set,
-          'primary_master_replica' => [].to_set,
-          'compile_master'         => [].to_set
-        }
+        'components' => empty_components
       }
       result = {
         'roles' => {

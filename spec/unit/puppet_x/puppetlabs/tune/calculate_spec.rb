@@ -353,6 +353,20 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
   end
 
   context 'with its supporting methods' do
+    it 'can calculate a reasonable sample of agent runs based upon node count and run interval' do
+      expect((calculator.send :calculate_run_sample, 1,    30)).to eq(2880)
+      expect((calculator.send :calculate_run_sample, 5000,  0)).to eq(5000)
+      expect((calculator.send :calculate_run_sample, 5000, 30)).to eq(10000)
+    end
+
+    it 'can calculate the theoretical maximum number of nodes that can managed by an infrastructure' do
+      expect((calculator.send :calculate_maximum_nodes, 20, 1, 30)).to eq(1)
+    end
+
+    it 'can calculate the theoretical minimum number of jrubies required for an infrastructure' do
+      expect((calculator.send :calculate_minimum_jrubies, 100, 20, 30)).to eq(134)
+    end
+
     it 'can calculate a setting based upon number of processors' do
       expect((calculator.send :fit_to_processors, 1,  'S', 'M', 'L')).to eq('S')
       expect((calculator.send :fit_to_processors, 4,  'S', 'M', 'L')).to eq('S')
@@ -373,6 +387,23 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       expect((calculator.send :clamp_percent_of_resource, 4096, 50, 1024, 3072)).to eq(2048)
       expect((calculator.send :clamp_percent_of_resource, 4096, 10, 1024, 3072)).to eq(1024)
       expect((calculator.send :clamp_percent_of_resource, 4096, 90, 1024, 3072)).to eq(3072)
+    end
+
+    it 'can test if a number is within a percentage of another number' do
+      expect((calculator.send :within_percent?, 80,  100, 5)).to eq(false)
+      expect((calculator.send :within_percent?, 95,  100, 5)).to eq(true)
+      expect((calculator.send :within_percent?, 100, 100, 5)).to eq(false)
+    end
+
+    it 'can calculate the nearest power of two' do
+      expect((calculator.send :nearest_power_of_two,  511)).to eq(512)
+      expect((calculator.send :nearest_power_of_two,  512)).to eq(512)
+      expect((calculator.send :nearest_power_of_two,  513)).to eq(512)
+      expect((calculator.send :nearest_power_of_two,  767)).to eq(512)
+      expect((calculator.send :nearest_power_of_two,  768)).to eq(1024)
+      expect((calculator.send :nearest_power_of_two, 1023)).to eq(1024)
+      expect((calculator.send :nearest_power_of_two, 1024)).to eq(1024)
+      expect((calculator.send :nearest_power_of_two, 1025)).to eq(1024)
     end
   end
 end
