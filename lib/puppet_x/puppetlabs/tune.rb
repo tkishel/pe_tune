@@ -435,6 +435,7 @@ module PuppetX
       # Identify configuration of node.
 
       def with_jruby9k_enabled?(certname)
+        return true if Gem::Version.new(Puppet.version) >= Gem::Version.new('6.0.0')
         jr9kjar = '/opt/puppetlabs/server/apps/puppetserver/jruby-9k.jar'
         available = File.exist?(jr9kjar)
         setting = 'puppet_enterprise::master::puppetserver::jruby_9k_enabled'
