@@ -30,57 +30,77 @@ describe PuppetX::Puppetlabs::Tune do
     end
 
     it 'can detect an unknown infrastructure' do
-      tune.instance_variable_set(:@primary_masters,  [])
+      nodes = { 'primary_master' => [] }
+      tune.instance_variable_set(:@nodes, nodes)
       expect(tune::unknown_pe_infrastructure?).to eq(true)
     end
 
     it 'can detect a monolithic infrastructure' do
-      tune.instance_variable_set(:@console_hosts,  [])
-      tune.instance_variable_set(:@puppetdb_hosts, [])
+      nodes = {
+        'console_hosts'  => [],
+        'puppetdb_hosts' => [],
+      }
+      tune.instance_variable_set(:@nodes, nodes)
       expect(tune::monolithic?).to eq(true)
     end
 
     it 'can detect a split infrastructure' do
-      tune.instance_variable_set(:@console_hosts,  ['console'])
-      tune.instance_variable_set(:@puppetdb_hosts, ['puppetdb'])
+      nodes = {
+        'console_hosts'  => ['console'],
+        'puppetdb_hosts' => ['puppetdb'],
+      }
+      tune.instance_variable_set(:@nodes, nodes)
       expect(tune::monolithic?).to eq(false)
     end
 
     it 'can detect a replica master' do
-      tune.instance_variable_set(:@replica_masters, ['replica'])
+      nodes = { 'replica_masters' => ['replica'] }
+      tune.instance_variable_set(:@nodes, nodes)
       expect(tune::with_ha?).to eq(true)
     end
 
     it 'can detect compile masters' do
-      tune.instance_variable_set(:@compile_masters, ['compile'])
+      nodes = { 'compile_masters' => ['compile'] }
+      tune.instance_variable_set(:@nodes, nodes)
       expect(tune::with_compile_masters?).to eq(true)
     end
 
     it 'can detect an external database host' do
-      tune.instance_variable_set(:@primary_masters,  ['master'])
-      tune.instance_variable_set(:@console_hosts,    [])
-      tune.instance_variable_set(:@puppetdb_hosts,   [])
-      tune.instance_variable_set(:@external_database_hosts, ['postgresql'])
+      nodes = {
+        'primary_master' => ['master'],
+        'console_hosts'  => [],
+        'puppetdb_hosts' => [],
+        'database_hosts' => ['postgresql'],
+      }
+      tune.instance_variable_set(:@nodes, nodes)
       expect(tune::with_external_database?).to eq(true)
     end
 
     it 'can detect the console service on a host' do
-      tune.instance_variable_set(:@nodes_with_console, ['console'])
+      nodes_with = { 'console' => ['console'] }
+      tune.instance_variable_set(:@nodes_with, nodes_with)
       expect(tune::with_console?('console')).to eq(true)
     end
 
     it 'can detect the database service on a host' do
-      tune.instance_variable_set(:@nodes_with_database, ['database'])
+      nodes = { 'compile_masters' => ['compile'] }
+      tune.instance_variable_set(:@nodes, nodes)
+      nodes_with = { 'database' => ['database'] }
+      tune.instance_variable_set(:@nodes_with, nodes_with)
       expect(tune::with_database?('database')).to eq(true)
     end
 
     it 'can detect the orchestrator service on a host' do
-      tune.instance_variable_set(:@nodes_with_orchestrator, ['orchestrator'])
+      nodes = { 'compile_masters' => ['compile'] }
+      tune.instance_variable_set(:@nodes, nodes)
+      nodes_with = { 'orchestrator' => ['orchestrator'] }
+      tune.instance_variable_set(:@nodes_with, nodes_with)
       expect(tune::with_orchestrator?('orchestrator')).to eq(true)
     end
 
     it 'can detect the puppetdb service on a host' do
-      tune.instance_variable_set(:@nodes_with_puppetdb, ['puppetdb'])
+      nodes_with = { 'puppetdb' => ['puppetdb'] }
+      tune.instance_variable_set(:@nodes_with, nodes_with)
       expect(tune::with_puppetdb?('puppetdb')).to eq(true)
     end
 
@@ -89,14 +109,14 @@ describe PuppetX::Puppetlabs::Tune do
 
     it 'can extract common settings' do
       tune.instance_variable_set(:@tune_options, :common => true)
-      tune.instance_variable_set(:@common_settings, {})
+      tune.instance_variable_set(:@collected_common_settings, {})
       collected_nodes = {
         'node_1' => { 'settings' => { 'a' => 1, 'b' => 'b' } },
         'node_2' => { 'settings' => { 'a' => 2, 'b' => 'b' } }
       }
       common_settings = { 'b' => 'b' }
       tune.instance_variable_set(:@collected_nodes, collected_nodes)
-      expect(tune::extract_common_optimized_settings).to eq(common_settings)
+      expect(tune::collect_common_optimized_settings).to eq(common_settings)
     end
 
     it 'can enforce minimum system requirements' do
