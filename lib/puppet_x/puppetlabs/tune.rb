@@ -53,9 +53,6 @@ module PuppetX
         # Nodes from either the local system or an inventory file.
         @inventory = {}
 
-        # Nodes from pe.conf.
-        @pe_conf_nodes = {}
-
         # Nodes with classes from inventory or PuppetDB.
         @nodes_with = {}
 
@@ -85,59 +82,45 @@ module PuppetX
 
         @configurator = PuppetX::Puppetlabs::Tune::Configuration.new
 
-        @pe_conf_nodes['puppet_master_host'] = @configurator::find_pe_conf_host('puppet_master_host')
-        if @pe_conf_nodes['puppet_master_host'] != Puppet[:certname]
-          output_error_and_exit('This command must be run on the Primary Master with a puppet_master_host defined in pe.conf')
-        end
-
         if @tune_options[:local]
           @inventory = use_local_system_as_inventory
         elsif @tune_options[:inventory]
           @inventory = use_inventory_file_as_inventory
         end
 
-        # If using an inventory, merge inventory with pe.conf, then convert inventory roles to components.
+        # If using an inventory, convert inventory roles to components.
         if @tune_options[:local] || @tune_options[:inventory]
-          # Use puppet_master_host from inventory instead of pe.conf, if defined in inventory.
-          @pe_conf_nodes['puppet_master_host'] = @inventory['roles']['puppet_master_host']   if @inventory['roles']['puppet_master_host']
-          # Use nodes from pe.conf in inventory, if defined in pe.conf.
-          # Note: the compile_master and puppetdb_host roles may be an Array of String or a String.
-          @inventory['roles']['puppet_master_host'] = @pe_conf_nodes['puppet_master_host']   unless nil_or_empty?(@pe_conf_nodes['puppet_master_host'])
-          @inventory['roles']['console_host']       = @pe_conf_nodes['console_host']         unless nil_or_empty?(@pe_conf_nodes['console_host'])
-          @inventory['roles']['puppetdb_host']      = Array(@pe_conf_nodes['puppetdb_host']) unless nil_or_empty?(@pe_conf_nodes['puppetdb_host'])
-          @inventory['roles']['database_host']      = @pe_conf_nodes['database_host']        unless nil_or_empty?(@pe_conf_nodes['database_host'])
-          # Anticipated for use in the future.
-          # @inventory['roles']['primary_master_replica'] = @pe_conf_nodes['primary_master_replica'] unless nil_or_empty?(@pe_conf_nodes['primary_master_replica'])
-          # @inventory['roles']['compile_master']         = Array(@pe_conf_nodes['compile_master'])  unless nil_or_empty?(@pe_conf_nodes['compile_master'])
           @inventory = convert_inventory_roles_to_components(@inventory)
         end
 
-        # Query PuppetDB or inventory and cache the results.
-        @nodes_with['master']                 = get_nodes_with('master')
-        @nodes_with['console']                = get_nodes_with('console')
-        @nodes_with['puppetdb']               = get_nodes_with('puppetdb')
-        @nodes_with['database']               = get_nodes_with('database')
-        @nodes_with['amq_broker']             = get_nodes_with('amq::broker')
-        @nodes_with['orchestrator']           = get_nodes_with('orchestrator')
-        @nodes_with['primary_master']         = get_nodes_with('primary_master')
-        @nodes_with['primary_master_replica'] = get_nodes_with('primary_master_replica')
-        @nodes_with['compile_master']         = get_nodes_with('compile_master')
+        # Query PuppetDB for profiles (or inventory for components) and cache the results.
+        @nodes_with['certificate_authority']          = get_nodes_with('certificate_authority')
+        @nodes_with['master']                         = get_nodes_with('master')
+        @nodes_with['console']                        = get_nodes_with('console')
+        @nodes_with['puppetdb']                       = get_nodes_with('puppetdb')
+        @nodes_with['database']                       = get_nodes_with('database')
+        @nodes_with['amq_broker']                     = get_nodes_with('amq::broker')
+        @nodes_with['orchestrator']                   = get_nodes_with('orchestrator')
+        @nodes_with['primary_master']                 = get_nodes_with('primary_master')
+        @nodes_with['primary_master_replica']         = get_nodes_with('primary_master_replica')
+        @nodes_with['enabled_primary_master_replica'] = get_nodes_with('enabled_primary_master_replica')
+        @nodes_with['compile_master']                 = get_nodes_with('compile_master')
 
-        nodes_with_m_or_cm = (@nodes_with['master'] + @nodes_with['compile_master']).uniq
-        # Anticipated for use in the future.
-        # nodes_with_m_or_pm = (@nodes_with['master'] + @nodes_with['primary_master']).uniq
+        # Mappings vary between roles, profiles, and classes.
+        # See: https://github.com/puppetlabs/puppetlabs-pe_infrastructure/blob/irving/lib/puppet_x/puppetlabs/meep/defaults.rb
 
-        @nodes['primary_master']  = [@pe_conf_nodes['puppet_master_host']] # Highlander.
-        @nodes['replica_masters'] = @nodes_with['primary_master_replica']
-        @nodes['compile_masters'] = nodes_with_m_or_cm      - @nodes['primary_master'] - @nodes['replica_masters']
-        @nodes['console_hosts']   = @nodes_with['console']  - @nodes['primary_master'] - @nodes['replica_masters']
-        @nodes['puppetdb_hosts']  = @nodes_with['puppetdb'] - @nodes['primary_master'] - @nodes['replica_masters'] - @nodes['compile_masters']
-        @nodes['database_hosts']  = @nodes_with['database'] - @nodes['primary_master'] - @nodes['replica_masters'] - @nodes['compile_masters'] - @nodes['puppetdb_hosts']
+        replica_masters = (@nodes_with['primary_master_replica'] + @nodes_with['enabled_primary_master_replica']).uniq
+        primary_masters = (@nodes_with['certificate_authority']  + @nodes_with['primary_master']).uniq
+        masters_and_compile_masters = (@nodes_with['master'] + @nodes_with['compile_master']).uniq
+
+        # Roles
+        @nodes['replica_masters'] = replica_masters
+        @nodes['primary_masters'] = primary_masters             - @nodes['replica_masters']
+        @nodes['compile_masters'] = masters_and_compile_masters - @nodes['primary_masters'] - @nodes['replica_masters']
+        @nodes['console_hosts']   = @nodes_with['console']      - @nodes['primary_masters'] - @nodes['replica_masters']
+        @nodes['puppetdb_hosts']  = @nodes_with['puppetdb']     - @nodes['primary_masters'] - @nodes['replica_masters'] - @nodes['compile_masters']
+        @nodes['database_hosts']  = @nodes_with['database']     - @nodes['primary_masters'] - @nodes['replica_masters'] - @nodes['compile_masters'] - @nodes['puppetdb_hosts']
       end
-
-      # Notes:
-      # There is variation between pe.conf, pe_role, roles, secondary roles, profiles, and classes.
-      # https://github.com/puppetlabs/puppetlabs-pe_infrastructure/blob/irving/lib/puppet_x/puppetlabs/meep/defaults.rb
 
       #
       # Interfaces
@@ -214,7 +197,7 @@ module PuppetX
       # Identify infrastructure.
 
       def unknown_pe_infrastructure?
-        @nodes['primary_master'].count.zero?
+        @nodes['primary_masters'].count.zero?
       end
 
       def monolithic?
@@ -444,7 +427,7 @@ module PuppetX
         available_jrubies = 0
 
         # Primary Master: Applicable to Monolithic and Split Infrastructures.
-        @nodes['primary_master'].each do |certname|
+        @nodes['primary_masters'].each do |certname|
           resources = get_resources_for_node(certname)
           settings, duplicates = get_settings_for_node(certname, tunable_settings)
           output_node_settings('Primary Master', certname, settings, duplicates)
@@ -501,7 +484,7 @@ module PuppetX
         available_jrubies = 0
 
         # Primary Master: Applicable to Monolithic and Split Infrastructures.
-        @nodes['primary_master'].each do |certname|
+        @nodes['primary_masters'].each do |certname|
           resources = get_resources_for_node(certname)
           output_minimum_system_requirements_error_and_exit(certname) unless meets_minimum_system_requirements?(resources)
           configuration = {

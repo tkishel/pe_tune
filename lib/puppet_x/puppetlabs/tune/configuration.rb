@@ -23,7 +23,7 @@ module PuppetX
             Puppet.debug("Found: #{pe_conf_file}")
             pe_conf = Hocon.load(pe_conf_file)
           else
-            Puppet.err("File does not exist: #{pe_conf_file}")
+            Puppet.debug("File does not exist: #{pe_conf_file}")
             pe_conf = {}
           end
           pe_conf

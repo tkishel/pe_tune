@@ -30,7 +30,7 @@ describe PuppetX::Puppetlabs::Tune do
     end
 
     it 'can detect an unknown infrastructure' do
-      nodes = { 'primary_master' => [] }
+      nodes = { 'primary_masters' => [] }
       tune.instance_variable_set(:@nodes, nodes)
       expect(tune::unknown_pe_infrastructure?).to eq(true)
     end
@@ -67,7 +67,7 @@ describe PuppetX::Puppetlabs::Tune do
 
     it 'can detect an external database host' do
       nodes = {
-        'primary_master' => ['master'],
+        'primary_masters' => ['master'],
         'console_hosts'  => [],
         'puppetdb_hosts' => [],
         'database_hosts' => ['postgresql'],
