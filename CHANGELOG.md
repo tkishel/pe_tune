@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.2.1
+
+- Remove dependency on pe.conf.
+- Refactor roles, profiles, and components mappings.
+
 ## 1.2.0
 
 - Allow use of the local system or an inventory file instead of PuppetDB.
