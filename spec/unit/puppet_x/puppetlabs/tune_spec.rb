@@ -68,9 +68,9 @@ describe PuppetX::Puppetlabs::Tune do
     it 'can detect an external database host' do
       nodes = {
         'primary_masters' => ['master'],
-        'console_hosts'  => [],
-        'puppetdb_hosts' => [],
-        'database_hosts' => ['postgresql'],
+        'console_hosts'   => [],
+        'puppetdb_hosts'  => [],
+        'database_hosts'  => ['postgresql'],
       }
       tune.instance_variable_set(:@nodes, nodes)
       expect(tune::with_external_database?).to eq(true)
