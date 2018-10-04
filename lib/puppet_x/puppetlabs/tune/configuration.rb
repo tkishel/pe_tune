@@ -29,13 +29,13 @@ module PuppetX
           pe_conf
         end
 
-        def find_pe_conf_host(pe_role)
+        def get_pe_conf_host(role)
           return if @pe_conf.empty?
-          host = @pe_conf["puppet_enterprise::#{pe_role}"]
+          host = @pe_conf["puppet_enterprise::#{role}"]
           return if host.nil? || host.empty?
-          Puppet.debug("Found pe.conf #{pe_role}: #{host}")
+          Puppet.debug("Found pe.conf #{role}: #{host}")
           host = Puppet[:certname] if ['%{trusted.certname}', '%{::trusted.certname}'].include?(host)
-          Puppet.debug("Using pe.conf #{pe_role}: #{host}")
+          Puppet.debug("Using pe.conf #{role}: #{host}")
           host
         end
 
@@ -56,7 +56,7 @@ module PuppetX
           results.map { |resource| resource.fetch('certname') }
         end
 
-        def read_active_nodes
+        def count_active_nodes
           Puppet.debug('Querying PuppetDB for Active Nodes')
           pql = ['from', 'nodes',
                 ['and',
@@ -77,7 +77,7 @@ module PuppetX
         # "name" => "transaction_evaluation",
         # "name" => "total",
 
-        def read_average_compile_time(query_limit = 1000)
+        def get_average_compile_time(query_limit = 1000)
           Puppet.debug('Querying PuppetDB for Average Compile Time')
           pql = ['from', 'reports',
                 ['extract',
@@ -106,7 +106,7 @@ module PuppetX
           avg_config_retrieval_time.ceil
         end
 
-        def read_node_facts(certname, environment)
+        def get_node_facts(certname, environment)
           node_facts = {}
           if recover_with_instance_method?
             recover = Puppet::Util::Pe_conf::Recover.new
@@ -125,9 +125,11 @@ module PuppetX
           node_facts
         end
 
-        def read_hiera_classifier_overrides(certname, settings, environment, environmentpath)
+        # Return settings configured in Hiera and the classifier, identifying duplicates and merging the results.
+
+        def get_hiera_classifier_settings(certname, settings, environment, environmentpath)
           duplicates = []
-          overrides_hiera, overrides_classifier = _read_hiera_classifier_overrides(certname, settings, environment, environmentpath)
+          overrides_hiera, overrides_classifier = get_hiera_classifier_overrides(certname, settings, environment, environmentpath)
           overrides = overrides_hiera
           overrides_classifier.each do |classifier_k, classifier_v|
             next unless settings.include?(classifier_k)
@@ -138,10 +140,14 @@ module PuppetX
             # Classifer settings take precedence over Hiera settings.
             overrides[classifier_k] = classifier_v
           end
-          [overrides, duplicates]
+          { 'params' => overrides, 'duplicates' => duplicates }
         end
 
-        def _read_hiera_classifier_overrides(certname, settings, environment, _environmentpath)
+        # Internal helper methods.
+
+        private
+
+        def get_hiera_classifier_overrides(certname, settings, environment, _environmentpath)
           if recover_with_instance_method?
             recover = Puppet::Util::Pe_conf::Recover.new
             node_facts = recover.facts_for_node(certname, environment)
@@ -160,10 +166,6 @@ module PuppetX
           end
           [overrides_hiera, overrides_classifier]
         end
-
-        # Internal helper methods.
-
-        private
 
         # PE-24106 changes Recover to a class with instance methods.
 

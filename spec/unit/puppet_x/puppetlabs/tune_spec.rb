@@ -15,7 +15,7 @@ describe PuppetX::Puppetlabs::Tune do
   end
 
   context 'with its supporting methods' do
-    let(:empty_components) do
+    let(:empty_classes) do
       {
         'master'                 => [].to_set,
         'console'                => [].to_set,
@@ -31,8 +31,9 @@ describe PuppetX::Puppetlabs::Tune do
 
     it 'can detect an unknown infrastructure' do
       nodes = { 'primary_masters' => [] }
-      tune.instance_variable_set(:@nodes, nodes)
-      expect(tune::unknown_pe_infrastructure?).to eq(true)
+      tune.instance_variable_set(:@nodes_with_role, nodes)
+
+      expect(tune::unknown_infrastructure?).to eq(true)
     end
 
     it 'can detect a monolithic infrastructure' do
@@ -40,7 +41,8 @@ describe PuppetX::Puppetlabs::Tune do
         'console_hosts'  => [],
         'puppetdb_hosts' => [],
       }
-      tune.instance_variable_set(:@nodes, nodes)
+      tune.instance_variable_set(:@nodes_with_role, nodes)
+
       expect(tune::monolithic?).to eq(true)
     end
 
@@ -49,19 +51,22 @@ describe PuppetX::Puppetlabs::Tune do
         'console_hosts'  => ['console'],
         'puppetdb_hosts' => ['puppetdb'],
       }
-      tune.instance_variable_set(:@nodes, nodes)
+      tune.instance_variable_set(:@nodes_with_role, nodes)
+
       expect(tune::monolithic?).to eq(false)
     end
 
     it 'can detect a replica master' do
       nodes = { 'replica_masters' => ['replica'] }
-      tune.instance_variable_set(:@nodes, nodes)
+      tune.instance_variable_set(:@nodes_with_role, nodes)
+
       expect(tune::with_ha?).to eq(true)
     end
 
     it 'can detect compile masters' do
       nodes = { 'compile_masters' => ['compile'] }
-      tune.instance_variable_set(:@nodes, nodes)
+      tune.instance_variable_set(:@nodes_with_role, nodes)
+
       expect(tune::with_compile_masters?).to eq(true)
     end
 
@@ -72,36 +77,16 @@ describe PuppetX::Puppetlabs::Tune do
         'puppetdb_hosts'  => [],
         'database_hosts'  => ['postgresql'],
       }
-      tune.instance_variable_set(:@nodes, nodes)
+      tune.instance_variable_set(:@nodes_with_role, nodes)
+
       expect(tune::with_external_database?).to eq(true)
     end
 
-    it 'can detect the console service on a host' do
-      nodes_with = { 'console' => ['console'] }
-      tune.instance_variable_set(:@nodes_with, nodes_with)
-      expect(tune::with_console?('console')).to eq(true)
-    end
+    it 'can detect a class on a host' do
+      nodes_with_class = { 'console' => ['console'] }
+      tune.instance_variable_set(:@nodes_with_class, nodes_with_class)
 
-    it 'can detect the database service on a host' do
-      nodes = { 'compile_masters' => ['compile'] }
-      tune.instance_variable_set(:@nodes, nodes)
-      nodes_with = { 'database' => ['database'] }
-      tune.instance_variable_set(:@nodes_with, nodes_with)
-      expect(tune::with_database?('database')).to eq(true)
-    end
-
-    it 'can detect the orchestrator service on a host' do
-      nodes = { 'compile_masters' => ['compile'] }
-      tune.instance_variable_set(:@nodes, nodes)
-      nodes_with = { 'orchestrator' => ['orchestrator'] }
-      tune.instance_variable_set(:@nodes_with, nodes_with)
-      expect(tune::with_orchestrator?('orchestrator')).to eq(true)
-    end
-
-    it 'can detect the puppetdb service on a host' do
-      nodes_with = { 'puppetdb' => ['puppetdb'] }
-      tune.instance_variable_set(:@nodes_with, nodes_with)
-      expect(tune::with_puppetdb?('puppetdb')).to eq(true)
+      expect(tune::node_with_class?('console', 'console')).to eq(true)
     end
 
     # it 'can detect that JRuby9K is enabled for the puppetsever service' do
@@ -109,24 +94,50 @@ describe PuppetX::Puppetlabs::Tune do
 
     it 'can extract common settings' do
       tune.instance_variable_set(:@tune_options, :common => true)
-      tune.instance_variable_set(:@collected_common_settings, {})
+      tune.instance_variable_set(:@collected_settings_common, {})
       collected_nodes = {
-        'node_1' => { 'settings' => { 'a' => 1, 'b' => 'b' } },
-        'node_2' => { 'settings' => { 'a' => 2, 'b' => 'b' } }
+        'node_1' => {
+          'settings' => {
+            'params' => {
+              'a' => 1,
+              'b' => 'b'
+            }
+          }
+        },
+        'node_2' => {
+          'settings' => {
+            'params' => {
+              'a' => 2,
+              'b' => 'b'
+            }
+          }
+        }
       }
-      common_settings = { 'b' => 'b' }
+      collected_nodes_without_common_settings = {
+        'node_1' => { 'settings' => { 'params' => { 'a' => 1 } } },
+        'node_2' => { 'settings' => { 'params' => { 'a' => 2 } } }
+      }
+      collected_settings_common = { 'b' => 'b' }
+
       tune.instance_variable_set(:@collected_nodes, collected_nodes)
-      expect(tune::collect_common_optimized_settings).to eq(common_settings)
+      tune::collect_optimized_settings_common_to_all_nodes
+
+      expect(tune.instance_variable_get(:@collected_settings_common)).to eq(collected_settings_common)
+      expect(tune.instance_variable_get(:@collected_nodes)).to eq(collected_nodes_without_common_settings)
     end
 
     it 'can enforce minimum system requirements' do
       tune.instance_variable_set(:@tune_options, :force => false)
+
       resources = { 'cpu' => 3, 'ram' => 8191 }
       expect(tune::meets_minimum_system_requirements?(resources)).to eq(false)
+
       resources = { 'cpu' => 3, 'ram' => 8192 }
       expect(tune::meets_minimum_system_requirements?(resources)).to eq(false)
+
       resources = { 'cpu' => 4, 'ram' => 8191 }
       expect(tune::meets_minimum_system_requirements?(resources)).to eq(false)
+
       resources = { 'cpu' => 4, 'ram' => 8192 }
       expect(tune::meets_minimum_system_requirements?(resources)).to eq(true)
     end
@@ -134,6 +145,7 @@ describe PuppetX::Puppetlabs::Tune do
     it 'can disable minimum system requirements' do
       tune.instance_variable_set(:@tune_options, :force => true)
       resources = { 'cpu' => 3, 'ram' => 8191 }
+
       expect(tune::meets_minimum_system_requirements?(resources)).to eq(true)
     end
 
@@ -167,6 +179,7 @@ describe PuppetX::Puppetlabs::Tune do
       }
       resources = { 'cpu' => 8, 'ram' => 16384 }
       tune.instance_variable_set(:@inventory, 'nodes' => nodes)
+
       expect(tune::get_resources_for_node('master')).to eq(resources)
     end
 
@@ -186,9 +199,10 @@ describe PuppetX::Puppetlabs::Tune do
         'roles' => {
           'puppet_master_host' => 'master.example.com',
         },
-        'components' => empty_components
+        'classes' => empty_classes
       }
-      expect(tune::use_local_system_as_inventory).to eq(inventory)
+
+      expect(tune::read_inventory_from_local_system).to eq(inventory)
     end
 
     it 'can convert mono inventory roles to profiles' do
@@ -201,7 +215,7 @@ describe PuppetX::Puppetlabs::Tune do
           'primary_master_replica' => nil,
           'compile_master'         => nil
         },
-        'components' => empty_components
+        'classes' => empty_classes
       }
       result = {
         'roles' => {
@@ -212,7 +226,7 @@ describe PuppetX::Puppetlabs::Tune do
           'primary_master_replica' => nil,
           'compile_master'         => nil
         },
-        'components' => {
+        'classes' => {
           'master'                 => ['master'].to_set,
           'console'                => ['master'].to_set,
           'puppetdb'               => ['master'].to_set,
@@ -224,7 +238,8 @@ describe PuppetX::Puppetlabs::Tune do
           'compile_master'         => [].to_set
         }
       }
-      expect(tune::convert_inventory_roles_to_components(inventory)).to eq(result)
+
+      expect(tune::convert_inventory_roles_to_classes(inventory)).to eq(result)
     end
 
     it 'can convert mono inventory roles to profiles with a compile master' do
@@ -237,7 +252,7 @@ describe PuppetX::Puppetlabs::Tune do
           'primary_master_replica' => nil,
           'compile_master'         => ['compile']
         },
-        'components' => empty_components
+        'classes' => empty_classes
       }
       result = {
         'roles' => {
@@ -248,7 +263,7 @@ describe PuppetX::Puppetlabs::Tune do
           'primary_master_replica' => nil,
           'compile_master'         => ['compile']
         },
-        'components' => {
+        'classes' => {
           'master'                 => ['master', 'compile'].to_set,
           'console'                => ['master'].to_set,
           'puppetdb'               => ['master'].to_set,
@@ -260,7 +275,8 @@ describe PuppetX::Puppetlabs::Tune do
           'compile_master'         => ['compile'].to_set
         }
       }
-      expect(tune::convert_inventory_roles_to_components(inventory)).to eq(result)
+
+      expect(tune::convert_inventory_roles_to_classes(inventory)).to eq(result)
     end
 
     it 'can convert split inventory roles to profiles' do
@@ -273,7 +289,7 @@ describe PuppetX::Puppetlabs::Tune do
           'primary_master_replica' => nil,
           'compile_master'         => nil
         },
-        'components' => empty_components
+        'classes' => empty_classes
       }
       result = {
         'roles' => {
@@ -284,7 +300,7 @@ describe PuppetX::Puppetlabs::Tune do
           'primary_master_replica' => nil,
           'compile_master'         => nil
         },
-        'components' => {
+        'classes' => {
           'master'                 => ['master'].to_set,
           'console'                => ['console'].to_set,
           'puppetdb'               => ['puppetdb'].to_set,
@@ -296,7 +312,8 @@ describe PuppetX::Puppetlabs::Tune do
           'compile_master'         => [].to_set
         }
       }
-      expect(tune::convert_inventory_roles_to_components(inventory)).to eq(result)
+
+      expect(tune::convert_inventory_roles_to_classes(inventory)).to eq(result)
     end
 
     it 'can convert split inventory roles to profiles with a database host' do
@@ -309,7 +326,7 @@ describe PuppetX::Puppetlabs::Tune do
           'primary_master_replica' => nil,
           'compile_master'         => nil
         },
-        'components' => empty_components
+        'classes' => empty_classes
       }
       result = {
         'roles' => {
@@ -320,7 +337,7 @@ describe PuppetX::Puppetlabs::Tune do
           'primary_master_replica' => nil,
           'compile_master'         => nil
         },
-        'components' => {
+        'classes' => {
           'master'                 => ['master'].to_set,
           'console'                => ['console'].to_set,
           'puppetdb'               => ['puppetdb'].to_set,
@@ -332,7 +349,7 @@ describe PuppetX::Puppetlabs::Tune do
           'compile_master'         => [].to_set
         }
       }
-      expect(tune::convert_inventory_roles_to_components(inventory)).to eq(result)
+      expect(tune::convert_inventory_roles_to_classes(inventory)).to eq(result)
     end
 
     it 'can convert split inventory roles to profiles with an array of puppetdb hosts' do
@@ -345,7 +362,7 @@ describe PuppetX::Puppetlabs::Tune do
           'primary_master_replica' => nil,
           'compile_master'         => nil
         },
-        'components' => empty_components
+        'classes' => empty_classes
       }
       result = {
         'roles' => {
@@ -356,7 +373,7 @@ describe PuppetX::Puppetlabs::Tune do
           'primary_master_replica' => nil,
           'compile_master'         => nil
         },
-        'components' => {
+        'classes' => {
           'master'                 => ['master'].to_set,
           'console'                => ['console'].to_set,
           'puppetdb'               => ['puppetdb1', 'puppetdb2'].to_set,
@@ -368,7 +385,8 @@ describe PuppetX::Puppetlabs::Tune do
           'compile_master'         => [].to_set
         }
       }
-      expect(tune::convert_inventory_roles_to_components(inventory)).to eq(result)
+
+      expect(tune::convert_inventory_roles_to_classes(inventory)).to eq(result)
     end
 
     it 'can convert split inventory roles to profiles with a database host and an array of puppetdb hosts' do
@@ -381,7 +399,7 @@ describe PuppetX::Puppetlabs::Tune do
           'primary_master_replica' => nil,
           'compile_master'         => nil
         },
-        'components' => empty_components
+        'classes' => empty_classes
       }
       result = {
         'roles' => {
@@ -392,7 +410,7 @@ describe PuppetX::Puppetlabs::Tune do
           'primary_master_replica' => nil,
           'compile_master'         => nil
         },
-        'components' => {
+        'classes' => {
           'master'                 => ['master'].to_set,
           'console'                => ['console'].to_set,
           'puppetdb'               => ['puppetdb1', 'puppetdb2'].to_set,
@@ -404,7 +422,8 @@ describe PuppetX::Puppetlabs::Tune do
           'compile_master'         => [].to_set
         }
       }
-      expect(tune::convert_inventory_roles_to_components(inventory)).to eq(result)
+
+      expect(tune::convert_inventory_roles_to_classes(inventory)).to eq(result)
     end
   end
 end

@@ -14,19 +14,21 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'cpu' => 4,
         'ram' => 8192,
       }
-      configuration = {
+      infrastructure = {
         'is_monolithic_master' => true,
         'with_compile_masters' => false,
         'with_jruby9k_enabled' => false,
       }
-      components = {
-        'activemq'     => true,
+      classes = {
+        'amq::broker'  => true,
         'console'      => true,
         'database'     => true,
         'orchestrator' => true,
         'puppetdb'     => true,
       }
-      settings = {
+      node = { 'resources' => resources, 'infrastructure' => infrastructure, 'classes' => classes }
+
+      params = {
         'puppet_enterprise::profile::database::shared_buffers'                => '2048MB',
         'puppet_enterprise::puppetdb::command_processing_threads'             => 2,
         'puppet_enterprise::master::puppetserver::jruby_max_active_instances' => 2,
@@ -41,7 +43,9 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'RAM'          => { 'total' => 8192, 'used' => 6451 },
         'MB_PER_JRUBY' => 512,
       }
-      expect(calculator::calculate_master_settings(resources, configuration, components)).to eq([settings, totals])
+      settings = { 'params' => params, 'totals' => totals }
+
+      expect(calculator::calculate_master_settings(node)).to eq(settings)
     end
   end
 
@@ -51,19 +55,21 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'cpu' => 8,
         'ram' => 16384,
       }
-      configuration = {
+      infrastructure = {
         'is_monolithic_master' => true,
         'with_compile_masters' => false,
         'with_jruby9k_enabled' => false,
       }
-      components = {
-        'activemq'     => true,
+      classes = {
+        'amq::broker'  => true,
         'console'      => true,
         'database'     => true,
         'orchestrator' => true,
         'puppetdb'     => true,
       }
-      settings = {
+      node = { 'resources' => resources, 'infrastructure' => infrastructure, 'classes' => classes }
+
+      params = {
         'puppet_enterprise::profile::database::shared_buffers'                => '4096MB',
         'puppet_enterprise::puppetdb::command_processing_threads'             => 2,
         'puppet_enterprise::master::puppetserver::jruby_max_active_instances' => 5,
@@ -78,7 +84,9 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'RAM'          => { 'total' => 16384, 'used' => 12134 },
         'MB_PER_JRUBY' => 768,
       }
-      expect(calculator::calculate_master_settings(resources, configuration, components)).to eq([settings, totals])
+      settings = { 'params' => params, 'totals' => totals }
+
+      expect(calculator::calculate_master_settings(node)).to eq(settings)
     end
   end
 
@@ -88,19 +96,21 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'cpu' => 16,
         'ram' => 32768,
       }
-      configuration = {
+      infrastructure = {
         'is_monolithic_master' => true,
         'with_compile_masters' => false,
         'with_jruby9k_enabled' => false,
       }
-      components = {
-        'activemq'     => true,
+      classes = {
+        'amq::broker'  => true,
         'console'      => true,
         'database'     => true,
         'orchestrator' => true,
         'puppetdb'     => true,
       }
-      settings = {
+      node = { 'resources' => resources, 'infrastructure' => infrastructure, 'classes' => classes }
+
+      params = {
         'puppet_enterprise::profile::database::shared_buffers'                => '8192MB',
         'puppet_enterprise::puppetdb::command_processing_threads'             => 4,
         'puppet_enterprise::master::puppetserver::jruby_max_active_instances' => 11,
@@ -115,7 +125,9 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'RAM'          => { 'total' => 32768, 'used' => 26828 },
         'MB_PER_JRUBY' => 1024,
       }
-      expect(calculator::calculate_master_settings(resources, configuration, components)).to eq([settings, totals])
+      settings = { 'params' => params, 'totals' => totals }
+
+      expect(calculator::calculate_master_settings(node)).to eq(settings)
     end
   end
 
@@ -127,19 +139,21 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'cpu' => 4,
         'ram' => 8192,
       }
-      configuration = {
+      infrastructure = {
         'is_monolithic_master' => true,
         'with_compile_masters' => true,
         'with_jruby9k_enabled' => false,
       }
-      components = {
-        'activemq'     => true,
+      classes = {
+        'amq::broker'  => true,
         'console'      => true,
         'database'     => true,
         'orchestrator' => true,
         'puppetdb'     => true,
       }
-      settings = {
+      node = { 'resources' => resources, 'infrastructure' => infrastructure, 'classes' => classes }
+
+      params = {
         'puppet_enterprise::profile::database::shared_buffers'                => '2048MB',
         'puppet_enterprise::puppetdb::command_processing_threads'             => 3,
         'puppet_enterprise::master::puppetserver::jruby_max_active_instances' => 2,
@@ -154,7 +168,9 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'RAM'          => { 'total' => 8192, 'used' => 6246 },
         'MB_PER_JRUBY' => 512,
       }
-      expect(calculator::calculate_master_settings(resources, configuration, components)).to eq([settings, totals])
+      settings = { 'params' => params, 'totals' => totals }
+
+      expect(calculator::calculate_master_settings(node)).to eq(settings)
     end
 
     it 'can calculate master host settings with an external database' do
@@ -162,19 +178,21 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'cpu' => 4,
         'ram' => 8192,
       }
-      configuration = {
+      infrastructure = {
         'is_monolithic_master' => true,
         'with_compile_masters' => false,
         'with_jruby9k_enabled' => false,
       }
-      components = {
-        'activemq'     => true,
+      classes = {
+        'amq::broker'  => true,
         'console'      => true,
         'database'     => false,
         'orchestrator' => true,
         'puppetdb'     => true,
       }
-      settings = {
+      node = { 'resources' => resources, 'infrastructure' => infrastructure, 'classes' => classes }
+
+      params = {
         'puppet_enterprise::puppetdb::command_processing_threads'             => 2,
         'puppet_enterprise::master::puppetserver::jruby_max_active_instances' => 2,
         'puppet_enterprise::profile::master::java_args'                       => { 'Xms' => '2048m', 'Xmx' => '2048m' },
@@ -188,7 +206,9 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'RAM'          => { 'total' => 8192, 'used' => 4403 },
         'MB_PER_JRUBY' => 512,
       }
-      expect(calculator::calculate_master_settings(resources, configuration, components)).to eq([settings, totals])
+      settings = { 'params' => params, 'totals' => totals }
+
+      expect(calculator::calculate_master_settings(node)).to eq(settings)
     end
   end
 
@@ -198,19 +218,21 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'cpu' => 4,
         'ram' => 8192,
       }
-      configuration = {
+      infrastructure = {
         'is_monolithic_master' => false,
         'with_compile_masters' => false,
         'with_jruby9k_enabled' => false,
       }
-      components = {
-        'activemq'     => false,
+      classes = {
+        'amq::broker'  => false,
         'console'      => false,
         'database'     => false,
         'orchestrator' => true,
         'puppetdb'     => false,
       }
-      settings = {
+      node = { 'resources' => resources, 'infrastructure' => infrastructure, 'classes' => classes }
+
+      params = {
         'puppet_enterprise::master::puppetserver::jruby_max_active_instances' => 3,
         'puppet_enterprise::profile::master::java_args'                       => { 'Xms' => '1536m', 'Xmx' => '1536m' },
         'puppet_enterprise::profile::orchestrator::java_args'                 => { 'Xms' => '512m',  'Xmx' => '512m' },
@@ -220,7 +242,8 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'RAM'          => { 'total' => 8192, 'used' => 2048 },
         'MB_PER_JRUBY' => 512,
       }
-      expect(calculator::calculate_master_settings(resources, configuration, components)).to eq([settings, totals])
+      settings = { 'params' => params, 'totals' => totals }
+      expect(calculator::calculate_master_settings(node)).to eq(settings)
     end
 
     it 'can calculate console host settings' do
@@ -228,11 +251,18 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'cpu' => 4,
         'ram' => 8192,
       }
-      settings = {
+      node = { 'resources' => resources, 'infrastructure' => {}, 'classes' => {} }
+
+      params = {
         'puppet_enterprise::profile::console::java_args' => { 'Xms' => '4096m', 'Xmx' => '4096m' },
       }
-      totals = { 'RAM' => { 'total' => 8192, 'used' => 4096 } }
-      expect(calculator::calculate_console_settings(resources)).to eq([settings, totals])
+      totals = {
+        'CPU' => { 'total' => 4,    'used' => 0 },
+        'RAM' => { 'total' => 8192, 'used' => 4096 }
+      }
+      settings = { 'params' => params, 'totals' => totals }
+
+      expect(calculator::calculate_console_settings(node)).to eq(settings)
     end
 
     it 'can calculate puppetdb host settings' do
@@ -240,20 +270,22 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'cpu' => 4,
         'ram' => 8192,
       }
-      components = {
+      classes = {
         'database' => true,
       }
-      settings = {
+      node = { 'resources' => resources, 'infrastructure' => {}, 'classes' => classes }
+
+      params = {
         'puppet_enterprise::puppetdb::command_processing_threads' => 3,
         'puppet_enterprise::profile::puppetdb::java_args'         => { 'Xms' => '2048m', 'Xmx' => '2048m' },
         'puppet_enterprise::profile::database::shared_buffers'    => '2048MB',
       }
-      # settings['puppet_enterprise::profile::puppetdb::java_args']['XX:+UseG1GC'] = ''
       totals = {
         'CPU' => { 'total' => 4,    'used' => 3 },
         'RAM' => { 'total' => 8192, 'used' => 4096 },
       }
-      expect(calculator::calculate_puppetdb_settings(resources, components)).to eq([settings, totals])
+      settings = { 'params' => params, 'totals' => totals }
+      expect(calculator::calculate_puppetdb_settings(node)).to eq(settings)
     end
 
     it 'can calculate puppetdb host settings with an external database' do
@@ -261,10 +293,12 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'cpu' => 4,
         'ram' => 8192,
       }
-      components = {
+      classes = {
         'database' => false,
       }
-      settings = {
+      node = { 'resources' => resources, 'infrastructure' => {}, 'classes' => classes }
+
+      params = {
         'puppet_enterprise::puppetdb::command_processing_threads' => 3,
         'puppet_enterprise::profile::puppetdb::java_args'         => { 'Xms' => '4096m', 'Xmx' => '4096m' },
       }
@@ -272,7 +306,9 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'CPU' => { 'total' => 4, 'used' => 3 },
         'RAM' => { 'total' => 8192, 'used' => 4096 },
       }
-      expect(calculator::calculate_puppetdb_settings(resources, components)).to eq([settings, totals])
+      settings = { 'params' => params, 'totals' => totals }
+
+      expect(calculator::calculate_puppetdb_settings(node)).to eq(settings)
     end
   end
 
@@ -282,19 +318,21 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'cpu' => 4,
         'ram' => 8192,
       }
-      configuration = {
+      infrastructure = {
         'is_monolithic_master' => false,
         'with_compile_masters' => true,
         'with_jruby9k_enabled' => false,
       }
-      components = {
-        'activemq'     => false,
+      classes = {
+        'amq::broker'  => false,
         'console'      => false,
         'database'     => false,
         'orchestrator' => false,
         'puppetdb'     => false,
       }
-      settings = {
+      node = { 'resources' => resources, 'infrastructure' => infrastructure, 'classes' => classes }
+
+      params = {
         'puppet_enterprise::master::puppetserver::jruby_max_active_instances' => 3,
         'puppet_enterprise::profile::master::java_args'                       => { 'Xms' => '1536m', 'Xmx' => '1536m' },
       }
@@ -303,7 +341,8 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'RAM'          => { 'total' => 8192, 'used' => 1536 },
         'MB_PER_JRUBY' => 512,
       }
-      expect(calculator::calculate_master_settings(resources, configuration, components)).to eq([settings, totals])
+      settings = { 'params' => params, 'totals' => totals }
+      expect(calculator::calculate_master_settings(node)).to eq(settings)
     end
 
     it 'can calculate compile master host settings with puppetdb' do
@@ -311,19 +350,21 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'cpu' => 4,
         'ram' => 8192,
       }
-      configuration = {
+      infrastructure = {
         'is_monolithic_master' => false,
         'with_compile_masters' => true,
         'with_jruby9k_enabled' => false,
       }
-      components = {
-        'activemq'     => false,
+      classes = {
+        'amq::broker'  => false,
         'console'      => false,
         'database'     => false,
         'orchestrator' => false,
         'puppetdb'     => true,
       }
-      settings = {
+      node = { 'resources' => resources, 'infrastructure' => infrastructure, 'classes' => classes }
+
+      params = {
         'puppet_enterprise::puppetdb::command_processing_threads'             => 2,
         'puppet_enterprise::profile::puppetdb::java_args'                     => { 'Xms' => '819m', 'Xmx' => '819m' },
         'puppet_enterprise::master::puppetserver::jruby_max_active_instances' => 2,
@@ -334,7 +375,9 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'RAM'          => { 'total' => 8192, 'used' => 1843 },
         'MB_PER_JRUBY' => 512,
       }
-      expect(calculator::calculate_master_settings(resources, configuration, components)).to eq([settings, totals])
+      settings = { 'params' => params, 'totals' => totals }
+
+      expect(calculator::calculate_master_settings(node)).to eq(settings)
     end
 
     it 'can calculate database host settings' do
@@ -342,13 +385,18 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'cpu' => 4,
         'ram' => 8192,
       }
-      settings = {
+      node = { 'resources' => resources, 'infrastructure' => {}, 'classes' => {} }
+
+      params = {
         'puppet_enterprise::profile::database::shared_buffers' => '2048MB',
       }
       totals = {
+        'CPU' => { 'total' => 4,    'used' => 0 },
         'RAM' => { 'total' => 8192, 'used' => 2048 },
       }
-      expect(calculator::calculate_database_settings(resources)).to eq([settings, totals])
+      settings = { 'params' => params, 'totals' => totals }
+
+      expect(calculator::calculate_database_settings(node)).to eq(settings)
     end
   end
 
