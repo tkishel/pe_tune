@@ -12,6 +12,15 @@
 #   export TEST_CPU=8; export TEST_RAM=16384;
 # These are necessary to accomodate manual testing and pe_acceptance_tests/acceptance/tests/faces/infrastructure/tune.rb.
 
+# TODO: Review:
+#
+# puppet_enterprise::profile::database::autovacuum_max_workers
+#
+# puppet_enterprise::profile::database::autovacuum_work_mem
+# puppet_enterprise::profile::database::maintenance_work_mem
+# puppet_enterprise::profile::database::effective_cache_size
+# puppet_enterprise::profile::database::work_mem
+
 module PuppetX
   module Puppetlabs
     # Query infrastructure and show current or calculate optimized settings.
@@ -242,12 +251,9 @@ module PuppetX
         available = File.exist?(jr9kjar)
         return false unless available
         setting = 'puppet_enterprise::master::puppetserver::jruby_9k_enabled'
-        begin
-          settings = get_current_settings_for_node(certname, [setting])
-          enabled = settings['params'][setting] != 'false'
-        rescue StandardError
-          enabled = false
-        end
+        settings = get_current_settings_for_node(certname, [setting])
+        return false unless settings['params'].key?(setting)
+        enabled = settings['params'][setting] != 'false'
         Puppet.debug("jruby_9k_enabled: available: #{available}, enabled: #{enabled}")
         available && enabled
       end
@@ -395,8 +401,8 @@ module PuppetX
         Puppet.debug("Using the inventory file #{yaml_file} to define infrastructure nodes")
         begin
           yaml_inventory = YAML.load_file(yaml_file)
-        rescue StandardError
-          yaml_inventory = {}
+        rescue Psych::SyntaxError
+          output_error_and_exit("The inventory file #{yaml_file} has a syntax error")
         end
         output_error_and_exit('The inventory file does not contain a nodes hash') unless yaml_inventory['nodes']
         yaml_inventory['roles'] = {} unless yaml_inventory['roles']

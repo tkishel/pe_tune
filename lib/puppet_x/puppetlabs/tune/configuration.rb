@@ -98,7 +98,7 @@ module PuppetX
           config_retrieval_times = results.map do |report|
             begin
               report['metrics']['data'].select { |h| (h['name'] == 'config_retrieval' && h['category'] == 'time') }.first.fetch('value')
-            rescue StandardError
+            rescue NoMethodError
               report['metrics']['data'].select { |h| (h['name'] == 'total' && h['category'] == 'time') }.first.fetch('value')
             end
           end
