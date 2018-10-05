@@ -94,13 +94,11 @@ module PuppetX
           # avg_run_time = (run_times.inject(0.0) { |sum, element| sum + element } / run_times.size).ceil
           # Filter out reports that do not contain metric data.
           results.delete_if { |report| report['metrics']['data'].empty? }
-          # Collect config_retrieval time or if absent, total time.
+          # Collect config_retrieval time, or if absent (for a run with a catalog compilation error), total time.
           config_retrieval_times = results.map do |report|
-            begin
-              report['metrics']['data'].select { |h| (h['name'] == 'config_retrieval' && h['category'] == 'time') }.first.fetch('value')
-            rescue NoMethodError
-              report['metrics']['data'].select { |h| (h['name'] == 'total' && h['category'] == 'time') }.first.fetch('value')
-            end
+            report['metrics']['data'].select { |md|
+              md['category'] == 'time' && (md['name'] == 'config_retrieval' || md['name'] == 'total')
+            }.first.fetch('value')
           end
           avg_config_retrieval_time = config_retrieval_times.reduce(0.0) { |sum, element| sum + element } / config_retrieval_times.size
           avg_config_retrieval_time.ceil
