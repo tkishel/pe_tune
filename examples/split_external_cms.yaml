@@ -15,6 +15,18 @@ nodes:
     resources:
       cpu: 8
       ram: 16
+  external-database.example.com:
+    resources:
+      cpu: 8
+      ram: 16
+  compile-master1.example.com:
+    resources:
+      cpu: 4
+      ram: 8
+  compile-master2.example.com:
+    resources:
+      cpu: 4
+      ram: 8
 
 # Infrastructure roles include:
 #
@@ -29,3 +41,7 @@ roles:
   puppet_master_host: split-master.example.com
   console_host:       split-console.example.com
   puppetdb_host:      split-db.example.com
+  database_host:      external-database.example.com
+  compile_master:
+    - compile-master1.example.com
+    - compile-master2.example.com

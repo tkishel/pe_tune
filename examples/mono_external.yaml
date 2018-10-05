@@ -5,8 +5,12 @@
 nodes:
   master.example.com:
     resources:
-      cpu: 4
-      ram: 8
+      cpu: 16
+      ram: 32
+  external-database.example.com:
+    resources:
+      cpu: 8
+      ram: 16
 
 # Infrastructure roles include:
 #
@@ -19,3 +23,4 @@ nodes:
 
 roles:
   puppet_master_host: master.example.com
+  database_host:      external-database.example.com

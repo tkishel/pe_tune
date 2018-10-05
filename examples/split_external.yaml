@@ -3,10 +3,22 @@
 # Use 'g' for GB (the default) and 'm' for MB for ram values.
 
 nodes:
-  master.example.com:
+  split-master.example.com:
     resources:
-      cpu: 4
-      ram: 8
+      cpu: 16
+      ram: 32
+  split-console.example.com:
+    resources:
+      cpu: 8
+      ram: 16
+  split-db.example.com:
+    resources:
+      cpu: 8
+      ram: 16
+  external-database.example.com:
+    resources:
+      cpu: 8
+      ram: 16
 
 # Infrastructure roles include:
 #
@@ -18,4 +30,7 @@ nodes:
 #  compile_master         (string or an array)
 
 roles:
-  puppet_master_host: master.example.com
+  puppet_master_host: split-master.example.com
+  console_host:       split-console.example.com
+  puppetdb_host:      split-db.example.com
+  database_host:      external-database.example.com

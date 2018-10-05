@@ -33,14 +33,14 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'puppet_enterprise::puppetdb::command_processing_threads'             => 2,
         'puppet_enterprise::master::puppetserver::jruby_max_active_instances' => 2,
         'puppet_enterprise::profile::master::java_args'                       => { 'Xms' => '2048m', 'Xmx' => '2048m' },
-        'puppet_enterprise::profile::puppetdb::java_args'                     => { 'Xms' => '819m',  'Xmx' => '819m' },
+        'puppet_enterprise::profile::puppetdb::java_args'                     => { 'Xms' => '512m',  'Xmx' => '512m' },
         'puppet_enterprise::profile::console::java_args'                      => { 'Xms' => '512m',  'Xmx' => '512m' },
         'puppet_enterprise::profile::orchestrator::java_args'                 => { 'Xms' => '512m',  'Xmx' => '512m' },
         'puppet_enterprise::profile::amq::broker::heap_mb'                    => 512,
       }
       totals = {
         'CPU'          => { 'total' => 4,    'used' => 4 },
-        'RAM'          => { 'total' => 8192, 'used' => 6451 },
+        'RAM'          => { 'total' => 8192, 'used' => 6144 },
         'MB_PER_JRUBY' => 512,
       }
       settings = { 'params' => params, 'totals' => totals }
@@ -70,18 +70,18 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       node = { 'resources' => resources, 'infrastructure' => infrastructure, 'classes' => classes }
 
       params = {
-        'puppet_enterprise::profile::database::shared_buffers'                => '4096MB',
+        'puppet_enterprise::profile::database::shared_buffers'                => '3840MB',
         'puppet_enterprise::puppetdb::command_processing_threads'             => 2,
         'puppet_enterprise::master::puppetserver::jruby_max_active_instances' => 5,
         'puppet_enterprise::profile::master::java_args'                       => { 'Xms' => '3840m', 'Xmx' => '3840m' },
-        'puppet_enterprise::profile::puppetdb::java_args'                     => { 'Xms' => '1638m', 'Xmx' => '1638m' },
+        'puppet_enterprise::profile::puppetdb::java_args'                     => { 'Xms' => '1152m', 'Xmx' => '1152m' },
         'puppet_enterprise::profile::console::java_args'                      => { 'Xms' => '768m',  'Xmx' => '768m' },
         'puppet_enterprise::profile::orchestrator::java_args'                 => { 'Xms' => '768m',  'Xmx' => '768m' },
         'puppet_enterprise::profile::amq::broker::heap_mb'                    => 1024,
       }
       totals = {
         'CPU'          => { 'total' => 8,     'used' => 7 },
-        'RAM'          => { 'total' => 16384, 'used' => 12134 },
+        'RAM'          => { 'total' => 16384, 'used' => 11392 },
         'MB_PER_JRUBY' => 768,
       }
       settings = { 'params' => params, 'totals' => totals }
@@ -111,18 +111,18 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       node = { 'resources' => resources, 'infrastructure' => infrastructure, 'classes' => classes }
 
       params = {
-        'puppet_enterprise::profile::database::shared_buffers'                => '8192MB',
+        'puppet_enterprise::profile::database::shared_buffers'                => '7936MB',
         'puppet_enterprise::puppetdb::command_processing_threads'             => 4,
         'puppet_enterprise::master::puppetserver::jruby_max_active_instances' => 11,
         'puppet_enterprise::profile::master::java_args'                       => { 'Xms' => '11264m', 'Xmx' => '11264m' },
-        'puppet_enterprise::profile::puppetdb::java_args'                     => { 'Xms' => '3276m',  'Xmx' => '3276m' },
+        'puppet_enterprise::profile::puppetdb::java_args'                     => { 'Xms' => '2380m',  'Xmx' => '2380m' },
         'puppet_enterprise::profile::console::java_args'                      => { 'Xms' => '1024m',  'Xmx' => '1024m' },
         'puppet_enterprise::profile::orchestrator::java_args'                 => { 'Xms' => '1024m',  'Xmx' => '1024m' },
         'puppet_enterprise::profile::amq::broker::heap_mb'                    => 2048,
       }
       totals = {
         'CPU'          => { 'total' => 16,    'used' => 15 },
-        'RAM'          => { 'total' => 32768, 'used' => 26828 },
+        'RAM'          => { 'total' => 32768, 'used' => 25676 },
         'MB_PER_JRUBY' => 1024,
       }
       settings = { 'params' => params, 'totals' => totals }
@@ -158,14 +158,14 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'puppet_enterprise::puppetdb::command_processing_threads'             => 3,
         'puppet_enterprise::master::puppetserver::jruby_max_active_instances' => 2,
         'puppet_enterprise::profile::master::java_args'                       => { 'Xms' => '1024m', 'Xmx' => '1024m' },
-        'puppet_enterprise::profile::puppetdb::java_args'                     => { 'Xms' => '1638m', 'Xmx' => '1638m' },
+        'puppet_enterprise::profile::puppetdb::java_args'                     => { 'Xms' => '1024m', 'Xmx' => '1024m' },
         'puppet_enterprise::profile::console::java_args'                      => { 'Xms' => '512m',  'Xmx' => '512m' },
         'puppet_enterprise::profile::orchestrator::java_args'                 => { 'Xms' => '512m',  'Xmx' => '512m' },
         'puppet_enterprise::profile::amq::broker::heap_mb'                    => 512,
       }
       totals = {
         'CPU'          => { 'total' => 4,    'used' => 5 },
-        'RAM'          => { 'total' => 8192, 'used' => 6246 },
+        'RAM'          => { 'total' => 8192, 'used' => 5632 },
         'MB_PER_JRUBY' => 512,
       }
       settings = { 'params' => params, 'totals' => totals }
@@ -196,14 +196,14 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'puppet_enterprise::puppetdb::command_processing_threads'             => 2,
         'puppet_enterprise::master::puppetserver::jruby_max_active_instances' => 2,
         'puppet_enterprise::profile::master::java_args'                       => { 'Xms' => '2048m', 'Xmx' => '2048m' },
-        'puppet_enterprise::profile::puppetdb::java_args'                     => { 'Xms' => '819m',  'Xmx' => '819m' },
+        'puppet_enterprise::profile::puppetdb::java_args'                     => { 'Xms' => '716m',  'Xmx' => '716m' },
         'puppet_enterprise::profile::console::java_args'                      => { 'Xms' => '512m',  'Xmx' => '512m' },
         'puppet_enterprise::profile::orchestrator::java_args'                 => { 'Xms' => '512m',  'Xmx' => '512m' },
         'puppet_enterprise::profile::amq::broker::heap_mb'                    => 512,
       }
       totals = {
         'CPU'          => { 'total' => 4,    'used' => 4 },
-        'RAM'          => { 'total' => 8192, 'used' => 4403 },
+        'RAM'          => { 'total' => 8192, 'used' => 4300 },
         'MB_PER_JRUBY' => 512,
       }
       settings = { 'params' => params, 'totals' => totals }
@@ -277,12 +277,12 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
 
       params = {
         'puppet_enterprise::puppetdb::command_processing_threads' => 3,
-        'puppet_enterprise::profile::puppetdb::java_args'         => { 'Xms' => '2048m', 'Xmx' => '2048m' },
+        'puppet_enterprise::profile::puppetdb::java_args'         => { 'Xms' => '1280m', 'Xmx' => '1280m' },
         'puppet_enterprise::profile::database::shared_buffers'    => '2048MB',
       }
       totals = {
         'CPU' => { 'total' => 4,    'used' => 3 },
-        'RAM' => { 'total' => 8192, 'used' => 4096 },
+        'RAM' => { 'total' => 8192, 'used' => 3328 },
       }
       settings = { 'params' => params, 'totals' => totals }
       expect(calculator::calculate_puppetdb_settings(node)).to eq(settings)
@@ -300,11 +300,11 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
 
       params = {
         'puppet_enterprise::puppetdb::command_processing_threads' => 3,
-        'puppet_enterprise::profile::puppetdb::java_args'         => { 'Xms' => '4096m', 'Xmx' => '4096m' },
+        'puppet_enterprise::profile::puppetdb::java_args'         => { 'Xms' => '3584m', 'Xmx' => '3584m' },
       }
       totals = {
         'CPU' => { 'total' => 4, 'used' => 3 },
-        'RAM' => { 'total' => 8192, 'used' => 4096 },
+        'RAM' => { 'total' => 8192, 'used' => 3584 },
       }
       settings = { 'params' => params, 'totals' => totals }
 
@@ -366,13 +366,13 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
 
       params = {
         'puppet_enterprise::puppetdb::command_processing_threads'             => 2,
-        'puppet_enterprise::profile::puppetdb::java_args'                     => { 'Xms' => '819m', 'Xmx' => '819m' },
+        'puppet_enterprise::profile::puppetdb::java_args'                     => { 'Xms' => '716m', 'Xmx' => '716m' },
         'puppet_enterprise::master::puppetserver::jruby_max_active_instances' => 2,
         'puppet_enterprise::profile::master::java_args'                       => { 'Xms' => '1024m', 'Xmx' => '1024m' },
       }
       totals = {
         'CPU'          => { 'total' => 4,    'used' => 4 },
-        'RAM'          => { 'total' => 8192, 'used' => 1843 },
+        'RAM'          => { 'total' => 8192, 'used' => 1740 },
         'MB_PER_JRUBY' => 512,
       }
       settings = { 'params' => params, 'totals' => totals }
@@ -431,10 +431,12 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       expect((calculator.send :fit_to_memory, 32769, 'S', 'M', 'L')).to eq('L')
     end
 
-    it 'can calculate the percentage of a resource limited to a minimum and maximum' do
-      expect((calculator.send :clamp_percent_of_resource, 4096, 50, 1024, 3072)).to eq(2048)
-      expect((calculator.send :clamp_percent_of_resource, 4096, 10, 1024, 3072)).to eq(1024)
-      expect((calculator.send :clamp_percent_of_resource, 4096, 90, 1024, 3072)).to eq(3072)
+    it 'can calculate the percentage of a resource limited to a minimum and maximum, or the minimum.' do
+      expect((calculator.send :floor_clamp_percent, 4, 25, 2, 1)).to eq(2)
+      expect((calculator.send :floor_clamp_percent, 4, 25, 2, 2)).to eq(2)
+      expect((calculator.send :floor_clamp_percent, 4096, 50, 1024, 3072)).to eq(2048)
+      expect((calculator.send :floor_clamp_percent, 4096, 10, 1024, 3072)).to eq(1024)
+      expect((calculator.send :floor_clamp_percent, 4096, 90, 1024, 3072)).to eq(3072)
     end
 
     it 'can test if a number is within a percentage of another number' do
