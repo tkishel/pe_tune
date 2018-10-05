@@ -6,20 +6,15 @@
 #   https://puppet.com/docs/pe/latest/configuring/tuning_monolithic.html
 #
 # It does not optimize the following settings in puppetlabs-puppet_enterprise:
-#   autovacuum_max_workers, autovacuum_work_mem, effective_cache_size, maintenance_work_mem, work_mem
+#   puppet_enterprise::profile::database::autovacuum_max_workers
+#   puppet_enterprise::profile::database::autovacuum_work_mem
+#   puppet_enterprise::profile::database::maintenance_work_mem
+#   puppet_enterprise::profile::database::effective_cache_size
+#   puppet_enterprise::profile::database::work_mem
 #
 # It accepts the following overrides via ENV:
 #   export TEST_CPU=8; export TEST_RAM=16384;
 # These are necessary to accomodate manual testing and pe_acceptance_tests/acceptance/tests/faces/infrastructure/tune.rb.
-
-# TODO: Review:
-#
-# puppet_enterprise::profile::database::autovacuum_max_workers
-#
-# puppet_enterprise::profile::database::autovacuum_work_mem
-# puppet_enterprise::profile::database::maintenance_work_mem
-# puppet_enterprise::profile::database::effective_cache_size
-# puppet_enterprise::profile::database::work_mem
 
 module PuppetX
   module Puppetlabs
@@ -402,7 +397,7 @@ module PuppetX
         begin
           yaml_inventory = YAML.load_file(yaml_file)
         rescue Psych::SyntaxError
-          output_error_and_exit("The inventory file #{yaml_file} has a syntax error")
+          output_error_and_exit("The inventory file #{yaml_file} contains a syntax error")
         end
         output_error_and_exit('The inventory file does not contain a nodes hash') unless yaml_inventory['nodes']
         yaml_inventory['roles'] = {} unless yaml_inventory['roles']
