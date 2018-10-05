@@ -61,7 +61,6 @@ module PuppetX
 
         if options[:current] && (options[:inventory] || options[:local])
           output_error_and_exit('The --current and (--inventory or --local) options are mutually exclusive')
-          exit 1
         end
 
         if options[:inventory] && options[:local]
@@ -134,6 +133,10 @@ module PuppetX
         @nodes_with_role['console_hosts']   = @nodes_with_class['console']  - @nodes_with_role['primary_masters'] - @nodes_with_role['replica_masters']
         @nodes_with_role['puppetdb_hosts']  = @nodes_with_class['puppetdb'] - @nodes_with_role['primary_masters'] - @nodes_with_role['replica_masters'] - @nodes_with_role['compile_masters']
         @nodes_with_role['database_hosts']  = @nodes_with_class['database'] - @nodes_with_role['primary_masters'] - @nodes_with_role['replica_masters'] - @nodes_with_role['compile_masters'] - @nodes_with_role['puppetdb_hosts']
+
+        if options[:current] && (@nodes_with_role['replica_masters'].include?(Puppet[:certname]))
+          output_error_and_exit('The --current option is limited to running on the Primary Master')
+        end
       end
 
       #
@@ -166,7 +169,7 @@ module PuppetX
           Puppet.debug('Using inventory for get_resources_for_node')
           output_error_and_exit("Cannot read node: #{certname}") unless @inventory['nodes'][certname]
           output_error_and_exit("Cannot read resources for node: #{certname}") unless @inventory['nodes'][certname]['resources']
-          output_error_and_exit("Cannot read cpu resources for node: #{certname}") unless @inventory['nodes'][certname]['resources']['cpu'] && @inventory['nodes'][certname]['resources']['ram']
+          output_error_and_exit("Cannot read resources for node: #{certname}") unless @inventory['nodes'][certname]['resources']['cpu'] && @inventory['nodes'][certname]['resources']['ram']
           node_facts = @inventory['nodes'][certname]['resources']
           resources['cpu'] = node_facts['cpu'].to_i
           resources['ram'] = string_to_bytes(node_facts['ram']).to_i
