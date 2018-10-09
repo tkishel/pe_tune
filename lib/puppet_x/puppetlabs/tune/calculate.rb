@@ -128,7 +128,7 @@ module PuppetX
           end
 
           puppetserver_ram_by_ram_per_jruby = (available_ram_for_puppetserver / ram_per_puppetserver_jruby).to_i
-          jruby_max_active_instances = clamp(puppetserver_ram_by_ram_per_jruby, minimum_cpu_jrubies, maximum_cpu_jrubies)
+          jruby_max_active_instances = val_min_max(puppetserver_ram_by_ram_per_jruby, minimum_cpu_jrubies, maximum_cpu_jrubies)
           settings['params']['puppet_enterprise::master::puppetserver::jruby_max_active_instances'] = jruby_max_active_instances
           settings['totals']['CPU']['used'] += jruby_max_active_instances
 
@@ -289,7 +289,7 @@ module PuppetX
             Puppet.debug("Error: available processors less than minimum: #{available} < minimum: #{minimum}")
             return
           end
-          floor_clamp_percent(percent, available, minimum, maximum)
+          pct_val_min_max(percent, available, minimum, maximum)
         end
 
         # Return a value within a minimum and maximum amount of available memory.
@@ -301,7 +301,7 @@ module PuppetX
             Puppet.debug("Error: available memory less than minimum: #{available} < minimum: #{minimum}")
             return
           end
-          floor_clamp_percent(percent, available, minimum, maximum)
+          pct_val_min_max(percent, available, minimum, maximum)
         end
 
         # Model https://puppet.com/docs/pe/latest/configuring/tuning_monolithic.html
@@ -331,19 +331,21 @@ module PuppetX
           return large  if memory >= 32768
         end
 
-        # Return a value within a minimum and maximum.
+        # Return a value or the minimum or maximum.
+        # Different than clamp: [minimum, val, maximum].sort[1]
 
-        def clamp(val, minimum, maximum)
-          [minimum, val, maximum].sort[1]
+        def val_min_max(val, minimum, maximum)
+          value_or_maximum = [val, maximum].min
+          [value_or_maximum, minimum].max
         end
 
-        # Return a percentage of a value within a minimum and maximum, or the minimum.
+        # Return a percentage of a value or the minimum or maximum.
 
-        def floor_clamp_percent(percent, val, minimum, maximum)
+        def pct_val_min_max(percent, val, minimum, maximum)
           percent *= 0.01
           val_percent = (val * percent).to_i
-          resource_percentage_or_maximum = [val_percent, maximum].min
-          [resource_percentage_or_maximum, minimum].max
+          value_or_maximum = [val_percent, maximum].min
+          [value_or_maximum, minimum].max
         end
 
         # Test if a number is within a percentage of another number.
