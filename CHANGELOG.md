@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+# 1.2.3
+
+- Refactor calculate methods.
+
 ## 1.2.1
 
 - Remove dependency on pe.conf.
