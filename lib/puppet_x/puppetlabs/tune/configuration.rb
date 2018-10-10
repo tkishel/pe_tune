@@ -20,10 +20,10 @@ module PuppetX
           pe_conf_file = '/etc/puppetlabs/enterprise/conf.d/pe.conf'
           Puppet.debug("Reading: #{pe_conf_file}")
           if File.exist?(pe_conf_file)
-            Puppet.debug("Found: #{pe_conf_file}")
+            Puppet.debug _("Found: %{file}") % { file: pe_conf_file }
             pe_conf = Hocon.load(pe_conf_file)
           else
-            Puppet.debug("File does not exist: #{pe_conf_file}")
+            Puppet.debug _("File does not exist: %{file}") % { file: pe_conf_file }
             pe_conf = {}
           end
           pe_conf
@@ -33,9 +33,9 @@ module PuppetX
           return if @pe_conf.empty?
           host = @pe_conf["puppet_enterprise::#{role}"]
           return if host.nil? || host.empty?
-          Puppet.debug("Found pe.conf #{role}: #{host}")
+          Puppet.debug _("Found pe.conf %{role}: %{host}") % { role: role,  host: host}
           host = Puppet[:certname] if ['%{trusted.certname}', '%{::trusted.certname}'].include?(host)
-          Puppet.debug("Using pe.conf #{role}: #{host}")
+          Puppet.debug _("Using pe.conf %{role}: %{host}") % { role: role,  host: host}
           host
         end
 
@@ -87,7 +87,7 @@ module PuppetX
               ]
           results = Puppet::Util::Puppetdb.query_puppetdb(pql)
           random_report_hash = results.sample['hash']
-          Puppet.debug("Random report: #{random_report_hash}")
+          Puppet.debug _("Random report: %{report}") % { report: random_report_hash }
           # run_times = results.map do |report|
           #   Time.parse(report['end_time']) - Time.parse(report['start_time'])
           # end
@@ -132,7 +132,7 @@ module PuppetX
           overrides_classifier.each do |classifier_k, classifier_v|
             next unless settings.include?(classifier_k)
             if overrides.key?(classifier_k)
-              Puppet.debug("# Duplicate settings for #{certname}: #{classifier_k} Classifier: #{classifier_v} Hiera: #{overrides_hiera[classifier_k]}")
+              Puppet.debug _("# Duplicate settings for #{certname}: %{classifier_k} Classifier: %{classifier_v} Hiera: %{hiera_v}") % { certname: certname, classifier_k: classifier_k, classifier_v: classifier_v, hiera_v: overrides_hiera[classifier_k] }
               duplicates.push(classifier_k)
             end
             # Classifer settings take precedence over Hiera settings.

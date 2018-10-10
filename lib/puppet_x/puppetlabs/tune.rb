@@ -148,12 +148,12 @@ module PuppetX
 
       def collect_nodes_with_class(classname)
         if @inventory['classes']
-          Puppet.debug('Using inventory for collect_nodes_with_class')
+          Puppet.debug _('Using inventory for collect_nodes_with_class')
           # Key names are downcased in inventory.
           class_name = classname.downcase
           @nodes_with_class[classname] = @inventory['classes'][class_name].to_a
         else
-          Puppet.debug('Using PuppetDB for collect_nodes_with_class')
+          Puppet.debug _('Using PuppetDB for collect_nodes_with_class')
           # Key names are capitalized in PuppetDB.
           class_name = classname.split('::').map(&:capitalize).join('::')
           @nodes_with_class[classname] = @configurator::get_infra_nodes_with_class(class_name, @environment)
@@ -166,7 +166,7 @@ module PuppetX
       def get_resources_for_node(certname)
         resources = {}
         if @inventory['nodes']
-          Puppet.debug('Using inventory for get_resources_for_node')
+          Puppet.debug _('Using inventory for get_resources_for_node')
           output_error_and_exit("Cannot read node: #{certname}") unless @inventory['nodes'][certname]
           output_error_and_exit("Cannot read resources for node: #{certname}") unless @inventory['nodes'][certname]['resources']
           output_error_and_exit("Cannot read resources for node: #{certname}") unless @inventory['nodes'][certname]['resources']['cpu'] && @inventory['nodes'][certname]['resources']['ram']
@@ -174,7 +174,7 @@ module PuppetX
           resources['cpu'] = node_facts['cpu'].to_i
           resources['ram'] = string_to_bytes(node_facts['ram']).to_i
         else
-          Puppet.debug('Using PuppetDB for get_resources_for_node')
+          Puppet.debug _('Using PuppetDB for get_resources_for_node')
           node_facts = @configurator::get_node_facts(certname, @environment)
           output_error_and_exit("Cannot query resources for node: #{certname}") unless node_facts['processors'] && node_facts['memory']
           resources['cpu'] = node_facts['processors']['count'].to_i
@@ -182,11 +182,11 @@ module PuppetX
         end
         resources['ram'] = (resources['ram'] / 1024 / 1024).to_i
         if ENV['TEST_CPU']
-          Puppet.debug("Using TEST_CPU=#{ENV['TEST_CPU']} for #{certname}")
+          Puppet.debug _("Using TEST_CPU=%{cpu} for %{certname}") % { cpu: ENV['TEST_CPU'], certname: certname }
           resources['cpu'] = ENV['TEST_CPU'].to_i
         end
         if ENV['TEST_RAM']
-          Puppet.debug("Using TEST_RAM=#{ENV['TEST_RAM']} for #{certname}")
+          Puppet.debug _("Using TEST_RAM=%{ram} for %{certname}") % { ram: ENV['TEST_RAM'], certname: certname }
           resources['ram'] = ENV['TEST_RAM'].to_i
         end
         resources
@@ -252,7 +252,7 @@ module PuppetX
         settings = get_current_settings_for_node(certname, [setting])
         return false unless settings['params'].key?(setting)
         enabled = settings['params'][setting] != 'false'
-        Puppet.debug("jruby_9k_enabled: available: #{available}, enabled: #{enabled}")
+        Puppet.debug _("jruby_9k_enabled: available: %{available}, enabled: %{enabled}") % { available: available, enabled: enabled }
         available && enabled
       end
 
@@ -301,13 +301,13 @@ module PuppetX
       def convert_inventory_roles_to_classes(inventory)
         if inventory['roles']['database_host']
           database_host = inventory['roles']['database_host']
-          Puppet.debug("Converting database_host role to classes for: #{database_host}")
+          Puppet.debug _("Converting database_host role to classes for: %{host}") % { host: database_host }
           inventory['classes']['database'] << database_host
         end
 
         if inventory['roles']['puppet_master_host']
           puppet_master_host = inventory['roles']['puppet_master_host']
-          Puppet.debug("Converting puppet_master_host role to classes for: #{puppet_master_host}")
+          Puppet.debug _("Converting puppet_master_host role to classes for: %{host}") % { host: puppet_master_host }
           inventory['classes']['primary_master'] << puppet_master_host
           inventory['classes']['master']         << puppet_master_host
           if nil_or_empty?(inventory['roles']['console_host'])
@@ -325,13 +325,13 @@ module PuppetX
 
         if inventory['roles']['console_host']
           console_host = inventory['roles']['console_host']
-          Puppet.debug("Converting console_host role to classes for: #{console_host}")
+          Puppet.debug _("Converting console_host role to classes for: %{host}") % { host: console_host }
           inventory['classes']['console'] << console_host
         end
 
         if inventory['roles']['puppetdb_host']
           inventory['roles']['puppetdb_host'].each do |puppetdb_host|
-            Puppet.debug("Converting puppetdb_host role to classes for: #{puppetdb_host}")
+          Puppet.debug _("Converting puppetdb_host role to classes for: %{host}") % { host: puppetdb_host }
             inventory['classes']['puppetdb'] << puppetdb_host
             if nil_or_empty?(inventory['roles']['database_host'])
               inventory['classes']['database'] << inventory['roles']['puppetdb_host'].first
@@ -341,7 +341,7 @@ module PuppetX
 
         if inventory['roles']['primary_master_replica']
           primary_master_replica = inventory['roles']['primary_master_replica']
-          Puppet.debug("Converting primary_master_replica role to classes for: #{primary_master_replica}")
+          Puppet.debug _("Converting primary_master_replica role to classes for: %{host}") % { host: primary_master_replica }
           inventory['classes']['primary_master_replica'] << primary_master_replica
           inventory['classes']['master']                 << primary_master_replica
           inventory['classes']['console']                << primary_master_replica
@@ -353,7 +353,7 @@ module PuppetX
 
         if inventory['roles']['compile_master']
           inventory['roles']['compile_master'].each do |compile_master|
-            Puppet.debug("Converting compile_master role to classes for: #{compile_master}")
+            Puppet.debug _("Converting compile_master role to classes for: %{host}") % { host: compile_master }
             inventory['classes']['compile_master'] << compile_master
             inventory['classes']['master']         << compile_master
           end
@@ -366,7 +366,7 @@ module PuppetX
       # This eliminates the dependency upon PuppetDB to query node resources and classes.
 
       def read_inventory_from_local_system
-        Puppet.debug('Querying the local system to define a monolithic infrastructure master node')
+        Puppet.debug _('Querying the local system to define a monolithic infrastructure master node')
         hostname = Puppet::Util::Execution.execute('hostname -f').chomp
         cpu = Puppet::Util::Execution.execute('nproc --all').chomp
         ram = Puppet::Util::Execution.execute('free -b | grep Mem').chomp.split(' ')[1]
@@ -379,7 +379,7 @@ module PuppetX
             }
           }
         }
-        Puppet.debug("Found resources on the local system: #{nodes}")
+        Puppet.debug _("Found resources on the local system: %{nodes}") % { nodes: nodes }
         roles = {}
         roles['puppet_master_host'] = hostname
         inventory = {
@@ -396,7 +396,7 @@ module PuppetX
       def read_inventory_from_inventory_file
         yaml_file = @tune_options[:inventory]
         output_error_and_exit("The inventory file #{yaml_file} does not exist") unless File.exist?(yaml_file)
-        Puppet.debug("Using the inventory file #{yaml_file} to define infrastructure nodes")
+        Puppet.debug _("Using the inventory file %{file} to define infrastructure nodes") % { file: yaml_file }
         begin
           yaml_inventory = YAML.load_file(yaml_file)
         rescue Psych::SyntaxError
