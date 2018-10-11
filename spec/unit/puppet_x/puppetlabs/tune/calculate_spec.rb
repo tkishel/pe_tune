@@ -155,7 +155,7 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
 
       params = {
         'puppet_enterprise::profile::database::shared_buffers'                => '2048MB',
-        'puppet_enterprise::puppetdb::command_processing_threads'             => 3,
+        'puppet_enterprise::puppetdb::command_processing_threads'             => 2,
         'puppet_enterprise::master::puppetserver::jruby_max_active_instances' => 2,
         'puppet_enterprise::profile::master::java_args'                       => { 'Xms' => '1024m', 'Xmx' => '1024m' },
         'puppet_enterprise::profile::puppetdb::java_args'                     => { 'Xms' => '1024m', 'Xmx' => '1024m' },
@@ -164,7 +164,7 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'puppet_enterprise::profile::amq::broker::heap_mb'                    => 512,
       }
       totals = {
-        'CPU'          => { 'total' => 4,    'used' => 5 },
+        'CPU'          => { 'total' => 4,    'used' => 4 },
         'RAM'          => { 'total' => 8192, 'used' => 5632 },
         'MB_PER_JRUBY' => 512,
       }
@@ -276,12 +276,12 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       node = { 'resources' => resources, 'infrastructure' => {}, 'classes' => classes }
 
       params = {
-        'puppet_enterprise::puppetdb::command_processing_threads' => 3,
+        'puppet_enterprise::puppetdb::command_processing_threads' => 2,
         'puppet_enterprise::profile::puppetdb::java_args'         => { 'Xms' => '1280m', 'Xmx' => '1280m' },
         'puppet_enterprise::profile::database::shared_buffers'    => '2048MB',
       }
       totals = {
-        'CPU' => { 'total' => 4,    'used' => 3 },
+        'CPU' => { 'total' => 4,    'used' => 2 },
         'RAM' => { 'total' => 8192, 'used' => 3328 },
       }
       settings = { 'params' => params, 'totals' => totals }
@@ -299,11 +299,11 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       node = { 'resources' => resources, 'infrastructure' => {}, 'classes' => classes }
 
       params = {
-        'puppet_enterprise::puppetdb::command_processing_threads' => 3,
+        'puppet_enterprise::puppetdb::command_processing_threads' => 2,
         'puppet_enterprise::profile::puppetdb::java_args'         => { 'Xms' => '3584m', 'Xmx' => '3584m' },
       }
       totals = {
-        'CPU' => { 'total' => 4, 'used' => 3 },
+        'CPU' => { 'total' => 4, 'used' => 2 },
         'RAM' => { 'total' => 8192, 'used' => 3584 },
       }
       settings = { 'params' => params, 'totals' => totals }

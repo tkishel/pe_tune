@@ -58,7 +58,7 @@ module PuppetX
           if node['infrastructure']['is_monolithic_master']
             if node['infrastructure']['with_compile_masters']
               # Invert resource allocation between puppetserver and puppetdb, if this host is a monolithic master with compile masters.
-              percent_cpu_threads      = 75
+              percent_cpu_threads      = 70
               percent_cpu_jrubies      = 25
               percent_ram_puppetdb     = 20
               minimum_ram_puppetserver = 1024
@@ -180,7 +180,7 @@ module PuppetX
         # Services: pe-puppetdb and (by default, but optionally) pe-postgresql
 
         def calculate_puppetdb_settings(node)
-          percent_cpu_threads  = 75
+          percent_cpu_threads  = 50
           minimum_cpu_threads  = 1
           maximum_cpu_threads  = [1, (node['resources']['cpu'] - 1)].max
 
