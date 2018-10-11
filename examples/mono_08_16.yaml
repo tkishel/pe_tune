@@ -1,0 +1,21 @@
+---
+# Use lowercase for all nodes, roles, and components keys and values.
+# Use 'g' for GB (the default) and 'm' for MB for ram values.
+
+nodes:
+  master.example.com:
+    resources:
+      cpu: 8
+      ram: 16
+
+# Infrastructure roles include:
+#
+#  puppet_master_host     (use instead of primary_master)
+#  console_host           (string)
+#  puppetdb_host          (string or an array)
+#  database_host          (string)
+#  primary_master_replica (string)
+#  compile_master         (string or an array)
+
+roles:
+  puppet_master_host: master.example.com
