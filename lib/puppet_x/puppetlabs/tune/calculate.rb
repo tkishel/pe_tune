@@ -32,28 +32,22 @@ module PuppetX
         def calculate_master_settings(node)
           percent_cpu_threads         = 25
           minimum_cpu_threads         = 2
-
           percent_cpu_jrubies         = 75
           minimum_cpu_jrubies         = 2
-
           minimum_ram_puppetserver    = 2048
           ram_per_puppetserver_jruby  = fit_to_memory(node['resources']['ram'], 512, 768, 1024)
           ram_puppetserver_code_cache = fit_to_memory(node['resources']['ram'], 512, 1024, 2048)
-
           percent_ram_database        = 25
           minimum_ram_database        = fit_to_memory(node['resources']['ram'], 2048, 3072, 4096)
           maximum_ram_database        = 16384
-
           percent_ram_puppetdb        = 10
           minimum_ram_puppetdb        = fit_to_memory(node['resources']['ram'], 512, 1024, 2048)
           maximum_ram_puppetdb        = 8192
-
           ram_console                 = fit_to_memory(node['resources']['ram'], 512, 768, 1024)
           ram_orchestrator            = fit_to_memory(node['resources']['ram'], 512, 768, 1024)
           ram_activemq                = fit_to_memory(node['resources']['ram'], 512, 1024, 2048)
-
           ram_per_puppetserver_jruby  = @options[:memory_per_jruby] if @options[:memory_per_jruby] != 0
-          minimum_ram_os              = (@options[:memory_reserved_for_os] != 0) ? @options[:memory_reserved_for_os] : @defaults[:memory_reserved_for_os]
+          minimum_ram_os              = memory_reserved_for_os
 
           if node['infrastructure']['is_monolithic_master']
             if node['infrastructure']['with_compile_masters']
@@ -73,7 +67,7 @@ module PuppetX
             minimum_ram_puppetserver = 1024
           end
 
-          # Unallocate resources for services not on this host.
+          # Unallocate resources for services not active on this host.
 
           minimum_ram_database        = 0 unless node['classes']['database']
           ram_activemq                = 0 unless node['classes']['amq::broker']
@@ -183,7 +177,6 @@ module PuppetX
           percent_cpu_threads  = 50
           minimum_cpu_threads  = 1
           maximum_cpu_threads  = [1, (node['resources']['cpu'] - 1)].max
-
           percent_ram_puppetdb = 50
           minimum_ram_puppetdb = fit_to_memory(node['resources']['ram'], 512, 1024, 2048)
           maximum_ram_puppetdb = 8192
@@ -281,6 +274,12 @@ module PuppetX
           ((active_nodes.to_f * jruby_lock_time.to_f) / run_interval.to_f).ceil
         end
 
+        # Return the option or the default.
+
+        def memory_reserved_for_os
+          (@options[:memory_reserved_for_os] != 0) ? @options[:memory_reserved_for_os] : @defaults[:memory_reserved_for_os]
+        end
+
         # Return a value within a minimum and maximum amount of available processors.
 
         def calculate_cpu(total, used, percent, minimum, maximum)
@@ -295,7 +294,7 @@ module PuppetX
         # Return a value within a minimum and maximum amount of available memory.
 
         def calculate_ram(total, used, percent, minimum, maximum)
-          reserved  = (@options[:memory_reserved_for_os] != 0) ? @options[:memory_reserved_for_os] : @defaults[:memory_reserved_for_os]
+          reserved  = memory_reserved_for_os
           available = total - reserved - used
           if available < minimum
             Puppet.debug("Error: available memory less than minimum: #{available} < minimum: #{minimum}")
@@ -316,8 +315,7 @@ module PuppetX
 
         # Model https://puppet.com/docs/pe/latest/configuring/tuning_monolithic.html
 
-        def fit_to_memory(memory, small, medium, large, override = 0)
-          return override if override && override > 0
+        def fit_to_memory(memory, small, medium, large)
           # Round up to the nearest power of two (31500 -> 32768) if within a percentage.
           target_memory = nearest_power_of_two(memory)
           if within_percent?(memory, target_memory, @defaults[:fit_to_memory_percentage])
