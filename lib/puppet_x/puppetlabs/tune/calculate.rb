@@ -77,8 +77,8 @@ module PuppetX
 
           # Calculate these maximums based upon the above allocations.
 
-          maximum_cpu_threads = (node['resources']['cpu'] * (percent_cpu_threads * 0.01)).to_i
-          maximum_cpu_jrubies = (node['resources']['cpu'] * (percent_cpu_jrubies * 0.01) - 1).to_i
+          maximum_cpu_threads = [1, (node['resources']['cpu'] * (percent_cpu_threads * 0.01)).to_i].max
+          maximum_cpu_jrubies = [1, (node['resources']['cpu'] * (percent_cpu_jrubies * 0.01) - 1).to_i].max
 
           # The Vegas Renormalization: Allow testing of masters with vmpooler. Requires use of the '--force' option.
 
@@ -176,7 +176,7 @@ module PuppetX
         def calculate_puppetdb_settings(node)
           percent_cpu_threads  = 50
           minimum_cpu_threads  = 1
-          maximum_cpu_threads  = [1, (node['resources']['cpu'] - 1)].max
+          maximum_cpu_threads  = [1, (node['resources']['cpu'] * (percent_cpu_threads * 0.01)).to_i].max
           percent_ram_puppetdb = 50
           minimum_ram_puppetdb = fit_to_memory(node['resources']['ram'], 512, 1024, 2048)
           maximum_ram_puppetdb = 8192
