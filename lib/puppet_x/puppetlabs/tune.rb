@@ -628,15 +628,16 @@ module PuppetX
         if settings['params'].empty?
           output("## Found default settings for #{role} #{certname}\n\n")
         else
-          output("## Found custom settings for #{role} #{certname}\n\n")
+          output("## Found defined settings for #{role} #{certname}\n\n")
           output_data(JSON.pretty_generate(settings['params']))
           output("\n")
         end
         unless settings['duplicates'].count.zero?
-          output("## Found duplicate settings in Hiera and in the Classifier:\n\n")
+          output("## Found duplicate defined settings in Hiera and in the Classifier (Console):\n\n")
           output_data(settings['duplicates'].join("\n"))
           output("\n")
-          output("## Define settings in Hiera (preferred) or the Classifier, but not both.\n\n")
+          output("## Define settings in Hiera (preferred) or the Classifier, but not both.\n")
+          output("## Note that Hiera includes settings defined in pe.conf.\n\n")
         end
       end
 
@@ -790,7 +791,7 @@ if File.expand_path(__FILE__) == File.expand_path($PROGRAM_NAME)
       options[:common] = true
     end
     options[:current] = false
-    opts.on('--current', 'Output current settings and exit') do
+    opts.on('--current', 'Output currently defined settings (other than defaults)') do
       options[:current] = true
     end
     options[:debug] = false

@@ -123,7 +123,7 @@ module PuppetX
           node_facts
         end
 
-        # Return settings configured in Hiera and the classifier, identifying duplicates and merging the results.
+        # Return settings configured in Hiera and the Classifier, identifying duplicates and merging the results.
 
         def get_hiera_classifier_settings(certname, settings, environment, environmentpath)
           duplicates = []
@@ -136,6 +136,7 @@ module PuppetX
               duplicates.push(classifier_k)
             end
             # Classifer settings take precedence over Hiera settings.
+            # Hiera settings include pe.conf.
             overrides[classifier_k] = classifier_v
           end
           { 'params' => overrides, 'duplicates' => duplicates }
