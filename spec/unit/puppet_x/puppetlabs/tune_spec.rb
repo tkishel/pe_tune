@@ -93,7 +93,7 @@ describe PuppetX::Puppetlabs::Tune do
     # end
 
     it 'can extract common settings' do
-      tune.instance_variable_set(:@tune_options, :common => true)
+      tune.instance_variable_set(:@options, :common => true)
       tune.instance_variable_set(:@collected_settings_common, {})
       collected_nodes = {
         'node_1' => {
@@ -127,7 +127,7 @@ describe PuppetX::Puppetlabs::Tune do
     end
 
     it 'can enforce minimum system requirements' do
-      tune.instance_variable_set(:@tune_options, :force => false)
+      tune.instance_variable_set(:@options, :force => false)
 
       resources = { 'cpu' => 3, 'ram' => 8191 }
       expect(tune::meets_minimum_system_requirements?(resources)).to eq(false)
@@ -143,7 +143,7 @@ describe PuppetX::Puppetlabs::Tune do
     end
 
     it 'can disable minimum system requirements' do
-      tune.instance_variable_set(:@tune_options, :force => true)
+      tune.instance_variable_set(:@options, :force => true)
       resources = { 'cpu' => 3, 'ram' => 8191 }
 
       expect(tune::meets_minimum_system_requirements?(resources)).to eq(true)

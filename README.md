@@ -10,7 +10,7 @@
 
 ## Description
 
-This module provides a script that outputs optimized settings for Puppet Enterprise services based upon available hardware resources.
+This module provides a script that outputs optimized settings (parameters) for Puppet Enterprise services based upon available hardware resources.
 
 ## Setup
 
@@ -33,11 +33,13 @@ chmod +x ./pe_tune/lib/puppet_x/puppetlabs/tune.rb
 
 ##### `--common`
 
-Extract common settings from node-specific settings when outputting optimized settings (BETA).
+Extract common settings from node-specific settings when outputting optimized settings.
+
+In this case, a common settings is defined as one that is unique/does not need to be defined for a specific node.
 
 ##### `--current`
 
-Output currently defined settings in JSON format and exit.
+Output currently-defined settings (not including defaults) in JSON format and exit.
 
 Settings may be defined either in the Classifier (the Console) or in Hiera, with Classifier settings taking precedence over Hiera settings. Best practice is to define settings in Hiera (preferred) or the Classifier, but not both.
 

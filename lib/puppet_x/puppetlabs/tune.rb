@@ -83,13 +83,13 @@ module PuppetX
         @nodes_with_role = {}
 
         # Options specific to this Tune class.
-        @tune_options = {}
-        @tune_options[:common]    = options[:common]
-        @tune_options[:estimate]  = options[:estimate]
-        @tune_options[:force]     = options[:force]
-        @tune_options[:hiera]     = options[:hiera]
-        @tune_options[:inventory] = options[:inventory]
-        @tune_options[:local]     = options[:local]
+        @options = {}
+        @options[:common]    = options[:common]
+        @options[:estimate]  = options[:estimate]
+        @options[:force]     = options[:force]
+        @options[:hiera]     = options[:hiera]
+        @options[:inventory] = options[:inventory]
+        @options[:local]     = options[:local]
 
         # Options specific to the Calculate class.
         calculate_options = {}
@@ -105,14 +105,14 @@ module PuppetX
 
         @configurator = PuppetX::Puppetlabs::Tune::Configuration.new
 
-        if @tune_options[:local]
+        if @options[:local]
           @inventory = read_inventory_from_local_system
-        elsif @tune_options[:inventory]
+        elsif @options[:inventory]
           @inventory = read_inventory_from_inventory_file
         end
 
         # If using an inventory, convert inventory roles to classes.
-        if @tune_options[:local] || @tune_options[:inventory]
+        if @options[:local] || @options[:inventory]
           @inventory = convert_inventory_roles_to_classes(@inventory)
         end
 
@@ -394,7 +394,7 @@ module PuppetX
       # This eliminates the dependency upon PuppetDB to query node resources and classes.
 
       def read_inventory_from_inventory_file
-        yaml_file = @tune_options[:inventory]
+        yaml_file = @options[:inventory]
         output_error_and_exit("The inventory file #{yaml_file} does not exist") unless File.exist?(yaml_file)
         Puppet.debug _("Using the inventory file %{file} to define infrastructure nodes") % { file: yaml_file }
         begin
@@ -562,7 +562,7 @@ module PuppetX
       # Extract common settings for common.yaml from <certname>.yaml.
 
       def collect_optimized_settings_common_to_all_nodes
-        return unless @tune_options[:common]
+        return unless @options[:common]
         nodes_with_param = {}
         @collected_nodes.each do |certname, properties|
           properties['settings']['params'].each do |param_name, param_value|
@@ -582,8 +582,8 @@ module PuppetX
       # Output Hiera YAML files.
 
       def output_settings_to_files
-        return unless @tune_options[:hiera]
-        hiera_directory = @tune_options[:hiera]
+        return unless @options[:hiera]
+        hiera_directory = @options[:hiera]
         hiera_subdirectory = "#{hiera_directory}/nodes"
         return if File.directory?(hiera_directory) && File.directory?(hiera_subdirectory)
         Dir.mkdir(hiera_directory) unless File.directory?(hiera_directory)
@@ -592,12 +592,12 @@ module PuppetX
         output_error_and_exit("Unable to create output directory: #{hiera_subdirectory}") unless File.directory?(hiera_subdirectory)
         @collected_nodes.each do |certname, properties|
           next if properties['settings']['params'].empty?
-          output_file = "#{@tune_options[:hiera]}/nodes/#{certname}.yaml"
+          output_file = "#{@options[:hiera]}/nodes/#{certname}.yaml"
           File.write(output_file, properties['settings']['params'].to_yaml)
           output("## Wrote Hiera YAML file: #{output_file}\n\n")
         end
         return if @collected_settings_common.empty?
-        output_file = "#{@tune_options[:hiera]}/common.yaml"
+        output_file = "#{@options[:hiera]}/common.yaml"
         File.write(output_file, @collected_settings_common.to_yaml)
       end
 
@@ -671,7 +671,7 @@ module PuppetX
       end
 
       def output_common_settings
-        return unless @tune_options[:common]
+        return unless @options[:common]
         return if @collected_settings_common.empty?
         output("## Specify the following optimized settings in Hiera in common.yaml\n\n")
         output(@collected_settings_common.to_yaml)
@@ -679,7 +679,7 @@ module PuppetX
       end
 
       def output_estimated_capacity(available_jrubies)
-        return unless @tune_options[:estimate]
+        return unless @options[:estimate]
         run_interval = Puppet[:runinterval]
         active_nodes = @configurator::count_active_nodes
         report_limit = @calculator::calculate_run_sample(active_nodes, run_interval)
@@ -719,7 +719,7 @@ module PuppetX
       # Verify minimum system requirements.
 
       def meets_minimum_system_requirements?(resources)
-        return true if @tune_options[:force]
+        return true if @options[:force]
         resources['cpu'] >= 4 && resources['ram'] >= 8192
       end
 
@@ -782,7 +782,7 @@ if File.expand_path(__FILE__) == File.expand_path($PROGRAM_NAME)
   parser = OptionParser.new do |opts|
     opts.banner = 'Usage: tune.rb [options]'
     opts.separator ''
-    opts.separator 'Summary: Inspect infrastructure and output optimized settings'
+    opts.separator 'Summary: Inspect infrastructure and output optimized settings (parameters)'
     opts.separator ''
     opts.separator 'Options:'
     opts.separator ''
@@ -791,7 +791,7 @@ if File.expand_path(__FILE__) == File.expand_path($PROGRAM_NAME)
       options[:common] = true
     end
     options[:current] = false
-    opts.on('--current', 'Output currently defined settings (other than defaults)') do
+    opts.on('--current', 'Output currently-defined settings (not including defaults)') do
       options[:current] = true
     end
     options[:debug] = false
