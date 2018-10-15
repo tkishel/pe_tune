@@ -398,7 +398,7 @@ module PuppetX
         output_error_and_exit("The inventory file #{yaml_file} does not exist") unless File.exist?(yaml_file)
         Puppet.debug _("Using the inventory file %{file} to define infrastructure nodes") % { file: yaml_file }
         begin
-          yaml_inventory = YAML.load_file(yaml_file)
+          yaml_inventory = YAML.safe_load(File.read(yaml_file))
         rescue Psych::SyntaxError
           output_error_and_exit("The inventory file #{yaml_file} contains a syntax error")
         end
@@ -689,7 +689,9 @@ module PuppetX
         output("### Puppet Infrastructure Estimated Capacity Summary: Found: Active Nodes: #{active_nodes}\n\n")
         output("## Given: Available JRubies: #{available_jrubies}, Agent Run Interval: #{run_interval} Seconds, Average Compile Time: #{average_compile_time} Seconds")
         output("## Estimate: a maximum of #{maximum_nodes} Active Nodes can be served by #{available_jrubies} Available JRubies")
-        output("## Estimate: a minimum of #{minimum_jrubies} Available JRubies is required to serve #{active_nodes} Active Nodes\n\n")
+        output("## Estimate: a minimum of #{minimum_jrubies} Available JRubies is required to serve #{active_nodes} Active Nodes")
+        output('## Note that Available JRubies does not include the Primary Master when using Compile Masters') if with_compile_masters?
+        output("\n")
       end
 
       # Output error and exit.
