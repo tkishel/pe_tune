@@ -146,6 +146,8 @@ module PuppetX
 
         private
 
+        # Extract the beating heart of a puppet compiler for lookup purposes.
+
         def get_hiera_classifier_overrides(certname, settings, environment, _environmentpath)
           if recover_with_instance_method?
             recover = Puppet::Util::Pe_conf::Recover.new

@@ -415,6 +415,27 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       expect((calculator.send :calculate_minimum_jrubies, 100, 20, 30)).to eq(134)
     end
 
+    it 'can calculate the default memory reserved for the operating system' do
+      expect((calculator.send :memory_reserved_for_os)).to eq(1024)
+    end
+
+    it 'can calculate the optional memory reserved for the operating system' do
+      calculator.instance_variable_set(:@options, :memory_reserved_for_os => 2048)
+      expect((calculator.send :memory_reserved_for_os)).to eq(2048)
+    end
+
+    it 'can calculate processor based values' do
+      expect((calculator.send :calculate_cpu, 8, 0,  25, 1, 7)).to eq(2)
+      expect((calculator.send :calculate_cpu, 8, 0,  50, 1, 7)).to eq(4)
+      expect((calculator.send :calculate_cpu, 8, 0, 100, 1, 7)).to eq(7)
+    end
+
+    it 'can calculate memory (total minus memory reserved for the operating system) based values' do
+      expect((calculator.send :calculate_ram, 16384, 0,  25, 1024,  8192)).to eq(3840)
+      expect((calculator.send :calculate_ram, 16384, 0,  50, 1024,  8192)).to eq(7680)
+      expect((calculator.send :calculate_ram, 16384, 0, 100, 1024, 16384)).to eq(15360)
+    end
+
     it 'can calculate a setting based upon number of processors' do
       expect((calculator.send :fit_to_processors, 1,  'S', 'M', 'L')).to eq('S')
       expect((calculator.send :fit_to_processors, 4,  'S', 'M', 'L')).to eq('S')
@@ -431,12 +452,12 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       expect((calculator.send :fit_to_memory, 32769, 'S', 'M', 'L')).to eq('L')
     end
 
-    it 'can calculate the percentage of a resource limited to a minimum and maximum, or the minimum.' do
-      expect((calculator.send :pct_val_min_max, 4, 25, 2, 1)).to eq(2)
-      expect((calculator.send :pct_val_min_max, 4, 25, 2, 2)).to eq(2)
-      expect((calculator.send :pct_val_min_max, 4096, 50, 1024, 3072)).to eq(2048)
-      expect((calculator.send :pct_val_min_max, 4096, 10, 1024, 3072)).to eq(1024)
-      expect((calculator.send :pct_val_min_max, 4096, 90, 1024, 3072)).to eq(3072)
+    it 'can calculate the percentage of a resource limited to a minimum and maximum' do
+      expect((calculator.send :percent_value_within_min_max, 4, 25, 2, 1)).to eq(2)
+      expect((calculator.send :percent_value_within_min_max, 4, 25, 2, 2)).to eq(2)
+      expect((calculator.send :percent_value_within_min_max, 4096, 50, 1024, 3072)).to eq(2048)
+      expect((calculator.send :percent_value_within_min_max, 4096, 10, 1024, 3072)).to eq(1024)
+      expect((calculator.send :percent_value_within_min_max, 4096, 90, 1024, 3072)).to eq(3072)
     end
 
     it 'can test if a number is within a percentage of another number' do

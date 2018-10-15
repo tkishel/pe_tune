@@ -122,7 +122,7 @@ module PuppetX
           end
 
           puppetserver_ram_by_ram_per_jruby = (available_ram_for_puppetserver / ram_per_puppetserver_jruby).to_i
-          jruby_max_active_instances = val_min_max(puppetserver_ram_by_ram_per_jruby, minimum_cpu_jrubies, maximum_cpu_jrubies)
+          jruby_max_active_instances = value_within_min_max(puppetserver_ram_by_ram_per_jruby, minimum_cpu_jrubies, maximum_cpu_jrubies)
           settings['params']['puppet_enterprise::master::puppetserver::jruby_max_active_instances'] = jruby_max_active_instances
           settings['totals']['CPU']['used'] += jruby_max_active_instances
 
@@ -288,10 +288,10 @@ module PuppetX
             Puppet.debug("Error: available processors less than minimum: #{available} < minimum: #{minimum}")
             return
           end
-          pct_val_min_max(percent, available, minimum, maximum)
+          percent_value_within_min_max(percent, available, minimum, maximum)
         end
 
-        # Return a value within a minimum and maximum amount of available memory.
+        # Return a value within a minimum and maximum amount of available (minus memory_reserved_for_os) memory.
 
         def calculate_ram(total, used, percent, minimum, maximum)
           reserved  = memory_reserved_for_os
@@ -300,7 +300,7 @@ module PuppetX
             Puppet.debug("Error: available memory less than minimum: #{available} < minimum: #{minimum}")
             return
           end
-          pct_val_min_max(percent, available, minimum, maximum)
+          percent_value_within_min_max(percent, available, minimum, maximum)
         end
 
         # Model https://puppet.com/docs/pe/latest/configuring/tuning_monolithic.html
@@ -329,17 +329,17 @@ module PuppetX
           return large  if memory >= 32768
         end
 
-        # Return a value or the minimum or maximum.
+        # Return a value or the minimum or maximum, with minimum having a higher precedence than maximum.
         # Different than clamp: [minimum, val, maximum].sort[1]
 
-        def val_min_max(val, minimum, maximum)
+        def value_within_min_max(val, minimum, maximum)
           value_or_maximum = [val, maximum].min
           [value_or_maximum, minimum].max
         end
 
-        # Return a percentage of a value or the minimum or maximum.
+        # Return a percentage of a value or the minimum or maximum, with minimum having a higher precedence than maximum.
 
-        def pct_val_min_max(percent, val, minimum, maximum)
+        def percent_value_within_min_max(percent, val, minimum, maximum)
           percent *= 0.01
           val_percent = (val * percent).to_i
           value_or_maximum = [val_percent, maximum].min
