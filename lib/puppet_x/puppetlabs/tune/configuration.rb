@@ -16,9 +16,11 @@ module PuppetX
           @pe_conf = read_pe_conf
         end
 
+        # Return pe.conf as a Hash.
+
         def read_pe_conf
           pe_conf_file = '/etc/puppetlabs/enterprise/conf.d/pe.conf'
-          Puppet.debug("Reading: #{pe_conf_file}")
+          Puppet.debug _("Reading: %{pe_conf_file}") % { file: pe_conf_file }
           if File.exist?(pe_conf_file)
             Puppet.debug _("Found: %{file}") % { file: pe_conf_file }
             pe_conf = Hocon.load(pe_conf_file)
@@ -28,6 +30,8 @@ module PuppetX
           end
           pe_conf
         end
+
+        # Read a role from pe.conf, translating trusted.certname if necessary.
 
         def get_pe_conf_host(role)
           return if @pe_conf.empty?
@@ -39,8 +43,10 @@ module PuppetX
           host
         end
 
+        # Query PuppetDB for nodes with a class.
+
         def get_infra_nodes_with_class(classname, environment)
-          Puppet.debug("Querying PuppetDB for Class: Puppet_enterprise::Profile::#{classname}")
+          Puppet.debug _("Querying PuppetDB for Class: Puppet_enterprise::Profile::%{classname}") % { classname: classname }
           pql = ['from', 'resources',
                 ['extract', ['certname', 'parameters'],
                   ['and',
@@ -56,17 +62,21 @@ module PuppetX
           results.map { |resource| resource.fetch('certname') }
         end
 
+        # Query PuppetDB for the count of active nodes.
+
         def count_active_nodes
-          Puppet.debug('Querying PuppetDB for Active Nodes')
+          Puppet.debug _('Querying PuppetDB for Active Nodes')
           pql = ['from', 'nodes',
                 ['and',
                   ['=', ['node', 'active'], true],
                 ]
               ]
           results = Puppet::Util::Puppetdb.query_puppetdb(pql)
-          Puppet.debug(results)
+          Puppet.debug (results)
           results.count
         end
+
+        # Query PuppetDB for config_retrieval or total time metrics.
 
         # "name" => "catalog_application",
         # "name" => "config_retrieval",
@@ -78,7 +88,7 @@ module PuppetX
         # "name" => "total",
 
         def get_average_compile_time(query_limit = 1000)
-          Puppet.debug('Querying PuppetDB for Average Compile Time')
+          Puppet.debug _('Querying PuppetDB for Average Compile Time')
           pql = ['from', 'reports',
                 ['extract',
                   ['hash', 'start_time', 'end_time', 'metrics'],
@@ -103,6 +113,8 @@ module PuppetX
           avg_config_retrieval_time = config_retrieval_times.reduce(0.0) { |sum, element| sum + element } / config_retrieval_times.size
           avg_config_retrieval_time.ceil
         end
+
+        # Query PuppetDB for facts for a node.
 
         def get_node_facts(certname, environment)
           node_facts = {}
