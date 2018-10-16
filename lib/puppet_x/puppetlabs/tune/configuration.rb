@@ -72,7 +72,7 @@ module PuppetX
                 ]
               ]
           results = Puppet::Util::Puppetdb.query_puppetdb(pql)
-          Puppet.debug (results)
+          Puppet.debug(results)
           results.count
         end
 
