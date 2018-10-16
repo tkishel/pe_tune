@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+# 1.3.0
+
+- Add translation method
+- Limit command_processing_threads
+- Move inventory into its own class
+
 # 1.2.3
 
 - Refactor calculate methods.
