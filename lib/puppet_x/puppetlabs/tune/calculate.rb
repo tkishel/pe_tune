@@ -18,8 +18,8 @@ module PuppetX
           @options[:memory_per_jruby]       = options[:memory_per_jruby] || 0
           @options[:memory_reserved_for_os] = options[:memory_reserved_for_os] || 0
 
-          Puppet.debug("Using optional #{@options[:memory_per_jruby]}MB RAM per JRuby") if @options[:memory_per_jruby] != 0
-          Puppet.debug("Using optional #{@options[:memory_reserved_for_os]}MB RAM reserved for the operating system") if @options[:memory_reserved_for_os] != 0
+          Puppet.debug("Using optional %{mem}MB RAM per JRuby") % { mem: @options[:memory_per_jruby] } if @options[:memory_per_jruby] != 0
+          Puppet.debug("Using optional %{mem}MB RAM reserved for the operating system") % { mem: @options[:memory_reserved_for_os] } if @options[:memory_reserved_for_os] != 0
         end
 
         #
@@ -93,8 +93,14 @@ module PuppetX
           if node['resources']['ram'] < 8096
             minimum_ram_database        = 256
             maximum_ram_database        = 256
+            minimum_ram_puppetdb        = 256
+            maximum_ram_puppetdb        = 256
             ram_puppetserver_code_cache = 256
             minimum_ram_puppetserver    = 256
+            ram_per_puppetserver_jruby  = 256
+            ram_console                 = 256
+            ram_orchestrator            = 256
+            ram_activemq                = 256
           end
 
           settings = initialize_settings(node)
@@ -120,7 +126,7 @@ module PuppetX
 
           available_ram_for_puppetserver = node['resources']['ram'] - minimum_ram_os - settings['totals']['RAM']['used']
           if available_ram_for_puppetserver < minimum_ram_puppetserver
-            Puppet.debug("Error: available_ram_for_puppetserver: #{available_ram_for_puppetserver} < minimum_ram_puppetserver: #{minimum_ram_puppetserver}")
+            Puppet.debug _("Error: available_ram_for_puppetserver: %{available} < minimum_ram_puppetserver: %{minimum}") % { available: available_ram_for_puppetserver, minimum: minimum_ram_puppetserver }
             return {}
           end
 
@@ -289,7 +295,7 @@ module PuppetX
         def calculate_cpu(total, used, percent, minimum, maximum)
           available = total - used
           if available < minimum
-            Puppet.debug("Error: available processors less than minimum: #{available} < minimum: #{minimum}")
+            Puppet.debug _("Error: available processors less than minimum: %{available} < minimum: %{minimum}") % { available: available, minimum: minimum }
             return
           end
           percent_value_within_min_max(percent, available, minimum, maximum)
@@ -301,7 +307,7 @@ module PuppetX
           reserved  = memory_reserved_for_os
           available = total - reserved - used
           if available < minimum
-            Puppet.debug("Error: available memory less than minimum: #{available} < minimum: #{minimum}")
+            Puppet.debug _("Error: available memory less than minimum: %{available} < minimum: %{minimum}") % { available: available, minimum: minimum }
             return
           end
           percent_value_within_min_max(percent, available, minimum, maximum)
@@ -313,7 +319,7 @@ module PuppetX
           return small  if processors <= 4
           return medium if processors <= 8
           return medium if processors <  16
-          Puppet.debug('Using a maximum value for fit_to_processors')
+          Puppet.debug _('Using a maximum value for fit_to_processors')
           return large  if processors >= 16
         end
 
@@ -323,13 +329,13 @@ module PuppetX
           # Round up to the nearest power of two (31500 -> 32768) if within a percentage.
           target_memory = nearest_power_of_two(memory)
           if within_percent?(memory, target_memory, @defaults[:fit_to_memory_percentage])
-            Puppet.debug("Rounding #{memory} up to #{target_memory} for fit_to_memory")
+            Puppet.debug _("Rounding %{memory} up to %{target_memory} for fit_to_memory") % { memory: memory, target_memory: target_memory}
             memory = target_memory
           end
           return small  if memory <= 8192
           return medium if memory <= 16384
           return medium if memory <  32768
-          Puppet.debug('Using a maximum value for fit_to_memory')
+          Puppet.debug _('Using a maximum value for fit_to_memory')
           return large  if memory >= 32768
         end
 
