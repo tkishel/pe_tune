@@ -106,8 +106,8 @@ module PuppetX
         # If using the local system or a file as inventory, read inventory and convert inventory roles to classes.
         if @options[:local] || @options[:inventory]
           @inventory::read_inventory_from_local_system if @options[:local]
-          @inventory::read_inventory_from_inventory_file(@options[:inventory])
-          output_error_and_exit('Unable to read inventory') unless @inventory::nodes && @inventory::classes
+          @inventory::read_inventory_from_inventory_file(@options[:inventory]) if @options[:inventory]
+          output_error_and_exit('Unable to read inventory') if @inventory::nodes.empty? && @inventory::classes.empty?
         end
 
         # Query PuppetDB (or inventory) for classes and cache the results.
@@ -141,7 +141,7 @@ module PuppetX
       # Interface to PuppetX::Puppetlabs::Tune::Configuration and ::Inventory
 
       def collect_nodes_with_class(classname)
-        if @inventory::classes
+        if !@inventory::classes.empty?
           Puppet.debug _('Using inventory for collect_nodes_with_class')
           # Key names are downcased in inventory.
           class_name = classname.downcase
@@ -159,7 +159,7 @@ module PuppetX
 
       def get_resources_for_node(certname)
         resources = {}
-        if @inventory::nodes
+        if !@inventory::nodes.empty?
           Puppet.debug _('Using inventory for get_resources_for_node')
           output_error_and_exit("Cannot read node: #{certname}") unless @inventory::nodes[certname] && @inventory::nodes[certname]['resources']
           node_facts = @inventory::nodes[certname]['resources']
@@ -391,7 +391,7 @@ module PuppetX
       # Collect node for output to <certname>.yaml.
 
       def collect_node_with_role(certname, role, node)
-        output_minimum_system_requirements_error_and_exit(certname) if node['settings'].empty?
+        output_minimum_system_requirements_error_and_exit(certname) unless node['settings']
         properties = {
           'resources' => node['resources'],
           'role'      => role,

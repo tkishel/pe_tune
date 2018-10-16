@@ -115,7 +115,6 @@ describe PuppetX::Puppetlabs::Tune::Inventory do
 
       inventory::convert_inventory_roles_to_classes
 
-      expect(inventory.instance_variable_get(:@nodes)).to   eq(inputs['nodes'])
       expect(inventory.instance_variable_get(:@roles)).to   eq(output['roles'])
       expect(inventory.instance_variable_get(:@classes)).to eq(output['classes'])
     end
@@ -159,13 +158,13 @@ describe PuppetX::Puppetlabs::Tune::Inventory do
 
       inventory::convert_inventory_roles_to_classes
 
-      expect(inventory.instance_variable_get(:@nodes)).to   eq(inputs['nodes'])
       expect(inventory.instance_variable_get(:@roles)).to   eq(output['roles'])
       expect(inventory.instance_variable_get(:@classes)).to eq(output['classes'])
     end
 
     it 'can convert split inventory roles to classes' do
       inputs = {
+        'nodes' => {},
         'roles' => {
           'puppet_master_host'     => 'master',
           'console_host'           => 'console',
@@ -203,7 +202,6 @@ describe PuppetX::Puppetlabs::Tune::Inventory do
 
       inventory::convert_inventory_roles_to_classes
 
-      expect(inventory.instance_variable_get(:@nodes)).to   eq(inputs['nodes'])
       expect(inventory.instance_variable_get(:@roles)).to   eq(output['roles'])
       expect(inventory.instance_variable_get(:@classes)).to eq(output['classes'])
     end
@@ -247,7 +245,6 @@ describe PuppetX::Puppetlabs::Tune::Inventory do
 
       inventory::convert_inventory_roles_to_classes
 
-      expect(inventory.instance_variable_get(:@nodes)).to   eq(inputs['nodes'])
       expect(inventory.instance_variable_get(:@roles)).to   eq(output['roles'])
       expect(inventory.instance_variable_get(:@classes)).to eq(output['classes'])
     end
@@ -291,7 +288,6 @@ describe PuppetX::Puppetlabs::Tune::Inventory do
 
       inventory::convert_inventory_roles_to_classes
 
-      expect(inventory.instance_variable_get(:@nodes)).to   eq(inputs['nodes'])
       expect(inventory.instance_variable_get(:@roles)).to   eq(output['roles'])
       expect(inventory.instance_variable_get(:@classes)).to eq(output['classes'])
     end
@@ -335,7 +331,6 @@ describe PuppetX::Puppetlabs::Tune::Inventory do
 
       inventory::convert_inventory_roles_to_classes
 
-      expect(inventory.instance_variable_get(:@nodes)).to   eq(inputs['nodes'])
       expect(inventory.instance_variable_get(:@roles)).to   eq(output['roles'])
       expect(inventory.instance_variable_get(:@classes)).to eq(output['classes'])
     end

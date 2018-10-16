@@ -16,6 +16,12 @@ module PuppetX
         attr_reader :roles
         attr_reader :classes
 
+        def initialize
+          @nodes   = {}
+          @roles   = {}
+          @classes = {}
+        end
+
         # Inventory infrastructure roles.
 
         def default_inventory_roles
