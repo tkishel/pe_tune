@@ -107,7 +107,7 @@ module PuppetX
         if @options[:local] || @options[:inventory]
           @inventory::read_inventory_from_local_system if @options[:local]
           @inventory::read_inventory_from_inventory_file(@options[:inventory]) if @options[:inventory]
-          output_error_and_exit('Unable to read inventory') if @inventory::nodes.empty? || @inventory::classes.empty?
+          output_error_and_exit('Unable to read Inventory') if @inventory::nodes.empty? || @inventory::classes.empty?
         end
 
         # Query PuppetDB (or inventory) for classes and cache the results.
@@ -141,8 +141,8 @@ module PuppetX
       # Interface to PuppetX::Puppetlabs::Tune::Configuration and ::Inventory
 
       def collect_nodes_with_class(classname)
-        if !@inventory::classes.empty?
-          Puppet.debug _('Using inventory for collect_nodes_with_class')
+        if @inventory::classes.any?
+          Puppet.debug _('Using Inventory for collect_nodes_with_class')
           # Key names are downcased in inventory.
           class_name = classname.downcase
           @nodes_with_class[classname] = @inventory::classes[class_name].to_a
@@ -159,8 +159,8 @@ module PuppetX
 
       def get_resources_for_node(certname)
         resources = {}
-        if !@inventory::nodes.empty?
-          Puppet.debug _('Using inventory for get_resources_for_node')
+        if @inventory::nodes.any?
+          Puppet.debug _('Using Inventory for get_resources_for_node')
           output_error_and_exit("Cannot read node: #{certname}") unless @inventory::nodes[certname] && @inventory::nodes[certname]['resources']
           node_facts = @inventory::nodes[certname]['resources']
           output_error_and_exit("Cannot read resources for node: #{certname}") unless node_facts['cpu'] && node_facts['ram']
@@ -244,7 +244,7 @@ module PuppetX
         return false unless available
         setting = 'puppet_enterprise::master::puppetserver::jruby_9k_enabled'
         # Do not query PuppetDB when using inventory, instead return the default.
-        return true if !@inventory::nodes.empty?
+        return true if @inventory::nodes.any?
         settings = get_current_settings_for_node(certname, [setting])
         return false unless settings['params'].key?(setting)
         enabled = settings['params'][setting] != 'false'
