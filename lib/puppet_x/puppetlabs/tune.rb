@@ -107,7 +107,7 @@ module PuppetX
         if @options[:local] || @options[:inventory]
           @inventory::read_inventory_from_local_system if @options[:local]
           @inventory::read_inventory_from_inventory_file(@options[:inventory]) if @options[:inventory]
-          output_error_and_exit('Unable to read inventory') if @inventory::nodes.empty? && @inventory::classes.empty?
+          output_error_and_exit('Unable to read inventory') if @inventory::nodes.empty? || @inventory::classes.empty?
         end
 
         # Query PuppetDB (or inventory) for classes and cache the results.
@@ -237,11 +237,14 @@ module PuppetX
       # Identify JRuby version on a node.
 
       def with_jruby9k_enabled?(certname)
-        return true if Gem::Version.new(Puppet.version) >= Gem::Version.new('6.0.0')
+        return false if Gem::Version.new(Puppet.version) < Gem::Version.new('5.5.1') # <  2018.1
+        return true if Gem::Version.new(Puppet.version) >= Gem::Version.new('6.0.0') # >= 2019.0
         jr9kjar = '/opt/puppetlabs/server/apps/puppetserver/jruby-9k.jar'
         available = File.exist?(jr9kjar)
         return false unless available
         setting = 'puppet_enterprise::master::puppetserver::jruby_9k_enabled'
+        # Do not query PuppetDB when using inventory, instead return the default.
+        return true if !@inventory::nodes.empty?
         settings = get_current_settings_for_node(certname, [setting])
         return false unless settings['params'].key?(setting)
         enabled = settings['params'][setting] != 'false'
