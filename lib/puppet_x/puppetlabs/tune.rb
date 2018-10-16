@@ -546,15 +546,15 @@ module PuppetX
       end
 
       def output_pe_infrastructure_error_and_exit
-        Puppet.err('Puppet Infrastructure Summary: Unknown Infrastructure')
-        Puppet.err('Unable to find a Primary Master via a PuppetDB query')
-        Puppet.err('Verify PE Infrastructure node groups in the Console')
-        Puppet.err('Rerun this command with --debug for more information')
+        Puppet.err _('Puppet Infrastructure Summary: Unknown Infrastructure')
+        Puppet.err _('Unable to find a Primary Master via a PuppetDB query')
+        Puppet.err _('Verify PE Infrastructure node groups in the Console')
+        Puppet.err _('Rerun this command with --debug for more information')
         exit 1
       end
 
       def output_minimum_system_requirements_error_and_exit(certname)
-        Puppet.err("#{certname} does not meet the minimum system requirements to optimize its settings")
+        Puppet.err _("%{certname} does not meet the minimum system requirements to optimize its settings") % { certname: certname }
         exit 1
       end
 
@@ -671,7 +671,7 @@ if File.expand_path(__FILE__) == File.expand_path($PROGRAM_NAME)
 
   Puppet.debug = options[:debug]
 
-  Puppet.debug("Command Options: #{options}")
+  Puppet.debug _("Command Options: %{options}") % { options: options }
 
   # The location of enterprise modules varies from version to version.
 
@@ -684,7 +684,7 @@ if File.expand_path(__FILE__) == File.expand_path($PROGRAM_NAME)
     enterprise_modules.each do |enterprise_module|
       enterprise_module_lib = "#{enterprise_module_path}/#{enterprise_module}/lib"
       next if $LOAD_PATH.include?(enterprise_module_lib)
-      Puppet.debug("Adding #{enterprise_module} to LOAD_PATH: #{enterprise_module_lib}")
+      Puppet.debug _("Adding %{enterprise_module} to LOAD_PATH: %{enterprise_module_lib}") % { enterprise_module: enterprise_module, enterprise_module_lib: enterprise_module_lib }
       $LOAD_PATH.unshift(enterprise_module_lib)
     end
   end
