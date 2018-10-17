@@ -81,7 +81,8 @@ module PuppetX
           maximum_cpu_threads = [minimum_cpu_threads, (node['resources']['cpu'] * (percent_cpu_threads * 0.01)).to_i].max
           maximum_cpu_jrubies = [minimum_cpu_jrubies, (node['resources']['cpu'] * (percent_cpu_jrubies * 0.01) - 1).to_i].max
 
-          # The Vegas Renormalization: Allow testing of masters with vmpooler. Requires use of the '--force' option.
+          # The Vegas Renormalization: allow for testing with vmpooler (2 CPU / 6 GB RAM) VMs.
+          # Requires use of TEST_CPU=8 and TEST_RAM=16384, or the '--force' option.
 
           if node['resources']['cpu'] < 4
             minimum_cpu_threads = 1
