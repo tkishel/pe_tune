@@ -51,16 +51,16 @@ module PuppetX
 
           # Reallocate resources depending upon infrastructure.
 
-          if node['infrastructure']['is_monolithic_master']
+          if node['infrastructure']['is_monolithic_master'] || node['infrastructure']['is_replica_master']
             if node['infrastructure']['with_compile_masters']
-              # Invert resource allocation between puppetserver and puppetdb, if this host is a monolithic master with compile masters.
+              # Invert resource allocation between puppetserver and puppetdb, if this host is a monolithic master or replica master with compile masters.
               percent_cpu_threads      = 50
               percent_cpu_jrubies      = 25
               percent_ram_puppetdb     = 20
               minimum_ram_puppetserver = 1024
             end
           else
-            # Reduce minimum memory allocation for puppetserver, if this host is not a monolithic master with compile masters.
+            # Decrease minimum memory allocation for puppetserver, if this host is not a monolithic master or replica master with compile masters.
             minimum_ram_puppetserver   = 1024
           end
 
@@ -80,6 +80,14 @@ module PuppetX
 
           maximum_cpu_threads = [minimum_cpu_threads, (node['resources']['cpu'] * (percent_cpu_threads * 0.01)).to_i].max
           maximum_cpu_jrubies = [minimum_cpu_jrubies, (node['resources']['cpu'] * (percent_cpu_jrubies * 0.01) - 1).to_i].max
+
+          # Decrease maximum_cpu_threads on compile masters, if this is an extra large reference architecture, to avoid making too many connections to the external database:
+
+          if node['infrastructure']['is_compile_master'] && node['infrastructure']['with_extra_large']
+            maximum_cpu_threads = minimum_cpu_threads
+            # puppet_enterprise::puppetdb::write_maximum_pool_size: 4
+            # puppet_enterprise::puppetdb::read_maximum_pool_size: 10
+          end
 
           # The Vegas Renormalization: allow for testing with vmpooler (2 CPU / 6 GB RAM) VMs.
           # Requires use of TEST_CPU=8 and TEST_RAM=16384, or the '--force' option.
@@ -218,9 +226,10 @@ module PuppetX
         # Services: pe-postgresql
 
         def calculate_database_settings(node)
-          percent_ram_database = 25
-          minimum_ram_database = fit_to_memory(node['resources']['ram'], 2048, 3072, 4096)
-          maximum_ram_database = 16384
+          percent_ram_database    = 25
+          minimum_ram_database    = fit_to_memory(node['resources']['ram'], 2048, 3072, 4096)
+          maximum_ram_database    = 16384
+          default_max_connections = 500
 
           settings = initialize_settings(node)
 
@@ -228,6 +237,11 @@ module PuppetX
           return unless ram_database
           settings['params']['puppet_enterprise::profile::database::shared_buffers'] = "#{ram_database}MB"
           settings['totals']['RAM']['used'] += ram_database
+
+          # Increase max_connections for postgresql, if this is an extra large reference architecture, as each puppetdb service uses connections.
+          if node['infrastructure']['with_extra_large']
+            settings['params']['puppet_enterprise::profile::database::max_connections'] = (default_max_connections * 2)
+          end
 
           settings
         end

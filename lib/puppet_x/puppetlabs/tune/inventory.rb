@@ -31,7 +31,9 @@ module PuppetX
             'puppetdb_host'          => [],
             'database_host'          => nil,
             'primary_master_replica' => nil,
-            'compile_master'         => []
+            'compile_master'         => [],
+            'compile_masters_xl'     => [],
+            'database_hosts_xl'      => []
           }
         end
 
@@ -112,6 +114,8 @@ module PuppetX
         # Convert inventory roles to classes, using Set instead of Array to prevent duplicates.
 
         def convert_inventory_roles_to_classes
+          # Split Architecture
+
           if @roles['database_host']
             database_host = @roles['database_host']
             Puppet.debug _("Converting database_host role to classes for: %{host}") % { host: database_host }
@@ -132,6 +136,8 @@ module PuppetX
             @classes['console'] << console_host
           end
 
+          # Split or Monolithic Architecture
+
           if @roles['puppet_master_host']
             puppet_master_host = @roles['puppet_master_host']
             Puppet.debug _("Converting puppet_master_host role to classes for: %{host}") % { host: puppet_master_host }
@@ -143,6 +149,8 @@ module PuppetX
             @classes['amq::broker']    << puppet_master_host
             @classes['orchestrator']   << puppet_master_host
           end
+
+          # Monolithic Architecture
 
           if @roles['primary_master_replica']
             primary_master_replica = @roles['primary_master_replica']
@@ -161,6 +169,23 @@ module PuppetX
               Puppet.debug _("Converting compile_master role to classes for: %{host}") % { host: compile_master }
               @classes['compile_master'] << compile_master
               @classes['master']         << compile_master
+            end
+          end
+
+          # Monolithic Extra Large Reference Architecture
+
+          if @roles['compile_masters_xl']
+            @roles['compile_masters_xl'].each do |compile_master|
+              Puppet.debug _("Converting compile_masters_xl role to classes for: %{host}") % { host: compile_master }
+              @classes['compile_master'] << compile_master
+              @classes['master']         << compile_master
+              @classes['puppetdb']       << compile_master
+            end
+          end
+          if @roles['database_hosts_xl']
+            @roles['database_hosts_xl'].each do |database_host|
+              Puppet.debug _("Converting database_hosts_xl role to classes for: %{host}") % { host: database_host }
+              @classes['database'] << database_host
             end
           end
         end

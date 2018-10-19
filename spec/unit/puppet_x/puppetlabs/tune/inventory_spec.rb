@@ -17,7 +17,9 @@ describe PuppetX::Puppetlabs::Tune::Inventory do
         'puppetdb_host'          => [],
         'database_host'          => nil,
         'primary_master_replica' => nil,
-        'compile_master'         => []
+        'compile_master'         => [],
+        'compile_masters_xl'     => [],
+        'database_hosts_xl'      => []
       }
     end
 
@@ -54,7 +56,9 @@ describe PuppetX::Puppetlabs::Tune::Inventory do
           'puppetdb_host'          => [],
           'database_host'          => nil,
           'primary_master_replica' => nil,
-          'compile_master'         => []
+          'compile_master'         => [],
+          'compile_masters_xl'     => [],
+          'database_hosts_xl'      => []
         },
         'classes' => {
           'master'                 => ['master.example.com'].to_set,

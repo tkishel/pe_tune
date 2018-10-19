@@ -59,13 +59,41 @@ describe PuppetX::Puppetlabs::Tune do
     it 'can detect an external database host' do
       nodes = {
         'primary_masters' => ['master'],
-        'console_hosts'   => [],
-        'puppetdb_hosts'  => [],
         'database_hosts'  => ['postgresql'],
       }
       tune.instance_variable_set(:@nodes_with_role, nodes)
 
       expect(tune::with_external_database?).to eq(true)
+    end
+
+    it 'can detect local and external databases' do
+      nodes_with_class = {
+        'database' => ['master','postgresql']
+      }
+      nodes = {
+        'primary_masters' => ['master'],
+        'replica_masters' => [],
+        'database_hosts'  => ['master','postgresql'],
+      }
+      tune.instance_variable_set(:@nodes_with_class, nodes_with_class)
+      tune.instance_variable_set(:@nodes_with_role, nodes)
+
+      expect(tune::with_local_and_external_databases?).to eq(true)
+    end
+
+    it 'can detect puppetdb on all masters' do
+      nodes_with_class = {
+        'puppetdb' => ['master', 'replica', 'compile']
+      }
+      nodes = {
+        'primary_masters' => ['master'],
+        'replica_masters' => ['replica'],
+        'compile_masters' => ['compile'],
+      }
+      tune.instance_variable_set(:@nodes_with_class, nodes_with_class)
+      tune.instance_variable_set(:@nodes_with_role, nodes)
+
+      expect(tune::with_puppetdb_on_all_masters?).to eq(true)
     end
 
     it 'can detect a class on a host' do

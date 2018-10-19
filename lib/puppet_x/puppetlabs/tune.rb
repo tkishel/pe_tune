@@ -28,6 +28,7 @@ module PuppetX
           'puppet_enterprise::profile::amq::broker::heap_mb',
           'puppet_enterprise::profile::console::java_args',
           'puppet_enterprise::profile::database::shared_buffers',
+          'puppet_enterprise::profile::database::max_connections',
           'puppet_enterprise::profile::master::java_args',
           'puppet_enterprise::profile::orchestrator::java_args',
           'puppet_enterprise::profile::puppetdb::java_args',
@@ -217,6 +218,40 @@ module PuppetX
         @nodes_with_role['database_hosts'].count > 0
       end
 
+      def with_local_and_external_databases?
+        primary_and_replica_masters_count = @nodes_with_role['primary_masters'].count + @nodes_with_role['replica_masters'].count
+        @nodes_with_class['database'].count == (2 * primary_and_replica_masters_count)
+      end
+
+      def with_puppetdb_on_all_masters?
+        primary_and_replica_masters_count = @nodes_with_role['primary_masters'].count + @nodes_with_role['replica_masters'].count
+        @nodes_with_class['puppetdb'].count == (primary_and_replica_masters_count + @nodes_with_role['compile_masters'].count)
+      end
+
+      # Identify infrastructure node.
+
+      def monolithic_master?(certname)
+        monolithic? && @nodes_with_role['primary_masters'].include?(certname)
+      end
+
+      def replica_master?(certname)
+        monolithic? && @nodes_with_role['replica_masters'].include?(certname)
+      end
+
+      def compile_master?(certname)
+        @nodes_with_role['compile_masters'].include?(certname)
+      end
+
+      # Monolithic with or without HA
+      # With PE Database Hosts (aka PostgreSQL Hosts) for pe-puppetdb on one host and the other databases on another
+      # With Compile Masters with PuppetDB
+
+      def extra_large?
+        return false unless monolithic?
+        return false unless with_compile_masters?
+        with_local_and_external_databases? && with_puppetdb_on_all_masters?
+      end
+
       # Identify class on a node.
 
       def node_with_class?(certname, classname)
@@ -267,7 +302,7 @@ module PuppetX
 
       def output_current_settings
         output_pe_infrastructure_error_and_exit if unknown_infrastructure?
-        output_pe_infrastucture_summary(monolithic?, with_compile_masters?, with_external_database?)
+        output_pe_infrastucture_summary(monolithic?, with_compile_masters?, with_external_database?, extra_large?)
 
         available_jrubies = 0
 
@@ -316,7 +351,7 @@ module PuppetX
 
       def output_optimized_settings
         output_pe_infrastructure_error_and_exit if unknown_infrastructure?
-        output_pe_infrastucture_summary(monolithic?, with_compile_masters?, with_external_database?)
+        output_pe_infrastucture_summary(monolithic?, with_compile_masters?, with_external_database?, extra_large?)
 
         available_jrubies = 0
 
@@ -383,8 +418,13 @@ module PuppetX
         output_minimum_system_requirements_error_and_exit(certname) unless meets_minimum_system_requirements?(resources)
         node['classes'] = get_tunable_classes_for_node(certname)
         node['infrastructure'] = {
-          'is_monolithic_master' => monolithic?,
+          'certname'             => certname,
+          'is_monolithic'        => monolithic?,
           'with_compile_masters' => with_compile_masters?,
+          'with_extra_large'     => extra_large?,
+          'is_monolithic_master' => monolithic_master?(certname),
+          'is_replica_master'    => replica_master?(certname),
+          'is_compile_master'    => compile_master?(certname),
           'with_jruby9k_enabled' => with_jruby9k_enabled?(certname),
         }
         node['resources'] = resources
@@ -459,11 +499,12 @@ module PuppetX
 
       # Output infrastucture information.
 
-      def output_pe_infrastucture_summary(is_monolithic, with_compile_masters, with_external_database)
+      def output_pe_infrastucture_summary(is_monolithic, with_compile_masters, with_external_database, with_extra_large)
         type = is_monolithic ? 'Monolithic' : 'Split'
         w_cm = with_compile_masters ? ' with Compile Masters' : ''
         w_ep = with_external_database ? ' with External Database' : ''
-        output("### Puppet Infrastructure Summary: Found a #{type} Infrastructure#{w_cm}#{w_ep}\n\n")
+        w_xl = with_extra_large ? ' with XL' : ''
+        output("### Puppet Infrastructure Summary: Found a #{type} Infrastructure#{w_cm}#{w_ep}#{w_xl}\n\n")
       end
 
       # Output current information for a node.
