@@ -1,0 +1,23 @@
+{
+  "description": "Run 'pe_tune' on the primary master",
+  "input_method": "stdin",
+  "supports_noop": false,
+  "parameters": {
+    "common": {
+      "description": "Extract common settings from node-specific settings",
+      "type": "Optional[Variant[Boolean,Enum['true','false']]]"
+    },
+    "hiera": {
+      "description": "Output Hiera YAML files to the specified directorypriomary ",
+      "type": "Optional[String]"
+    },
+    "memory_per_jruby": {
+      "description": "Amount of RAM to allocate for each Puppet Server JRuby",
+      "type": "Optional[Integer]"
+    },
+    "memory_reserved_for_os": {
+      "description": "Amount of RAM to reserve for the operating system",
+      "type": "Optional[Integer]"
+    }
+  }
+}
