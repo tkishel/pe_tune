@@ -51,7 +51,7 @@ module PuppetX
 
           # Reallocate resources depending upon infrastructure.
 
-          if node['infrastructure']['is_monolithic_master'] || node['infrastructure']['is_replica_master']
+          if node['type']['is_monolithic_master'] || node['type']['is_replica_master']
             if node['infrastructure']['with_compile_masters']
               # Invert resource allocation between puppetserver and puppetdb, if this host is a monolithic master or replica master with compile masters.
               percent_cpu_threads      = 50
@@ -64,7 +64,7 @@ module PuppetX
             minimum_ram_puppetserver   = 1024
           end
 
-          ram_puppetserver_code_cache = 0 unless node['infrastructure']['with_jruby9k_enabled']
+          ram_puppetserver_code_cache = 0 unless node['type']['with_jruby9k_enabled']
 
           # Reallocate resources depending upon services active on this host.
 
@@ -83,7 +83,7 @@ module PuppetX
 
           # Decrease maximum_cpu_threads on compile masters, if this is an extra large reference architecture, to avoid making too many connections to the external database:
 
-          if node['infrastructure']['is_compile_master'] && node['infrastructure']['with_extra_large']
+          if node['type']['is_compile_master'] && node['infrastructure']['with_extra_large']
             maximum_cpu_threads = minimum_cpu_threads
             # puppet_enterprise::puppetdb::write_maximum_pool_size: 4
             # puppet_enterprise::puppetdb::read_maximum_pool_size: 10

@@ -416,18 +416,20 @@ module PuppetX
         node = {}
         resources = get_resources_for_node(certname)
         output_minimum_system_requirements_error_and_exit(certname) unless meets_minimum_system_requirements?(resources)
+        node['certname'] = certname,
         node['classes'] = get_tunable_classes_for_node(certname)
         node['infrastructure'] = {
-          'certname'             => certname,
           'is_monolithic'        => monolithic?,
           'with_compile_masters' => with_compile_masters?,
           'with_extra_large'     => extra_large?,
+        }
+        node['resources'] = resources
+        node['type'] = {
           'is_monolithic_master' => monolithic_master?(certname),
           'is_replica_master'    => replica_master?(certname),
           'is_compile_master'    => compile_master?(certname),
           'with_jruby9k_enabled' => with_jruby9k_enabled?(certname),
         }
-        node['resources'] = resources
         node
       end
 

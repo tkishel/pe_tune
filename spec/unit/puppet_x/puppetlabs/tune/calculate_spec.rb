@@ -18,6 +18,8 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'is_monolithic'        => true,
         'with_compile_masters' => false,
         'with_extra_large'     => false,
+      }
+      type = {
         'is_monolithic_master' => true,
         'is_replica_master'    => false,
         'is_compile_master'    => false,
@@ -30,7 +32,7 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'orchestrator' => true,
         'puppetdb'     => true,
       }
-      node = { 'resources' => resources, 'infrastructure' => infrastructure, 'classes' => classes }
+      node = { 'resources' => resources, 'infrastructure' => infrastructure, 'type' => type, 'classes' => classes }
 
       params = {
         'puppet_enterprise::profile::database::shared_buffers'                => '2048MB',
@@ -63,6 +65,8 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'is_monolithic'        => true,
         'with_compile_masters' => false,
         'with_extra_large'     => false,
+      }
+      type = {
         'is_monolithic_master' => true,
         'is_replica_master'    => false,
         'is_compile_master'    => false,
@@ -75,7 +79,7 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'orchestrator' => true,
         'puppetdb'     => true,
       }
-      node = { 'resources' => resources, 'infrastructure' => infrastructure, 'classes' => classes }
+      node = { 'resources' => resources, 'infrastructure' => infrastructure, 'type' => type, 'classes' => classes }
 
       params = {
         'puppet_enterprise::profile::database::shared_buffers'                => '3840MB',
@@ -108,6 +112,8 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'is_monolithic'        => true,
         'with_compile_masters' => false,
         'with_extra_large'     => false,
+      }
+      type = {
         'is_monolithic_master' => true,
         'is_replica_master'    => false,
         'is_compile_master'    => false,
@@ -120,7 +126,7 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'orchestrator' => true,
         'puppetdb'     => true,
       }
-      node = { 'resources' => resources, 'infrastructure' => infrastructure, 'classes' => classes }
+      node = { 'resources' => resources, 'infrastructure' => infrastructure, 'type' => type, 'classes' => classes }
 
       params = {
         'puppet_enterprise::profile::database::shared_buffers'                => '7936MB',
@@ -155,9 +161,11 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'is_monolithic'        => true,
         'with_compile_masters' => true,
         'with_extra_large'     => false,
+      }
+      type = {
         'is_monolithic_master' => true,
         'is_replica_master'    => false,
-        'is_compile_master'    => true,
+        'is_compile_master'    => false,
         'with_jruby9k_enabled' => false,
       }
       classes = {
@@ -167,7 +175,7 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'orchestrator' => true,
         'puppetdb'     => true,
       }
-      node = { 'resources' => resources, 'infrastructure' => infrastructure, 'classes' => classes }
+      node = { 'resources' => resources, 'infrastructure' => infrastructure, 'type' => type, 'classes' => classes }
 
       params = {
         'puppet_enterprise::profile::database::shared_buffers'                => '2048MB',
@@ -196,8 +204,10 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       }
       infrastructure = {
         'is_monolithic'        => true,
-        'with_compile_masters' => false,
+        'with_compile_masters' => true,
         'with_extra_large'     => false,
+      }
+      type = {
         'is_monolithic_master' => true,
         'is_replica_master'    => false,
         'is_compile_master'    => false,
@@ -210,20 +220,20 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'orchestrator' => true,
         'puppetdb'     => true,
       }
-      node = { 'resources' => resources, 'infrastructure' => infrastructure, 'classes' => classes }
+      node = { 'resources' => resources, 'infrastructure' => infrastructure, 'type' => type, 'classes' => classes }
 
       params = {
         'puppet_enterprise::puppetdb::command_processing_threads'             => 2,
         'puppet_enterprise::master::puppetserver::jruby_max_active_instances' => 2,
-        'puppet_enterprise::profile::master::java_args'                       => { 'Xms' => '2048m', 'Xmx' => '2048m' },
-        'puppet_enterprise::profile::puppetdb::java_args'                     => { 'Xms' => '716m',  'Xmx' => '716m' },
+        'puppet_enterprise::profile::master::java_args'                       => { 'Xms' => '1024m', 'Xmx' => '1024m' },
+        'puppet_enterprise::profile::puppetdb::java_args'                     => { 'Xms' => '1433m', 'Xmx' => '1433m' },
         'puppet_enterprise::profile::console::java_args'                      => { 'Xms' => '512m',  'Xmx' => '512m' },
         'puppet_enterprise::profile::orchestrator::java_args'                 => { 'Xms' => '512m',  'Xmx' => '512m' },
         'puppet_enterprise::profile::amq::broker::heap_mb'                    => 512,
       }
       totals = {
         'CPU'          => { 'total' => 4,    'used' => 4 },
-        'RAM'          => { 'total' => 8192, 'used' => 4300 },
+        'RAM'          => { 'total' => 8192, 'used' => 3993 },
         'MB_PER_JRUBY' => 512,
       }
       settings = { 'params' => params, 'totals' => totals }
@@ -241,8 +251,10 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       infrastructure = {
         'is_monolithic'        => false,
         'with_compile_masters' => false,
-        'with_extra_large'     => false,
-        'is_monolithic_master' => true,
+        'with_extra_large'     => false
+      }
+      type = {
+        'is_monolithic_master' => false,
         'is_replica_master'    => false,
         'is_compile_master'    => false,
         'with_jruby9k_enabled' => false,
@@ -254,16 +266,16 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'orchestrator' => true,
         'puppetdb'     => false,
       }
-      node = { 'resources' => resources, 'infrastructure' => infrastructure, 'classes' => classes }
+      node = { 'resources' => resources, 'infrastructure' => infrastructure, 'type' => type, 'classes' => classes }
 
       params = {
         'puppet_enterprise::master::puppetserver::jruby_max_active_instances' => 3,
-        'puppet_enterprise::profile::master::java_args'                       => { 'Xms' => '2048m', 'Xmx' => '2048m' },
+        'puppet_enterprise::profile::master::java_args'                       => { 'Xms' => '1536m', 'Xmx' => '1536m' },
         'puppet_enterprise::profile::orchestrator::java_args'                 => { 'Xms' => '512m',  'Xmx' => '512m' },
       }
       totals = {
         'CPU'          => { 'total' => 4,    'used' => 3 },
-        'RAM'          => { 'total' => 8192, 'used' => 2560 },
+        'RAM'          => { 'total' => 8192, 'used' => 2048 },
         'MB_PER_JRUBY' => 512,
       }
       settings = { 'params' => params, 'totals' => totals }
@@ -275,7 +287,7 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'cpu' => 4,
         'ram' => 8192,
       }
-      node = { 'resources' => resources, 'infrastructure' => {}, 'classes' => {} }
+      node = { 'resources' => resources, 'infrastructure' => {}, 'type' => {}, 'classes' => {} }
 
       params = {
         'puppet_enterprise::profile::console::java_args' => { 'Xms' => '4096m', 'Xmx' => '4096m' },
@@ -290,23 +302,19 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
     end
 
     it 'can calculate puppetdb host settings' do
-      infrastructure = {
-        'is_monolithic'        => false,
-        'with_compile_masters' => false,
-        'with_extra_large'     => false,
-        'is_monolithic_master' => false,
-        'is_replica_master'    => false,
-        'is_compile_master'    => false,
-        'with_jruby9k_enabled' => false,
-      }
       resources = {
         'cpu' => 4,
         'ram' => 8192,
       }
+      infrastructure = {
+        'is_monolithic'        => false,
+        'with_compile_masters' => false,
+        'with_extra_large'     => false,
+      }
       classes = {
         'database' => true,
       }
-      node = { 'resources' => resources, 'infrastructure' => infrastructure, 'classes' => classes }
+      node = { 'resources' => resources, 'infrastructure' => infrastructure, 'type' => {}, 'classes' => classes }
 
       params = {
         'puppet_enterprise::puppetdb::command_processing_threads' => 2,
@@ -322,23 +330,19 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
     end
 
     it 'can calculate puppetdb host settings with an external database' do
-      infrastructure = {
-        'is_monolithic'        => false,
-        'with_compile_masters' => false,
-        'with_extra_large'     => false,
-        'is_monolithic_master' => false,
-        'is_replica_master'    => false,
-        'is_compile_master'    => false,
-        'with_jruby9k_enabled' => false,
-      }
       resources = {
         'cpu' => 4,
         'ram' => 8192,
       }
+      infrastructure = {
+        'is_monolithic'        => false,
+        'with_compile_masters' => false,
+        'with_extra_large'     => false,
+      }
       classes = {
         'database' => false,
       }
-      node = { 'resources' => resources, 'infrastructure' => infrastructure, 'classes' => classes }
+      node = { 'resources' => resources, 'infrastructure' => infrastructure, 'type' => {}, 'classes' => classes }
 
       params = {
         'puppet_enterprise::puppetdb::command_processing_threads' => 2,
@@ -364,6 +368,8 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'is_monolithic'        => false,
         'with_compile_masters' => true,
         'with_extra_large'     => false,
+      }
+      type = {
         'is_monolithic_master' => false,
         'is_replica_master'    => false,
         'is_compile_master'    => true,
@@ -376,7 +382,7 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'orchestrator' => false,
         'puppetdb'     => false,
       }
-      node = { 'resources' => resources, 'infrastructure' => infrastructure, 'classes' => classes }
+      node = { 'resources' => resources, 'infrastructure' => infrastructure, 'type' => type, 'classes' => classes }
 
       params = {
         'puppet_enterprise::master::puppetserver::jruby_max_active_instances' => 7,
@@ -400,6 +406,8 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'is_monolithic'        => true,
         'with_compile_masters' => true,
         'with_extra_large'     => false,
+      }
+      type = {
         'is_monolithic_master' => false,
         'is_replica_master'    => false,
         'is_compile_master'    => true,
@@ -412,7 +420,7 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'orchestrator' => false,
         'puppetdb'     => true,
       }
-      node = { 'resources' => resources, 'infrastructure' => infrastructure, 'classes' => classes }
+      node = { 'resources' => resources, 'infrastructure' => infrastructure, 'type' => type, 'classes' => classes }
 
       params = {
         'puppet_enterprise::puppetdb::command_processing_threads'             => 4,
@@ -439,6 +447,8 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'is_monolithic'        => true,
         'with_compile_masters' => true,
         'with_extra_large'     => true,
+      }
+      type = {
         'is_monolithic_master' => false,
         'is_replica_master'    => false,
         'is_compile_master'    => true,
@@ -451,7 +461,7 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'orchestrator' => false,
         'puppetdb'     => true,
       }
-      node = { 'resources' => resources, 'infrastructure' => infrastructure, 'classes' => classes }
+      node = { 'resources' => resources, 'infrastructure' => infrastructure, 'type' => type, 'classes' => classes }
 
       params = {
         'puppet_enterprise::puppetdb::command_processing_threads'             => 2,
@@ -478,12 +488,8 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'is_monolithic'        => false,
         'with_compile_masters' => false,
         'with_extra_large'     => false,
-        'is_monolithic_master' => false,
-        'is_replica_master'    => false,
-        'is_compile_master'    => false,
-        'with_jruby9k_enabled' => false,
       }
-      node = { 'resources' => resources, 'infrastructure' => infrastructure, 'classes' => {} }
+      node = { 'resources' => resources, 'infrastructure' => infrastructure, 'type' => {}, 'classes' => {} }
 
       params = {
         'puppet_enterprise::profile::database::shared_buffers' => '2048MB',
@@ -506,12 +512,8 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'is_monolithic'        => false,
         'with_compile_masters' => false,
         'with_extra_large'     => true,
-        'is_monolithic_master' => false,
-        'is_replica_master'    => false,
-        'is_compile_master'    => false,
-        'with_jruby9k_enabled' => false,
       }
-      node = { 'resources' => resources, 'infrastructure' => infrastructure, 'classes' => {} }
+      node = { 'resources' => resources, 'infrastructure' => infrastructure, 'type' => {}, 'classes' => {} }
 
       params = {
         'puppet_enterprise::profile::database::shared_buffers'  => '2048MB',
