@@ -31,10 +31,10 @@ module PuppetX
 
         def calculate_master_settings(node)
           percent_cpu_threads         = 25
-          minimum_cpu_threads         = 2
+          minimum_cpu_threads         = fit_to_processors(node['resources']['cpu'], 1, 2, 4)
           percent_cpu_jrubies         = 75
           minimum_cpu_jrubies         = 2
-          minimum_ram_puppetserver    = 2048
+          minimum_ram_puppetserver    = 1024
           ram_per_puppetserver_jruby  = fit_to_memory(node['resources']['ram'], 512, 768, 1024)
           ram_puppetserver_code_cache = fit_to_memory(node['resources']['ram'], 512, 1024, 2048)
           percent_ram_database        = 25
@@ -53,9 +53,9 @@ module PuppetX
 
           if node['type']['is_monolithic_master'] || node['type']['is_replica_master']
             if node['infrastructure']['with_compile_masters']
-              # Invert resource allocation between puppetserver and puppetdb, if this host is a monolithic master or replica master with compile masters.
+              # Reallocate resources between puppetserver and puppetdb, if this host is a monolithic master or replica master with compile masters.
               percent_cpu_threads      = 50
-              percent_cpu_jrubies      = 25
+              percent_cpu_jrubies      = 33
               percent_ram_puppetdb     = 20
               minimum_ram_puppetserver = 1024
             end
@@ -69,12 +69,11 @@ module PuppetX
           # Reallocate resources depending upon services active on this host.
 
           percent_cpu_jrubies         = 100 unless node['classes']['puppetdb']
-
-          percent_cpu_threads         = 0 unless node['classes']['puppetdb']
-          minimum_ram_database        = 0 unless node['classes']['database']
-          ram_console                 = 0 unless node['classes']['console']
-          ram_orchestrator            = 0 unless node['classes']['orchestrator']
-          ram_activemq                = 0 unless node['classes']['amq::broker']
+          percent_cpu_threads         = 0   unless node['classes']['puppetdb']
+          minimum_ram_database        = 0   unless node['classes']['database']
+          ram_console                 = 0   unless node['classes']['console']
+          ram_orchestrator            = 0   unless node['classes']['orchestrator']
+          ram_activemq                = 0   unless node['classes']['amq::broker']
 
           # Calculate the following maximums after the above reallocations.
 
@@ -84,7 +83,7 @@ module PuppetX
           # Decrease maximum_cpu_threads on compile masters, if this is an extra large reference architecture, to avoid making too many connections to the external database:
 
           if node['type']['is_compile_master'] && node['infrastructure']['with_extra_large']
-            maximum_cpu_threads = minimum_cpu_threads
+            maximum_cpu_threads = 2
             # puppet_enterprise::puppetdb::write_maximum_pool_size: 4
             # puppet_enterprise::puppetdb::read_maximum_pool_size: 10
           end

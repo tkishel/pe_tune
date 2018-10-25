@@ -7,8 +7,6 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
   subject(:calculator) { described_class.new(options) }
 
   context 'with a monolithic infrastructure, server size small' do
-    Facter.add(:pe_server_version) { setcode { '2017.1.1' } }
-
     it 'can calculate master host settings' do
       resources = {
         'cpu' => 4,
@@ -36,17 +34,17 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
 
       params = {
         'puppet_enterprise::profile::database::shared_buffers'                => '2048MB',
-        'puppet_enterprise::puppetdb::command_processing_threads'             => 2,
+        'puppet_enterprise::puppetdb::command_processing_threads'             => 1,
         'puppet_enterprise::master::puppetserver::jruby_max_active_instances' => 2,
-        'puppet_enterprise::profile::master::java_args'                       => { 'Xms' => '2048m', 'Xmx' => '2048m' },
+        'puppet_enterprise::profile::master::java_args'                       => { 'Xms' => '1024m', 'Xmx' => '1024m' },
         'puppet_enterprise::profile::puppetdb::java_args'                     => { 'Xms' => '512m',  'Xmx' => '512m' },
         'puppet_enterprise::profile::console::java_args'                      => { 'Xms' => '512m',  'Xmx' => '512m' },
         'puppet_enterprise::profile::orchestrator::java_args'                 => { 'Xms' => '512m',  'Xmx' => '512m' },
         'puppet_enterprise::profile::amq::broker::heap_mb'                    => 512,
       }
       totals = {
-        'CPU'          => { 'total' => 4,    'used' => 4 },
-        'RAM'          => { 'total' => 8192, 'used' => 6144 },
+        'CPU'          => { 'total' => 4,    'used' => 3 },
+        'RAM'          => { 'total' => 8192, 'used' => 5120 },
         'MB_PER_JRUBY' => 512,
       }
       settings = { 'params' => params, 'totals' => totals }
@@ -150,8 +148,6 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
   end
 
   context 'with a monolithic infrastructure' do
-    Facter.add(:pe_server_version) { setcode { '2017.1.1' } }
-
     it 'can calculate master host settings with compile masters' do
       resources = {
         'cpu' => 4,
@@ -464,13 +460,13 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       node = { 'resources' => resources, 'infrastructure' => infrastructure, 'type' => type, 'classes' => classes }
 
       params = {
-        'puppet_enterprise::puppetdb::command_processing_threads'             => 2,
+        'puppet_enterprise::puppetdb::command_processing_threads'             => 4,
         'puppet_enterprise::profile::puppetdb::java_args'                     => { 'Xms' => '3174m', 'Xmx' => '3174m' },
         'puppet_enterprise::master::puppetserver::jruby_max_active_instances' => 11,
         'puppet_enterprise::profile::master::java_args'                       => { 'Xms' => '11264m', 'Xmx' => '11264m' },
       }
       totals = {
-        'CPU'          => { 'total' => 16,    'used' => 13 },
+        'CPU'          => { 'total' => 16,    'used' => 15 },
         'RAM'          => { 'total' => 32768, 'used' => 14438 },
         'MB_PER_JRUBY' => 1024,
       }
