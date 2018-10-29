@@ -1,10 +1,10 @@
 def other_database_tunable_param_names
   [
-    'puppet_enterprise::profile::database::autovacuum_max_workers'
-    'puppet_enterprise::profile::database::autovacuum_work_mem'
-    'puppet_enterprise::profile::database::effective_cache_size'
-    'puppet_enterprise::profile::database::log_temp_files'
-    'puppet_enterprise::profile::database::maintenance_work_mem'
+    'puppet_enterprise::profile::database::autovacuum_max_workers',
+    'puppet_enterprise::profile::database::autovacuum_work_mem',
+    'puppet_enterprise::profile::database::effective_cache_size',
+    'puppet_enterprise::profile::database::log_temp_files',
+    'puppet_enterprise::profile::database::maintenance_work_mem',
     'puppet_enterprise::profile::database::work_mem'
   ]
 end
