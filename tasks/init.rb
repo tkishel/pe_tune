@@ -6,9 +6,6 @@ require 'open3'
 require 'puppet'
 require 'timeout'
 
-# Note: '/opt/puppetlabs/bin' is not in PATH, added to Open3.capture3.
-# This is require to execute 'puppet infra' commands.
-
 Puppet.initialize_settings
 
 # Read parameters, set defaults, and validate values.
@@ -53,7 +50,7 @@ end
 def optional_true(param)
   return false unless param
   return true if param == true
-  return param.downcase == 'true'
+  param == 'true'
 end
 
 # Validation
@@ -79,10 +76,12 @@ end
 # Execute a command with an array of arguments and return the result as a hash.
 
 def execute_command(command, args = [])
+  # '/opt/puppetlabs/bin' is not in PATH, but is require to execute 'puppet infra' commands.
+  command_env = { 'PATH' => "#{ENV['PATH']}:/opt/puppetlabs/bin" }
   # Convert each element of the args array to a string.
   args = args.reject { |a| a.empty? }.map(&:to_s)
   # Execute the command with the arguments passed as a variable length argument list using the asterisk operator.
-  stdout, stderr, status = Open3.capture3({'PATH'=>"#{ENV['PATH']}:/opt/puppetlabs/bin"}, command, *args)
+  stdout, stderr, status = Open3.capture3(command_env, command, *args)
   # Merge the command and args into a string.
   command_line = args.unshift(command).join(' ')
   { command: command_line, status: status.exitstatus, stdout: stdout.strip, stderr: stderr.strip }
@@ -116,7 +115,7 @@ end
 
 # Return the results of a command and exit.
 
-def return_command_results(params, command_results)
+def return_command_results(_params, command_results)
   result = {}
   result[:status]  = 'success'
   result[:command] = command_results[:command]
@@ -138,7 +137,7 @@ end
 params = read_parameters
 
 command = 'puppet'
-options = ['infra','tune',
+options = ['infra', 'tune',
   params['common'],
   params['hiera'],
   params['memory_per_jruby'],
@@ -147,7 +146,7 @@ options = ['infra','tune',
 
 results = execute_command(command, options)
 
-if (results[:status] != 0)
+if results[:status] != 0
   return_command_error(params, results)
 else
   return_command_results(params, results)
