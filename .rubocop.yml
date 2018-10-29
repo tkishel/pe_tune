@@ -1,5 +1,5 @@
 ---
-require: 
+require:
   - rubocop-i18n
   - rubocop-rspec
 AllCops:
@@ -132,9 +132,9 @@ Layout/ExtraSpacing:
   Enabled: false
 Layout/MultilineArrayBraceLayout:
   Enabled: false
-Naming/ClassAndModuleCamelCase:
-  Enabled: false
 RSpec/FilePath:
+  Enabled: false
+Style/ClassAndModuleCamelCase:
   Enabled: false
 Style/ColonMethodCall:
   Enabled: false
@@ -142,11 +142,8 @@ Style/GuardClause:
   Enabled: false
 Style/HashSyntax:
   Enabled: false
-Style/MixinUsage:
-  Enabled: false
 Style/NumericLiterals:
   Enabled: false
-Style/TrailingCommaInArrayLiteral:
+Style/StringLiterals:
   Enabled: false
-Style/TrailingCommaInHashLiteral:
-  Enabled: false
+
