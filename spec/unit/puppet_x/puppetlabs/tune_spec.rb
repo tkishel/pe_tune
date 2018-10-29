@@ -68,12 +68,12 @@ describe PuppetX::Puppetlabs::Tune do
 
     it 'can detect local and external databases' do
       nodes_with_class = {
-        'database' => ['master','postgresql']
+        'database' => ['master', 'postgresql']
       }
       nodes = {
         'primary_masters' => ['master'],
         'replica_masters' => [],
-        'database_hosts'  => ['master','postgresql'],
+        'database_hosts'  => ['master', 'postgresql'],
       }
       tune.instance_variable_set(:@nodes_with_class, nodes_with_class)
       tune.instance_variable_set(:@nodes_with_role, nodes)

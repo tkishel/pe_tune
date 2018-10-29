@@ -11,7 +11,6 @@ module PuppetX
     class Tune
       # Use the local system or a file as inventory.
       class Inventory
-
         attr_reader :nodes
         attr_reader :roles
         attr_reader :classes
@@ -29,11 +28,9 @@ module PuppetX
             'puppet_master_host'     => nil,
             'console_host'           => nil,
             'puppetdb_host'          => [],
-            'database_host'          => nil,
+            'database_host'          => [],
             'primary_master_replica' => nil,
-            'compile_master'         => [],
-            'compile_masters_xl'     => [],
-            'database_hosts_xl'      => []
+            'compile_master'         => []
           }
         end
 
@@ -83,7 +80,7 @@ module PuppetX
 
         # Use an inventory file to define infrastructure nodes.
         # This eliminates the dependency upon PuppetDB to query node resources and classes.
-        # The compile_master and puppetdb_host roles can be an Array or a String.
+        # The compile_master, database_host, and puppetdb_host roles can be an Array or a String.
 
         def read_inventory_from_inventory_file(file)
           unless File.exist?(file)
@@ -103,6 +100,7 @@ module PuppetX
           end
           file_inventory['roles'] = {} unless file_inventory['roles']
           file_inventory['roles']['compile_master'] = Array(file_inventory['roles']['compile_master'])
+          file_inventory['roles']['database_host']  = Array(file_inventory['roles']['database_host'])
           file_inventory['roles']['puppetdb_host']  = Array(file_inventory['roles']['puppetdb_host'])
 
           @nodes = file_inventory['nodes']
@@ -114,19 +112,10 @@ module PuppetX
         # Convert inventory roles to classes, using Set instead of Array to prevent duplicates.
 
         def convert_inventory_roles_to_classes
-          # Split Architecture
-
           if @roles['database_host']
-            database_host = @roles['database_host']
-            Puppet.debug _("Converting database_host role to classes for: %{host}") % { host: database_host }
-            @classes['database'] << database_host
-          end
-
-          if @roles['puppetdb_host']
-            @roles['puppetdb_host'].each do |puppetdb_host|
-            Puppet.debug _("Converting puppetdb_host role to classes for: %{host}") % { host: puppetdb_host }
-              @classes['puppetdb'] << puppetdb_host
-              @classes['database'] << @roles['puppetdb_host'].first if nil_or_empty?(@roles['database_host'])
+            @roles['database_host'].each do |database_host|
+              Puppet.debug _("Converting database_host role to classes for: %{host}") % { host: database_host }
+              @classes['database'] << database_host
             end
           end
 
@@ -136,21 +125,35 @@ module PuppetX
             @classes['console'] << console_host
           end
 
-          # Split or Monolithic Architecture
+          is_split                = not_set?(@roles['console_host'])
+          is_split_local_database = is_split && @roles['database_host'].count.zero?
+
+          if @roles['puppetdb_host']
+            @roles['puppetdb_host'].each do |puppetdb_host|
+              Puppet.debug _("Converting puppetdb_host role to classes for: %{host}") % { host: puppetdb_host }
+              @classes['puppetdb'] << puppetdb_host
+              @classes['database'] << @roles['puppetdb_host'].first if is_split_local_database
+            end
+          end
+
+          is_mono                = is_split == false
+          is_ha                  = not_set?(@roles['primary_master_replica'])
+          is_mono_local_database = is_mono && @roles['database_host'].count.zero?
+          is_mono_extra_large    = is_mono && !is_ha && @roles['database_host'].count == 1
+          is_mono_ha_extra_large = is_mono && is_ha  && @roles['database_host'].count == 2
+          is_extra_large         = is_mono_extra_large || is_mono_ha_extra_large
 
           if @roles['puppet_master_host']
             puppet_master_host = @roles['puppet_master_host']
             Puppet.debug _("Converting puppet_master_host role to classes for: %{host}") % { host: puppet_master_host }
             @classes['primary_master'] << puppet_master_host
             @classes['master']         << puppet_master_host
-            @classes['console']        << puppet_master_host if nil_or_empty?(@roles['console_host'])
-            @classes['puppetdb']       << puppet_master_host if nil_or_empty?(@roles['puppetdb_host'])
-            @classes['database']       << puppet_master_host if nil_or_empty?(@roles['puppetdb_host']) && nil_or_empty?(@roles['database_host'])
+            @classes['console']        << puppet_master_host if is_mono
+            @classes['puppetdb']       << puppet_master_host if is_mono
+            @classes['database']       << puppet_master_host if is_mono_local_database || is_extra_large
             @classes['amq::broker']    << puppet_master_host
             @classes['orchestrator']   << puppet_master_host
           end
-
-          # Monolithic Architecture
 
           if @roles['primary_master_replica']
             primary_master_replica = @roles['primary_master_replica']
@@ -169,23 +172,7 @@ module PuppetX
               Puppet.debug _("Converting compile_master role to classes for: %{host}") % { host: compile_master }
               @classes['compile_master'] << compile_master
               @classes['master']         << compile_master
-            end
-          end
-
-          # Monolithic Extra Large Reference Architecture
-
-          if @roles['compile_masters_xl']
-            @roles['compile_masters_xl'].each do |compile_master|
-              Puppet.debug _("Converting compile_masters_xl role to classes for: %{host}") % { host: compile_master }
-              @classes['compile_master'] << compile_master
-              @classes['master']         << compile_master
-              @classes['puppetdb']       << compile_master
-            end
-          end
-          if @roles['database_hosts_xl']
-            @roles['database_hosts_xl'].each do |database_host|
-              Puppet.debug _("Converting database_hosts_xl role to classes for: %{host}") % { host: database_host }
-              @classes['database'] << database_host
+              @classes['puppetdb']       << compile_master if is_extra_large
             end
           end
         end
@@ -196,9 +183,9 @@ module PuppetX
 
         # Array or String
 
-        def nil_or_empty?(variable)
-          return true if variable.nil? || variable.empty?
-          false
+        def not_set?(variable)
+          return false if variable.nil? || variable.empty?
+          true
         end
       end
     end

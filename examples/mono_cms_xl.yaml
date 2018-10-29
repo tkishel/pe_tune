@@ -3,14 +3,23 @@
 # Use 'g' for GB (the default) and 'm' for MB for ram values.
 
 nodes:
-  master.example.com:
+  mono-master.example.com:
+    resources:
+      cpu: 16
+      ram: 32
+  mono-master-database.example.com:
     resources:
       cpu: 16
       ram: 32
   compile-master1.example.com:
     resources:
-      cpu: 4
-      ram: 8
+      cpu: 16
+      ram: 32
+  compile-master2.example.com:
+    resources:
+      cpu: 16
+      ram: 32
+
 # Infrastructure roles include:
 #
 #  puppet_master_host     (string)
@@ -21,6 +30,8 @@ nodes:
 #  compile_master         (string or an array)
 
 roles:
-  puppet_master_host: master.example.com
+  puppet_master_host: mono-master.example.com
+  database_host:      mono-master-database.example.com
   compile_master:
     - compile-master1.example.com
+    - compile-master2.example.com

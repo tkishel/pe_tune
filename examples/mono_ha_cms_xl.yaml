@@ -30,21 +30,19 @@ nodes:
 
 # Infrastructure roles include:
 #
-#  puppet_master_host     (use instead of primary_master)
+#  puppet_master_host     (string)
+#  primary_master_replica (string)
 #  console_host           (string)
 #  puppetdb_host          (string or an array)
-#  database_host          (string)
-#  primary_master_replica (string)
-#  compile_master         (may be a string or an array)
-#  compile_masters_xl     (array)
-#  database_hosts_xl      (array)
+#  database_host          (string or an array)
+#  compile_master         (string or an array)
 
 roles:
   puppet_master_host:     mono-master.example.com
   primary_master_replica: replica-master.example.com
-  compile_masters_xl:
-    - compile-master1.example.com
-    - compile-master2.example.com
-  database_hosts_xl:
+  database_host:
     - mono-master-database.example.com
     - replica-master-database.example.com
+  compile_master:
+    - compile-master1.example.com
+    - compile-master2.example.com
