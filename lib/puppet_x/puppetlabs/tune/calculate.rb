@@ -61,7 +61,7 @@ module PuppetX
             end
           else
             # Decrease minimum memory allocation for puppetserver, if this host is not a monolithic master or replica master with compile masters.
-            minimum_ram_puppetserver   = 1024
+            minimum_ram_puppetserver = 1024
           end
 
           ram_puppetserver_code_cache = 0 unless node['type']['with_jruby9k_enabled']
@@ -343,7 +343,7 @@ module PuppetX
           # Round up to the nearest power of two (31500 -> 32768) if within a percentage.
           target_memory = nearest_power_of_two(memory)
           if within_percent?(memory, target_memory, @defaults[:fit_to_memory_percentage])
-            Puppet.debug _("Rounding %{memory} up to %{target_memory} for fit_to_memory") % { memory: memory, target_memory: target_memory}
+            Puppet.debug _("Rounding %{memory} up to %{target_memory} for fit_to_memory") % { memory: memory, target_memory: target_memory }
             memory = target_memory
           end
           return small  if memory <= 8192

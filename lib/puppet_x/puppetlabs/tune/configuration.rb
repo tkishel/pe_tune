@@ -37,9 +37,9 @@ module PuppetX
           return if @pe_conf.empty?
           host = @pe_conf["puppet_enterprise::#{role}"]
           return if host.nil? || host.empty?
-          Puppet.debug _("Found pe.conf %{role}: %{host}") % { role: role,  host: host}
+          Puppet.debug _("Found pe.conf %{role}: %{host}") % { role: role,  host: host }
           host = Puppet[:certname] if ['%{trusted.certname}', '%{::trusted.certname}'].include?(host)
-          Puppet.debug _("Using pe.conf %{role}: %{host}") % { role: role,  host: host}
+          Puppet.debug _("Using pe.conf %{role}: %{host}") % { role: role,  host: host }
           host
         end
 
@@ -144,7 +144,7 @@ module PuppetX
           overrides_classifier.each do |classifier_k, classifier_v|
             next unless settings.include?(classifier_k)
             if overrides.key?(classifier_k)
-              Puppet.debug _("# Duplicate settings for #{certname}: %{classifier_k} Classifier: %{classifier_v} Hiera: %{hiera_v}") % { certname: certname, classifier_k: classifier_k, classifier_v: classifier_v, hiera_v: overrides_hiera[classifier_k] }
+              Puppet.debug _("# Duplicate settings for %{certname}: %{classifier_k} Classifier: %{classifier_v} Hiera: %{hiera_v}") % { certname: certname, classifier_k: classifier_k, classifier_v: classifier_v, hiera_v: overrides_hiera[classifier_k] }
               duplicates.push(classifier_k)
             end
             # Classifer settings take precedence over Hiera settings.
