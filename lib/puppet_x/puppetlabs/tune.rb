@@ -22,7 +22,7 @@ module PuppetX
     class Tune
       # List of settings used by this module.
       def tunable_param_names
-        [
+        param_names = [
           'puppet_enterprise::master::puppetserver::jruby_max_active_instances',
           'puppet_enterprise::master::puppetserver::reserved_code_cache',
           'puppet_enterprise::profile::amq::broker::heap_mb',
@@ -34,12 +34,14 @@ module PuppetX
           'puppet_enterprise::profile::puppetdb::java_args',
           'puppet_enterprise::puppetdb::command_processing_threads',
         ]
+        param_names.delete('puppet_enterprise::profile::amq::broker::heap_mb') if pe_2019_or_newer?
+        param_names
       end
 
       # List of classes used by this module.
 
       def tunable_class_names
-        [
+        class_names = [
           'certificate_authority',
           'master',
           'console',
@@ -52,6 +54,8 @@ module PuppetX
           'enabled_primary_master_replica',
           'compile_master',
         ]
+        class_names.delete('amq::broker') if pe_2019_or_newer?
+        class_names
       end
 
       # Initialize this module class.
@@ -270,19 +274,24 @@ module PuppetX
       end
 
       # Identify JRuby version on a node.
+      # puppetserver::jruby_9k_enabled is a setting added to PE 2018.
+      # puppetserver::jruby_jar is a setting added to PE 2017 and is outside the scope of this code.
 
       def with_jruby9k_enabled?(certname)
-        return false if Gem::Version.new(Puppet.version) < Gem::Version.new('5.5.1') # <  2018.1
-        return true if Gem::Version.new(Puppet.version) >= Gem::Version.new('6.0.0') # >= 2019.0
+        # Do not query PuppetDB when using inventory, instead return a default based upon version.
+        if @inventory::nodes.any?
+          return pe_2018_or_newer?
+        end
+        # Does the jruby-9k.jar file exist?
         jr9kjar = '/opt/puppetlabs/server/apps/puppetserver/jruby-9k.jar'
         available = File.exist?(jr9kjar)
         return false unless available
+        # Does the jruby_9k_enabled setting exist?
         setting = 'puppet_enterprise::master::puppetserver::jruby_9k_enabled'
-        # Do not query PuppetDB when using inventory, instead return the default.
-        return true if @inventory::nodes.any?
         settings = get_current_settings_for_node(certname, [setting])
         return false unless settings['params'].key?(setting)
-        enabled = settings['params'][setting] != 'false'
+        # Is the jruby_9k_enabled setting true?
+        enabled = settings['params'][setting] == 'true'
         Puppet.debug _("jruby_9k_enabled: available: %{available}, enabled: %{enabled}") % { available: available, enabled: enabled }
         available && enabled
       end
@@ -610,6 +619,17 @@ module PuppetX
       def meets_minimum_system_requirements?(resources)
         return true if @options[:force]
         resources['cpu'] >= 4 && resources['ram'] >= 8192
+      end
+
+      # Versions
+      # Allows mergeups from PE 2018 LTS to STS. Revisit after PE 2018 is EOL.
+
+      def pe_2018_or_newer?
+        Gem::Version.new(Puppet.version) >= Gem::Version.new('5.5.0')
+      end
+
+      def pe_2019_or_newer?
+        Gem::Version.new(Puppet.version) >= Gem::Version.new('6.0.0')
       end
 
       # Convert (for example) 16, 16g, 16384m, 16777216k, or 17179869184b to 17179869184.

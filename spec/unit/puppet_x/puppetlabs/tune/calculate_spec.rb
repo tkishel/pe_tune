@@ -6,6 +6,9 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
   options = {}
   subject(:calculator) { described_class.new(options) }
 
+  # Allows mergeups from PE 2018 LTS to STS. Revisit after PE 2018 is EOL.
+  pe_2019_or_newer = Gem::Version.new(Puppet.version) >= Gem::Version.new('6.0.0')
+
   context 'with a monolithic infrastructure, server size small' do
     it 'can calculate master host settings' do
       resources = {
@@ -48,6 +51,13 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'MB_PER_JRUBY' => 512,
       }
       settings = { 'params' => params, 'totals' => totals }
+
+      if pe_2019_or_newer
+        node['type']['with_jruby9k_enabled'] = true
+        node['classes'].delete('amq::broker')
+        settings['params']['puppet_enterprise::master::puppetserver::reserved_code_cache'] = '512m'
+        settings['params'].delete('puppet_enterprise::profile::amq::broker::heap_mb')
+      end
 
       expect(calculator::calculate_master_settings(node)).to eq(settings)
     end
@@ -96,6 +106,13 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       }
       settings = { 'params' => params, 'totals' => totals }
 
+      if pe_2019_or_newer
+        node['type']['with_jruby9k_enabled'] = true
+        node['classes'].delete('amq::broker')
+        settings['params']['puppet_enterprise::master::puppetserver::reserved_code_cache'] = '1024m'
+        settings['params'].delete('puppet_enterprise::profile::amq::broker::heap_mb')
+      end
+
       expect(calculator::calculate_master_settings(node)).to eq(settings)
     end
   end
@@ -142,6 +159,13 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'MB_PER_JRUBY' => 1024,
       }
       settings = { 'params' => params, 'totals' => totals }
+
+      if pe_2019_or_newer
+        node['type']['with_jruby9k_enabled'] = true
+        node['classes'].delete('amq::broker')
+        settings['params']['puppet_enterprise::master::puppetserver::reserved_code_cache'] = '2048m'
+        settings['params'].delete('puppet_enterprise::profile::amq::broker::heap_mb')
+      end
 
       expect(calculator::calculate_master_settings(node)).to eq(settings)
     end
@@ -234,6 +258,12 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       }
       settings = { 'params' => params, 'totals' => totals }
 
+      if pe_2019_or_newer
+        node['classes'].delete('amq::broker')
+        settings['params'].delete('puppet_enterprise::profile::amq::broker::heap_mb')
+        settings['totals']['RAM']['used'] -= 512
+      end
+
       expect(calculator::calculate_master_settings(node)).to eq(settings)
     end
   end
@@ -275,6 +305,7 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'MB_PER_JRUBY' => 512,
       }
       settings = { 'params' => params, 'totals' => totals }
+
       expect(calculator::calculate_master_settings(node)).to eq(settings)
     end
 

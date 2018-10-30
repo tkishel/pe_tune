@@ -20,7 +20,7 @@ module PuppetX
 
         def read_pe_conf
           pe_conf_file = '/etc/puppetlabs/enterprise/conf.d/pe.conf'
-          Puppet.debug _("Reading: %{pe_conf_file}") % { file: pe_conf_file }
+          Puppet.debug _("Reading: %{file}") % { file: pe_conf_file }
           if File.exist?(pe_conf_file)
             Puppet.debug _("Found: %{file}") % { file: pe_conf_file }
             pe_conf = Hocon.load(pe_conf_file)
