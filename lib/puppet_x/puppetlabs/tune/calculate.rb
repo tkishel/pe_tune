@@ -18,8 +18,8 @@ module PuppetX
           @options[:memory_per_jruby]       = options[:memory_per_jruby] || 0
           @options[:memory_reserved_for_os] = options[:memory_reserved_for_os] || 0
 
-          Puppet.debug("Using optional %{mem}MB RAM per JRuby") % { mem: @options[:memory_per_jruby] } if @options[:memory_per_jruby] != 0
-          Puppet.debug("Using optional %{mem}MB RAM reserved for the operating system") % { mem: @options[:memory_reserved_for_os] } if @options[:memory_reserved_for_os] != 0
+          Puppet.debug _("Using optional %{mem}MB RAM per JRuby") % { mem: @options[:memory_per_jruby] } if @options[:memory_per_jruby] != 0
+          Puppet.debug _("Using optional %{mem}MB RAM reserved for the operating system") % { mem: @options[:memory_reserved_for_os] } if @options[:memory_reserved_for_os] != 0
         end
 
         #
