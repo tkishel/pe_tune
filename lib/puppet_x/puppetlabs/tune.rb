@@ -754,6 +754,8 @@ if File.expand_path(__FILE__) == File.expand_path($PROGRAM_NAME)
 
   Tune = PuppetX::Puppetlabs::Tune.new(options)
 
+  Puppet.warning ("Unable to identify Database Hosts or tune PostgreSQL services in PE 2017.x and older\n") unless Tune.pe_2018_or_newer?
+
   if options[:current]
     Tune.output_current_settings
   else

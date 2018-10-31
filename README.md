@@ -166,9 +166,10 @@ For more information, review:
 
 Support is limited to the following versions:
 
-* PE 2016.4.x
-* PE 2017.x.x
+* PE 2016.4.x (does not detect Database hosts or tune PostgreSQL services)
+* PE 2017.x.x (does not detect Database hosts or tune PostgreSQL services)
 * PE 2018.x.x
+* PE 2019.x.x
 
 Support is limited to the following infrastructures:
 
