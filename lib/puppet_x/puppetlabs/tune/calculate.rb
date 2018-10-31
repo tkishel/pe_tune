@@ -49,20 +49,17 @@ module PuppetX
           ram_per_puppetserver_jruby  = @options[:memory_per_jruby] if @options[:memory_per_jruby] != 0
           minimum_ram_os              = memory_reserved_for_os
 
-          # Reallocate resources depending upon infrastructure.
+          # Reallocate resources between puppetserver and puppetdb, if this host is a monolithic master or replica master with compile masters.
 
           if node['type']['is_monolithic_master'] || node['type']['is_replica_master']
             if node['infrastructure']['with_compile_masters']
-              # Reallocate resources between puppetserver and puppetdb, if this host is a monolithic master or replica master with compile masters.
               percent_cpu_threads      = 50
               percent_cpu_jrubies      = 33
               percent_ram_puppetdb     = 20
-              minimum_ram_puppetserver = 1024
             end
-          else
-            # Decrease minimum memory allocation for puppetserver, if this host is not a monolithic master or replica master with compile masters.
-            minimum_ram_puppetserver = 1024
           end
+
+          # Reallocate resources from puppetserver depending upon jruby version.
 
           ram_puppetserver_code_cache = 0 unless node['type']['with_jruby9k_enabled']
 
@@ -79,14 +76,6 @@ module PuppetX
 
           maximum_cpu_threads = [minimum_cpu_threads, (node['resources']['cpu'] * (percent_cpu_threads * 0.01)).to_i].max
           maximum_cpu_jrubies = [minimum_cpu_jrubies, (node['resources']['cpu'] * (percent_cpu_jrubies * 0.01) - 1).to_i].max
-
-          # Decrease maximum_cpu_threads on compile masters, if this is an extra large reference architecture, to avoid making too many connections to the external database:
-
-          if node['type']['is_compile_master'] && node['infrastructure']['with_extra_large']
-            maximum_cpu_threads = 2
-            # puppet_enterprise::puppetdb::write_maximum_pool_size: 4
-            # puppet_enterprise::puppetdb::read_maximum_pool_size: 10
-          end
 
           # The Vegas Renormalization: allow for testing with vmpooler (2 CPU / 6 GB RAM) VMs.
           # Requires use of TEST_CPU=8 and TEST_RAM=16384, or the '--force' option.
@@ -121,10 +110,25 @@ module PuppetX
           end
 
           if node['classes']['puppetdb']
+            # Reallocate resources from puppetdb, if this host is a compile master and this is an extra large reference architecture.
+            if node['type']['is_compile_master'] && node['infrastructure']['with_extra_large']
+              minimum_cpu_threads = 1
+              maximum_cpu_threads = 3
+              percent_cpu_threads = 25
+            end
+
             command_processing_threads = calculate_cpu(node['resources']['cpu'], settings['totals']['CPU']['used'], percent_cpu_threads, minimum_cpu_threads, maximum_cpu_threads)
             return unless command_processing_threads
             settings['params']['puppet_enterprise::puppetdb::command_processing_threads'] = command_processing_threads
             settings['totals']['CPU']['used'] += command_processing_threads
+
+            # Reallocate resources from puppetdb to avoid making too many connections to databases, if this host is a compile master and if this is an extra large reference architecture.
+            if node['type']['is_compile_master'] && node['infrastructure']['with_extra_large']
+              write_maximum_pool_size = (command_processing_threads * 2)
+              read_maximum_pool_size  = (write_maximum_pool_size * 2)
+              settings['params']['puppet_enterprise::puppetdb::write_maximum_pool_size'] = write_maximum_pool_size
+              settings['params']['puppet_enterprise::puppetdb::read_maximum_pool_size']  = read_maximum_pool_size
+            end
 
             ram_puppetdb = calculate_ram(node['resources']['ram'], settings['totals']['RAM']['used'], percent_ram_puppetdb, minimum_ram_puppetdb, maximum_ram_puppetdb)
             return unless ram_puppetdb
