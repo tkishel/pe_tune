@@ -278,22 +278,18 @@ module PuppetX
       # puppetserver::jruby_jar is a setting added to PE 2017 and is outside the scope of this code.
 
       def with_jruby9k_enabled?(certname)
-        # Do not query PuppetDB when using inventory, instead return a default based upon version.
-        if @inventory::nodes.any?
-          return pe_2018_or_newer?
-        end
+        # Do not query PuppetDB when using inventory, return the default based upon version.
+        return pe_2018_or_newer? if @inventory::nodes.any?
         # Does the jruby-9k.jar file exist?
         jr9kjar = '/opt/puppetlabs/server/apps/puppetserver/jruby-9k.jar'
-        available = File.exist?(jr9kjar)
-        return false unless available
+        return false unless File.exist?(jr9kjar)
         # Does the jruby_9k_enabled setting exist?
-        setting = 'puppet_enterprise::master::puppetserver::jruby_9k_enabled'
-        settings = get_current_settings_for_node(certname, [setting])
-        return false unless settings['params'].key?(setting)
-        # Is the jruby_9k_enabled setting true?
-        enabled = settings['params'][setting] == 'true'
-        Puppet.debug _("jruby_9k_enabled: available: %{available}, enabled: %{enabled}") % { available: available, enabled: enabled }
-        available && enabled
+        jruby_9k_enabled = 'puppet_enterprise::master::puppetserver::jruby_9k_enabled'
+        settings = get_current_settings_for_node(certname, [jruby_9k_enabled])
+        # The setting does not exist, return the default based upon version.
+        return pe_2018_or_newer? unless settings['params'].key?(jruby_9k_enabled)
+        # Does the jruby_9k_enabled setting equal true?
+        settings['params'][jruby_9k_enabled] == 'true'
       end
 
       # Identify available JRubies on a node.
