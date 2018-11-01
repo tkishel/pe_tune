@@ -65,11 +65,11 @@ module PuppetX
         return if options[:unit_test]
 
         if options[:current] && (options[:inventory] || options[:local])
-          output_error_and_exit('The --current and (--inventory or --local) options are mutually exclusive')
+          output_error_and_exit _("The '--current' and '--inventory' or '--local' options are mutually exclusive")
         end
 
         if options[:inventory] && options[:local]
-          output_error_and_exit('The --inventory and --local options are mutually exclusive')
+          output_error_and_exit _("The '--inventory' and '--local' options are mutually exclusive")
         end
 
         # Properties for each node.
@@ -112,7 +112,7 @@ module PuppetX
         if @options[:local] || @options[:inventory]
           @inventory::read_inventory_from_local_system if @options[:local]
           @inventory::read_inventory_from_inventory_file(@options[:inventory]) if @options[:inventory]
-          output_error_and_exit('Unable to read Inventory') if @inventory::nodes.empty? || @inventory::classes.empty?
+          output_error_and_exit _('Unable to read inventory') if @inventory::nodes.empty? || @inventory::classes.empty?
         end
 
         # Query PuppetDB (or inventory) for classes and cache the results.
@@ -135,7 +135,7 @@ module PuppetX
         @nodes_with_role['database_hosts']  = @nodes_with_class['database'] - @nodes_with_role['primary_masters'] - @nodes_with_role['replica_masters'] - @nodes_with_role['compile_masters'] - @nodes_with_role['puppetdb_hosts']
 
         if options[:current] && @nodes_with_role['replica_masters'].include?(Puppet[:certname])
-          output_error_and_exit('The --current option is limited to running on the Primary Master')
+          output_error_and_exit _("The '--current' option is limited to running on the Primary Master")
         end
       end
 
@@ -166,15 +166,15 @@ module PuppetX
         resources = {}
         if @inventory::nodes.any?
           Puppet.debug _('Using Inventory for get_resources_for_node')
-          output_error_and_exit("Cannot read node: #{certname}") unless @inventory::nodes[certname] && @inventory::nodes[certname]['resources']
+          output_error_and_exit _("Cannot read node: %{certname}") % { certname: certname } unless @inventory::nodes[certname] && @inventory::nodes[certname]['resources']
           node_facts = @inventory::nodes[certname]['resources']
-          output_error_and_exit("Cannot read resources for node: #{certname}") unless node_facts['cpu'] && node_facts['ram']
+          output_error_and_exit _("Cannot read resources for node: %{certname}") % { certname: certname } unless node_facts['cpu'] && node_facts['ram']
           resources['cpu'] = node_facts['cpu'].to_i
           resources['ram'] = string_to_bytes(node_facts['ram']).to_i
         else
           Puppet.debug _('Using PuppetDB for get_resources_for_node')
           node_facts = @configurator::get_node_facts(certname, @environment)
-          output_error_and_exit("Cannot query resources for node: #{certname}") unless node_facts['processors'] && node_facts['memory']
+          output_error_and_exit _("Cannot query resources for node: %{certname}") % { certname: certname } unless node_facts['processors'] && node_facts['memory']
           resources['cpu'] = node_facts['processors']['count'].to_i
           resources['ram'] = node_facts['memory']['system']['total_bytes'].to_i
         end
@@ -478,14 +478,15 @@ module PuppetX
         hiera_subdirectory = "#{hiera_directory}/nodes"
         return if File.directory?(hiera_directory) && File.directory?(hiera_subdirectory)
         Dir.mkdir(hiera_directory) unless File.directory?(hiera_directory)
-        output_error_and_exit("Unable to create output directory: #{hiera_directory}") unless File.directory?(hiera_directory)
+        output_error_and_exit _("Unable to create output directory: %{directory}") % { directory: hiera_directory } unless File.directory?(hiera_directory)
         Dir.mkdir(hiera_subdirectory) unless File.directory?(hiera_subdirectory)
-        output_error_and_exit("Unable to create output directory: #{hiera_subdirectory}") unless File.directory?(hiera_subdirectory)
+        output_error_and_exit _("Unable to create output directory: %{directory}") % { directory: hiera_subdirectory } unless File.directory?(hiera_subdirectory)
         @collected_nodes.each do |certname, properties|
           next if properties['settings']['params'].empty?
           output_file = "#{@options[:hiera]}/nodes/#{certname}.yaml"
           File.write(output_file, properties['settings']['params'].to_yaml)
-          output("## Wrote Hiera YAML file: #{output_file}\n\n")
+          output _("Wrote Hiera YAML file: %{output_file}") % { output_file: output_file }
+          output_line
         end
         return if @collected_settings_common.empty?
         output_file = "#{@options[:hiera]}/common.yaml"
@@ -495,7 +496,11 @@ module PuppetX
       # Consolidate output.
 
       def output(info)
-        puts info
+        puts "# #{info}"
+      end
+
+      def output_line
+        puts "\n"
       end
 
       # Output highlighted output.
@@ -511,34 +516,38 @@ module PuppetX
         w_cm = with_compile_masters ? ' with Compile Masters' : ''
         w_ep = with_external_database ? ' with External Database' : ''
         w_xl = with_extra_large ? ' with XL' : ''
-        output("### Puppet Infrastructure Summary: Found a #{type} Infrastructure#{w_cm}#{w_ep}#{w_xl}\n\n")
+        output _("Puppet Infrastructure Summary: Found a %{type} Infrastructure%{w_cm}%{w_ep}%{w_xl}") % { type: type, w_cm: w_cm, w_ep: w_ep, w_xl: w_xl }
+        output_line
       end
 
       # Output current information for a node.
 
       def output_current_settings_for_node_with_role(certname, role, settings)
         if settings['params'].empty?
-          output("## Found default settings for #{role} #{certname}\n\n")
+          output _("Found default settings for %{role} %{certname}") % { role: role, certname: certname }
         else
-          output("## Found defined settings for #{role} #{certname}\n\n")
+          output _("Found defined settings for %{role} %{certname}") % { role: role, certname: certname }
+          output_line
           output_data(JSON.pretty_generate(settings['params']))
-          output("\n")
         end
+        output_line
         unless settings['duplicates'].count.zero?
-          output("## Found duplicate defined settings in Hiera and in the Classifier (Console):\n\n")
+          output _('Found duplicate defined settings in Hiera and in the Classifier (Console):')
+          output_line
           output_data(settings['duplicates'].join("\n"))
-          output("\n")
-          output("## Define settings in Hiera (preferred) or the Classifier, but not both.\n")
-          output("## Note that Hiera includes settings defined in pe.conf.\n\n")
+          output_line
+          output _('Define settings in Hiera (preferred) or the Classifier, but not both.')
+          output _('Note that Hiera includes settings defined in pe.conf.')
         end
       end
 
       # Output optimized information for a node.
 
       def output_optimized_settings_for_collected_node(certname, node)
-        output("## Found: #{node['resources']['cpu']} CPU(s) / #{node['resources']['ram']} MB RAM for #{node['role']} #{certname}")
+        output _("Found %{cpu} CPU(s) / %{ram} MB RAM for %{role} %{certname}") % { cpu: node['resources']['cpu'], ram: node['resources']['ram'], role: node['role'], certname: certname }
         unless node['settings']['params'].empty?
-          output("## Specify the following optimized settings in Hiera in nodes/#{certname}.yaml\n\n")
+          output _("Specify the following optimized settings in Hiera in nodes/%{certname}.yaml") % { certname: certname }
+          output_line
           output_data(node['settings']['params'].to_yaml)
         end
         unless node['settings']['totals'].empty?
@@ -546,28 +555,29 @@ module PuppetX
             total = node['settings']['totals']['CPU']['total']
             used = node['settings']['totals']['CPU']['used']
             free = total - used
-            output("## CPU Summary: Total/Used/Free: #{total}/#{used}/#{free} for #{certname}")
+            output _("CPU Summary: Total/Used/Free: %{total}/%{used}/%{free} for %{certname}") % { total: total, used: used, free: free, certname: certname }
           end
           if node['settings']['totals']['RAM']
             total = node['settings']['totals']['RAM']['total']
             used = node['settings']['totals']['RAM']['used']
             free = total - used
-            output("## RAM Summary: Total/Used/Free: #{total}/#{used}/#{free} for #{certname}")
+            output _("RAM Summary: Total/Used/Free: %{total}/%{used}/%{free} for %{certname}") % { total: total, used: used, free: free, certname: certname }
           end
           if node['settings']['totals']['MB_PER_JRUBY']
             mb_per_puppetserver_jruby = node['settings']['totals']['MB_PER_JRUBY']
-            output("## JVM Summary: Using #{mb_per_puppetserver_jruby} MB per Puppet Server JRuby for #{certname}")
+            output _("JVM Summary: Using %{mb_per_puppetserver_jruby} MB per Puppet Server JRuby for %{certname}") % { mb_per_puppetserver_jruby: mb_per_puppetserver_jruby, certname: certname }
           end
         end
-        output("\n")
+        output_line
       end
 
       def output_common_settings
         return unless @options[:common]
         return if @collected_settings_common.empty?
-        output("## Specify the following optimized settings in Hiera in common.yaml\n\n")
+        output _('Specify the following optimized settings in Hiera in common.yaml')
+        output_line
         output(@collected_settings_common.to_yaml)
-        output("\n")
+        output_line
       end
 
       def output_estimated_capacity(available_jrubies)
@@ -578,12 +588,14 @@ module PuppetX
         average_compile_time = @configurator::get_average_compile_time(report_limit)
         maximum_nodes = @calculator::calculate_maximum_nodes(average_compile_time, available_jrubies, run_interval)
         minimum_jrubies = @calculator::calculate_minimum_jrubies(active_nodes, average_compile_time, run_interval)
-        output("### Puppet Infrastructure Estimated Capacity Summary: Found: Active Nodes: #{active_nodes}\n\n")
-        output("## Given: Available JRubies: #{available_jrubies}, Agent Run Interval: #{run_interval} Seconds, Average Compile Time: #{average_compile_time} Seconds")
-        output("## Estimate: a maximum of #{maximum_nodes} Active Nodes can be served by #{available_jrubies} Available JRubies")
-        output("## Estimate: a minimum of #{minimum_jrubies} Available JRubies is required to serve #{active_nodes} Active Nodes")
-        output('## Note that Available JRubies does not include the Primary Master when using Compile Masters') if with_compile_masters?
-        output("\n")
+        output _('Puppet Infrastructure Estimated Capacity')
+        output_line
+        output _("Found %{available_jrubies} available JRubies and %{active_nodes} active nodes.") % { available_jrubies: available_jrubies, active_nodes: active_nodes }
+        output _("Found a run interval of %{run_interval} seconds and an average compile time of %{average_compile_time} seconds.") % { run_interval: run_interval, average_compile_time: average_compile_time }
+        output _("A maximum of %{maximum_nodes} nodes can be served by %{available_jrubies} JRubies.") % { maximum_nodes: maximum_nodes, available_jrubies: available_jrubies }
+        output _("A minimum of %{minimum_jrubies} JRubies are required to serve %{active_nodes} nodes.") % { minimum_jrubies: minimum_jrubies, active_nodes: active_nodes }
+        output _('Note that available JRubies does not include the Primary Master when using Compile Masters.') if with_compile_masters?
+        output_line
       end
 
       # Output error and exit.
@@ -633,7 +645,7 @@ module PuppetX
       def string_to_bytes(s, default_units = 'g')
         return 0 if s.nil?
         matches = %r{(\d+)\s*(\w?)}.match(s.to_s)
-        output_error_and_exit("Unable to convert #{s} to bytes") if matches.nil?
+        output_error_and_exit _("Unable to convert %{s} to bytes") % { s: s } if matches.nil?
         value = matches[1].to_f
         units = matches[2].empty? ? default_units : matches[2].downcase
         case units
@@ -642,7 +654,7 @@ module PuppetX
         when 'm' then return (value * (1 << 20)).to_i
         when 'g' then return (value * (1 << 30)).to_i
         else
-          output_error_and_exit("Unable to convert #{s} to bytes, valid units are: b, k, m, g")
+          output_error_and_exit _("Unable to convert %{s} to bytes, valid units are: b, k, m, g") % { s: s }
         end
       end
 
@@ -651,14 +663,14 @@ module PuppetX
       def string_to_megabytes(s, default_units = 'm')
         return 0 if s.nil?
         matches = %r{(\d+)\s*(\w?)}.match(s.to_s)
-        output_error_and_exit("Unable to convert #{s} to megabytes") if matches.nil?
+        output_error_and_exit _("Unable to convert %{s} to megabytes") % { s: s } if matches.nil?
         value = matches[1].to_f
         units = matches[2].empty? ? default_units : matches[2].downcase
         case units
         when 'm' then return value.to_i
         when 'g' then return (value * (1 << 10)).to_i
         else
-          output_error_and_exit("Unable to convert #{s} to megabytes, valid units are: m, g")
+          output_error_and_exit _("Unable to convert %{s} to megabytes, valid units are: m, g") % { s: s }
         end
       end
     end
@@ -754,7 +766,7 @@ if File.expand_path(__FILE__) == File.expand_path($PROGRAM_NAME)
 
   Tune = PuppetX::Puppetlabs::Tune.new(options)
 
-  Puppet.warning ("Unable to identify Database Hosts or tune PostgreSQL services in PE 2017.x and older\n") unless Tune.pe_2018_or_newer?
+  Puppet.warning "Unable to identify Database Hosts or tune PostgreSQL services in PE 2017.x and older\n" unless Tune.pe_2018_or_newer?
 
   if options[:current]
     Tune.output_current_settings
