@@ -5,6 +5,18 @@ end
 require 'puppetlabs_spec_helper/module_spec_helper'
 require 'rspec-puppet-facts'
 
+require 'simplecov'
+require 'simplecov-console'
+
+SimpleCov.start do
+  add_filter '/.bundle'
+  add_filter '/spec'
+  formatter SimpleCov::Formatter::MultiFormatter.new([
+    SimpleCov::Formatter::HTMLFormatter,
+    SimpleCov::Formatter::Console
+  ])
+end
+
 begin
   require 'spec_helper_local' if File.file?(File.join(File.dirname(__FILE__), 'spec_helper_local.rb'))
 rescue LoadError => loaderror
