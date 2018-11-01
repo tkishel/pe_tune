@@ -10,7 +10,7 @@
 
 ## Description
 
-This module provides a script that outputs optimized settings (parameters) for Puppet Enterprise services based upon available hardware resources.
+This module provides a script that outputs optimized settings for Puppet Enterprise services based upon available hardware resources.
 
 ## Setup
 
@@ -35,7 +35,7 @@ chmod +x ./pe_tune/lib/puppet_x/puppetlabs/tune.rb
 
 Extract common settings from node-specific settings when outputting optimized settings.
 
-In this case, a common settings is defined as one that is unique/does not need to be defined for a specific node.
+In this case, a common settings is defined as one that does not need to be defined for a specific node.
 
 ##### `--current`
 
@@ -57,7 +57,7 @@ Note: Do not specify a directory in your current Hiera hierarchy, which should b
 
 ##### `--force`
 
-Do not enforce minimum system requirements (4 Cores, 8096 MB RAM) for infrastructure hosts.
+Do not enforce minimum system requirements (4 CPU / 8 GB RAM) for infrastructure hosts.
 
 ##### `--inventory FILE`
 
@@ -67,7 +67,7 @@ This eliminates the dependency upon PuppetDB to query node resources and classes
 
 Nodes can be defined by infrastructure 'roles' or 'profiles'.
 
-Refer to the [examples](examples) directory for details.
+Refer to the examples directory for details.
 
 ##### `--local`
 
@@ -95,10 +95,10 @@ For example:
 
 ```shell
 [root@master ~] ./pe_tune/lib/puppet_x/puppetlabs/tune.rb
-### Puppet Infrastructure Summary: Found a Monolithic Infrastructure
+# Puppet Infrastructure Summary: Found a Monolithic Infrastructure
 
-## Found: 8 CPU(s) / 16384 MB RAM for Primary Master pe-master.puppetdebug.vlan
-## Specify the following optimized settings in Hiera in nodes/pe-master.puppetdebug.vlan.yaml
+# Found 8 CPU(s) / 16384 MB RAM for Primary Master pe-master.puppetdebug.vlan
+# Specify the following optimized settings in Hiera in nodes/pe-master.puppetdebug.vlan.yaml
 
 ---
 puppet_enterprise::profile::database::shared_buffers: 4096MB
@@ -118,9 +118,9 @@ puppet_enterprise::profile::orchestrator::java_args:
   Xms: 768m
   Xmx: 768m
 
-## CPU Summary: Total/Used/Free: 8/7/1 for pe-master.puppetdebug.vlan
-## RAM Summary: Total/Used/Free: 16384/12134/4250 for pe-master.puppetdebug.vlan
-## JVM Summary: Using 768 MB per Puppet Server JRuby for pe-master.puppetdebug.vlan
+# CPU Summary: Total/Used/Free: 8/7/1 for pe-master.puppetdebug.vlan
+# RAM Summary: Total/Used/Free: 16384/12134/4250 for pe-master.puppetdebug.vlan
+# JVM Summary: Using 768 MB per Puppet Server JRuby for pe-master.puppetdebug.vlan
 ```
 
 This module outputs node-specific settings by default. With a monolithic infrastructure, the output could be saved to a common/default YAML file. With a split infrastructure, the output would need to be saved to node-specific YAML files included in a node-specific hierarchy.
@@ -166,10 +166,12 @@ For more information, review:
 
 Support is limited to the following versions:
 
-* PE 2016.4.x (does not detect Database hosts or tune PostgreSQL services)
-* PE 2017.x.x (does not detect Database hosts or tune PostgreSQL services)
+* PE 2016.4.x (\*)
+* PE 2017.3.x (\*)
 * PE 2018.x.x
 * PE 2019.x.x
+
+\* Unable to identify Database Hosts or tune PostgreSQL services in these versions.
 
 Support is limited to the following infrastructures:
 

@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+# 1.6.0
+
+- Improve estimate output and translation test.
+
 # 1.5.0
 
 - Implement extra large reference architecture.
