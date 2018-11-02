@@ -10,8 +10,49 @@ describe PuppetX::Puppetlabs::Tune do
   # Disable the initialize method to test just the supporting methods.
   subject(:tune) { described_class.new(:unit_test => true) }
 
+  # Allows mergeups from PE 2018 LTS to STS. Revisit after PE 2018 is EOL.
+  # pe_2018_or_newer = Gem::Version.new(Puppet.version) >= Gem::Version.new('5.5.0')
+  pe_2019_or_newer = Gem::Version.new(Puppet.version) >= Gem::Version.new('6.0.0')
+
   before(:each) do
     suppress_standard_output
+  end
+
+  context 'with its tunable methods' do
+    it 'tunes a known set of classes' do
+      class_names = [
+        'certificate_authority',
+        'master',
+        'console',
+        'puppetdb',
+        'database',
+        'amq::broker',
+        'orchestrator',
+        'primary_master',
+        'primary_master_replica',
+        'enabled_primary_master_replica',
+        'compile_master',
+      ]
+      class_names.delete('amq::broker') if pe_2019_or_newer
+      expect(tune::tunable_class_names).to eq(class_names)
+    end
+
+    it 'tunes a known set of settings' do
+      param_names = [
+        'puppet_enterprise::master::puppetserver::jruby_max_active_instances',
+        'puppet_enterprise::master::puppetserver::reserved_code_cache',
+        'puppet_enterprise::profile::amq::broker::heap_mb',
+        'puppet_enterprise::profile::console::java_args',
+        'puppet_enterprise::profile::database::shared_buffers',
+        'puppet_enterprise::profile::database::max_connections',
+        'puppet_enterprise::profile::master::java_args',
+        'puppet_enterprise::profile::orchestrator::java_args',
+        'puppet_enterprise::profile::puppetdb::java_args',
+        'puppet_enterprise::puppetdb::command_processing_threads',
+      ]
+      param_names.delete('puppet_enterprise::profile::amq::broker::heap_mb') if pe_2019_or_newer
+      expect(tune::tunable_param_names).to eq(param_names)
+    end
   end
 
   context 'with its supporting methods' do
@@ -42,7 +83,7 @@ describe PuppetX::Puppetlabs::Tune do
       expect(tune::monolithic?).to eq(false)
     end
 
-    it 'can detect a replica master' do
+    it 'can detect ha infrastructure' do
       nodes = { 'replica_masters' => ['replica'] }
       tune.instance_variable_set(:@nodes_with_role, nodes)
 
@@ -94,6 +135,57 @@ describe PuppetX::Puppetlabs::Tune do
       tune.instance_variable_set(:@nodes_with_role, nodes)
 
       expect(tune::with_puppetdb_on_all_masters?).to eq(true)
+    end
+
+    it 'can detect a monolithic master' do
+      nodes = {
+        'primary_masters' => ['master'],
+        'console_hosts'   => [],
+        'puppetdb_hosts'  => [],
+      }
+      tune.instance_variable_set(:@nodes_with_role, nodes)
+
+      expect(tune::monolithic_master?('master')).to eq(true)
+    end
+
+    it 'can detect a replica master' do
+      nodes = {
+        'primary_masters' => ['master'],
+        'console_hosts'   => [],
+        'puppetdb_hosts'  => [],
+        'replica_masters' => ['replica'],
+      }
+      tune.instance_variable_set(:@nodes_with_role, nodes)
+
+      expect(tune::replica_master?('replica')).to eq(true)
+    end
+
+    it 'can detect a compile master' do
+      nodes = {
+        'compile_masters' => ['compile'],
+      }
+      tune.instance_variable_set(:@nodes_with_role, nodes)
+
+      expect(tune::compile_master?('compile')).to eq(true)
+    end
+
+    it 'can detect an extra large architecture' do
+      nodes_with_class = {
+        'database' => ['master', 'replica', 'master-database', 'replica-database'],
+        'puppetdb' => ['master', 'replica', 'compile1', 'compile2']
+      }
+      nodes = {
+        'primary_masters' => ['master'],
+        'console_hosts'   => [],
+        'puppetdb_hosts'  => [],
+        'replica_masters' => ['replica'],
+        'compile_masters' => ['compile1', 'compile2'],
+        'database_hosts'  => ['master-database', 'replica-database'],
+      }
+      tune.instance_variable_set(:@nodes_with_class, nodes_with_class)
+      tune.instance_variable_set(:@nodes_with_role, nodes)
+
+      expect(tune::extra_large?).to eq(true)
     end
 
     it 'can detect a class on a host' do

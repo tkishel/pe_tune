@@ -10,6 +10,58 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
   pe_2019_or_newer = Gem::Version.new(Puppet.version) >= Gem::Version.new('6.0.0')
 
   context 'with a monolithic infrastructure' do
+    it 'can calculate master host settings, in vmpooler' do
+      resources = {
+        'cpu' => 2,
+        'ram' => 6144,
+      }
+      infrastructure = {
+        'is_monolithic'        => true,
+        'with_compile_masters' => false,
+        'with_extra_large'     => false,
+      }
+      type = {
+        'is_monolithic_master' => true,
+        'is_replica_master'    => false,
+        'is_compile_master'    => false,
+        'with_jruby9k_enabled' => false,
+      }
+      classes = {
+        'amq::broker'  => true,
+        'console'      => true,
+        'database'     => true,
+        'orchestrator' => true,
+        'puppetdb'     => true,
+      }
+      node = { 'resources' => resources, 'infrastructure' => infrastructure, 'type' => type, 'classes' => classes }
+
+      params = {
+        'puppet_enterprise::profile::database::shared_buffers'                => '256MB',
+        'puppet_enterprise::puppetdb::command_processing_threads'             => 1,
+        'puppet_enterprise::master::puppetserver::jruby_max_active_instances' => 1,
+        'puppet_enterprise::profile::master::java_args'                       => { 'Xms' => '256m', 'Xmx' => '256m' },
+        'puppet_enterprise::profile::puppetdb::java_args'                     => { 'Xms' => '256m',  'Xmx' => '256m' },
+        'puppet_enterprise::profile::console::java_args'                      => { 'Xms' => '256m',  'Xmx' => '256m' },
+        'puppet_enterprise::profile::orchestrator::java_args'                 => { 'Xms' => '256m',  'Xmx' => '256m' },
+        'puppet_enterprise::profile::amq::broker::heap_mb'                    => 256,
+      }
+      totals = {
+        'CPU'          => { 'total' => 2,    'used' => 2 },
+        'RAM'          => { 'total' => 6144, 'used' => 1536 },
+        'MB_PER_JRUBY' => 256,
+      }
+      settings = { 'params' => params, 'totals' => totals }
+
+      if pe_2019_or_newer
+        node['type']['with_jruby9k_enabled'] = true
+        node['classes'].delete('amq::broker')
+        settings['params']['puppet_enterprise::master::puppetserver::reserved_code_cache'] = '256m'
+        settings['params'].delete('puppet_enterprise::profile::amq::broker::heap_mb')
+      end
+
+      expect(calculator::calculate_master_settings(node)).to eq(settings)
+    end
+
     it 'can calculate master host settings, server size small' do
       resources = {
         'cpu' => 4,
@@ -668,12 +720,16 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       expect((calculator.send :calculate_cpu, 8, 0,  25, 1, 7)).to eq(2)
       expect((calculator.send :calculate_cpu, 8, 0,  50, 1, 7)).to eq(4)
       expect((calculator.send :calculate_cpu, 8, 0, 100, 1, 7)).to eq(7)
+
+      expect((calculator.send :calculate_cpu, 8, 8, 100, 1, 7)).to eq(nil)
     end
 
     it 'can calculate memory (total minus memory reserved for the operating system) based values' do
       expect((calculator.send :calculate_ram, 16384, 0,  25, 1024,  8192)).to eq(3840)
       expect((calculator.send :calculate_ram, 16384, 0,  50, 1024,  8192)).to eq(7680)
       expect((calculator.send :calculate_ram, 16384, 0, 100, 1024, 16384)).to eq(15360)
+
+      expect((calculator.send :calculate_ram, 16384, 16384, 100, 1024, 16384)).to eq(nil)
     end
 
     it 'can calculate a setting based upon number of processors' do
