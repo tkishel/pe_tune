@@ -1,18 +1,5 @@
-RSpec.configure do |c|
-  c.mock_with :rspec
-end
-
 require 'puppetlabs_spec_helper/module_spec_helper'
 require 'rspec-puppet-facts'
-
-require 'simplecov'
-require 'simplecov-console'
-
-SimpleCov.start do
-  add_filter '/.bundle'
-  add_filter '/spec'
-  formatter SimpleCov::Formatter::MultiFormatter.new([SimpleCov::Formatter::HTMLFormatter, SimpleCov::Formatter::Console])
-end
 
 begin
   require 'spec_helper_local' if File.file?(File.join(File.dirname(__FILE__), 'spec_helper_local.rb'))
@@ -45,4 +32,14 @@ RSpec.configure do |c|
     # by default Puppet runs at warning level
     Puppet.settings[:strict] = :warning
   end
+  c.mock_with :rspec
 end
+
+def ensure_module_defined(module_name)
+  module_name.split('::').reduce(Object) do |last_module, next_module|
+    last_module.const_set(next_module, Module.new) unless last_module.const_defined?(next_module)
+    last_module.const_get(next_module)
+  end
+end
+
+# 'spec_overrides' from sync.yml will appear below this line

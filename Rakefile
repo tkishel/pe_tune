@@ -73,4 +73,3 @@ EOM
   end
 end
 
-PuppetLint.configuration.send('relative')
