@@ -148,14 +148,18 @@ module PuppetX
       def collect_nodes_with_class(classname)
         if @inventory::classes.any?
           Puppet.debug _('Using Inventory for collect_nodes_with_class')
-          # Key names are downcased in inventory.
-          class_name = classname.downcase
-          @nodes_with_class[classname] = @inventory::classes[class_name].to_a
+          # Key names are downcased in Inventory.
+          class_name_in_inventory = classname.downcase
+          @nodes_with_class[classname] = @inventory::classes[class_name_in_inventory].to_a
         else
           Puppet.debug _('Using PuppetDB for collect_nodes_with_class')
           # Key names are capitalized in PuppetDB.
-          class_name = classname.split('::').map(&:capitalize).join('::')
-          @nodes_with_class[classname] = @configurator::get_infra_nodes_with_class(class_name, @environment)
+          class_name_in_puppetdb = classname.split('::').map(&:capitalize).join('::')
+          begin
+            @nodes_with_class[classname] = @configurator::get_infra_nodes_with_class(class_name_in_puppetdb, @environment)
+          rescue Puppet::Error
+            output_error_and_exit _('Unable to connect to PuppetDB to query classes')
+          end
         end
       end
 
@@ -173,7 +177,11 @@ module PuppetX
           resources['ram'] = string_to_bytes(node_facts['ram']).to_i
         else
           Puppet.debug _('Using PuppetDB for get_resources_for_node')
-          node_facts = @configurator::get_node_facts(certname, @environment)
+          begin
+            node_facts = @configurator::get_node_facts(certname, @environment)
+          rescue Puppet::Error
+            output_error_and_exit _('Unable to connect to PuppetDB to query facts')
+          end
           output_error_and_exit _("Cannot query resources for node: %{certname}") % { certname: certname } unless node_facts['processors'] && node_facts['memory']
           resources['cpu'] = node_facts['processors']['count'].to_i
           resources['ram'] = node_facts['memory']['system']['total_bytes'].to_i
@@ -194,6 +202,20 @@ module PuppetX
 
       def get_current_settings_for_node(certname, setting_names)
         @configurator::get_hiera_classifier_settings(certname, setting_names, @environment, @environmentpath)
+      rescue Puppet::Error
+        output_error_and_exit _('Unable to connect to PuppetDB to query current settings')
+      end
+
+      def count_active_nodes
+        @configurator::count_active_nodes
+      rescue Puppet::Error
+        output_error_and_exit _('Unable to connect to PuppetDB to query active nodes')
+      end
+
+      def get_average_compile_time(report_limit)
+        @configurator::get_average_compile_time(report_limit)
+      rescue Puppet::Error
+        output_error_and_exit _('Unable to connect to PuppetDB to query average compile time')
       end
 
       #
@@ -583,9 +605,9 @@ module PuppetX
       def output_estimated_capacity(available_jrubies)
         return unless @options[:estimate]
         run_interval = Puppet[:runinterval]
-        active_nodes = @configurator::count_active_nodes
+        active_nodes = count_active_nodes
         report_limit = @calculator::calculate_run_sample(active_nodes, run_interval)
-        average_compile_time = @configurator::get_average_compile_time(report_limit)
+        average_compile_time = get_average_compile_time(report_limit)
         maximum_nodes = @calculator::calculate_maximum_nodes(average_compile_time, available_jrubies, run_interval)
         minimum_jrubies = @calculator::calculate_minimum_jrubies(active_nodes, average_compile_time, run_interval)
         output _('Puppet Infrastructure Estimated Capacity')
