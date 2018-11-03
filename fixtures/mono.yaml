@@ -1,0 +1,8 @@
+---
+nodes:
+  master.example.com:
+    resources:
+      cpu: 4
+      ram: 8
+roles:
+  puppet_master_host: master.example.com

@@ -56,24 +56,59 @@ describe PuppetX::Puppetlabs::Tune::Inventory do
           'primary_master_replica' => nil,
           'compile_master'         => [],
         },
-        'classes' => {
-          'master'                 => ['master.example.com'].to_set,
-          'console'                => ['master.example.com'].to_set,
-          'puppetdb'               => ['master.example.com'].to_set,
-          'database'               => ['master.example.com'].to_set,
-          'amq::broker'            => ['master.example.com'].to_set,
-          'orchestrator'           => ['master.example.com'].to_set,
-          'primary_master'         => ['master.example.com'].to_set,
-          'primary_master_replica' => [].to_set,
-          'compile_master'         => [].to_set
-        }
       }
 
       inventory::read_inventory_from_local_system
 
       expect(inventory.instance_variable_get(:@nodes)).to   eq(output['nodes'])
       expect(inventory.instance_variable_get(:@roles)).to   eq(output['roles'])
-      expect(inventory.instance_variable_get(:@classes)).to eq(output['classes'])
+    end
+
+    it 'can use a file as inventory' do
+      output = {
+        'nodes' => {
+          'master.example.com' => {
+            'resources' => {
+              'cpu' => 4,
+              'ram' => 8,
+            }
+          }
+        },
+        'roles' => {
+          'puppet_master_host'     => 'master.example.com',
+          'console_host'           => nil,
+          'puppetdb_host'          => [],
+          'database_host'          => [],
+          'primary_master_replica' => nil,
+          'compile_master'         => [],
+        },
+      }
+
+      inventory::read_inventory_from_inventory_file('fixtures/mono.yaml')
+
+      expect(inventory.instance_variable_get(:@nodes)).to eq(output['nodes'])
+      expect(inventory.instance_variable_get(:@roles)).to eq(output['roles'])
+    end
+
+    it 'can handles errors with a file as inventory' do
+      inventory::read_inventory_from_inventory_file('fixtures/does_not_exist.yaml')
+
+      expect(inventory.instance_variable_get(:@nodes)).to eq({})
+      expect(inventory.instance_variable_get(:@roles)).to eq({})
+    end
+
+    it 'can handles syntax errors with a file as inventory' do
+      inventory::read_inventory_from_inventory_file('fixtures/syntax_error.yaml')
+
+      expect(inventory.instance_variable_get(:@nodes)).to eq({})
+      expect(inventory.instance_variable_get(:@roles)).to eq({})
+    end
+
+    it 'can handles node errors with a file as inventory' do
+      inventory::read_inventory_from_inventory_file('fixtures/no_nodes.yaml')
+
+      expect(inventory.instance_variable_get(:@nodes)).to eq({})
+      expect(inventory.instance_variable_get(:@roles)).to eq({})
     end
 
     it 'can convert mono inventory roles to classes' do

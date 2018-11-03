@@ -110,9 +110,15 @@ module PuppetX
 
         # If using the local system or a file as inventory, read inventory and convert inventory roles to classes.
         if @options[:local] || @options[:inventory]
-          @inventory::read_inventory_from_local_system if @options[:local]
-          @inventory::read_inventory_from_inventory_file(@options[:inventory]) if @options[:inventory]
-          output_error_and_exit _('Unable to read inventory') if @inventory::nodes.empty? || @inventory::classes.empty?
+          if @options[:local]
+            @inventory::read_inventory_from_local_system
+          end
+          if @options[:inventory]
+            @inventory::read_inventory_from_inventory_file(@options[:inventory])
+          end
+          output_error_and_exit _('Unable to read inventory') if @inventory::nodes.empty? || @inventory::roles.empty?
+          @inventory::convert_inventory_roles_to_classes
+          output_error_and_exit _('Unable to read inventory') if @inventory::classes == @inventory::default_inventory_classes
         end
 
         # Query PuppetDB (or inventory) for classes and cache the results.

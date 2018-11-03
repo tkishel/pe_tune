@@ -75,7 +75,6 @@ module PuppetX
           @nodes = nodes
           @roles = default_inventory_roles.merge(roles)
           @classes = default_inventory_classes
-          convert_inventory_roles_to_classes
         end
 
         # Use an inventory file to define infrastructure nodes.
@@ -106,7 +105,6 @@ module PuppetX
           @nodes = file_inventory['nodes']
           @roles = default_inventory_roles.merge(file_inventory['roles'])
           @classes = default_inventory_classes
-          convert_inventory_roles_to_classes
         end
 
         # Convert inventory roles to classes, using Set instead of Array to prevent duplicates.
