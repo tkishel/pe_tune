@@ -137,10 +137,6 @@ module PuppetX
         @nodes_with_role['console_hosts']   = @nodes_with_class['console']  - @nodes_with_role['primary_masters'] - @nodes_with_role['replica_masters']
         @nodes_with_role['puppetdb_hosts']  = @nodes_with_class['puppetdb'] - @nodes_with_role['primary_masters'] - @nodes_with_role['replica_masters'] - @nodes_with_role['compile_masters']
         @nodes_with_role['database_hosts']  = @nodes_with_class['database'] - @nodes_with_role['primary_masters'] - @nodes_with_role['replica_masters'] - @nodes_with_role['compile_masters'] - @nodes_with_role['puppetdb_hosts']
-
-        if @options[:current] && @nodes_with_role['replica_masters'].include?(Puppet[:certname])
-          output_error_and_exit _("The '--current' option is limited to running on the Primary Master")
-        end
       end
 
       #
