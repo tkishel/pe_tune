@@ -9,11 +9,11 @@ module PuppetX
     # Tune optimized settings.
     class Tune
       # Interface to Puppet::Util::Pe_conf and Puppet::Util::Pe_conf::Recover
-      class Configuration
+      class Query
         attr_reader :pe_conf
 
         def initialize
-          @pe_conf = read_pe_conf
+          @pe_conf = {}
         end
 
         # Return pe.conf as a Hash.
@@ -33,7 +33,7 @@ module PuppetX
 
         # Read a role from pe.conf, translating trusted.certname if necessary.
 
-        def get_pe_conf_host(role)
+        def read_pe_conf_host(role)
           return if @pe_conf.empty?
           host = @pe_conf["puppet_enterprise::#{role}"]
           return if host.nil? || host.empty?
@@ -45,7 +45,7 @@ module PuppetX
 
         # Query PuppetDB for nodes with a class.
 
-        def get_infra_nodes_with_class(classname, environment)
+        def infra_nodes_with_class(classname, environment)
           Puppet.debug _("Querying PuppetDB for Class: Puppet_enterprise::Profile::%{classname}") % { classname: classname }
           pql = ['from', 'resources',
                 ['extract', ['certname', 'parameters'],
@@ -64,7 +64,7 @@ module PuppetX
 
         # Query PuppetDB for the count of active nodes.
 
-        def count_active_nodes
+        def active_node_count
           Puppet.debug _('Querying PuppetDB for Active Nodes')
           pql = ['from', 'nodes',
                 ['and',
@@ -87,7 +87,7 @@ module PuppetX
         # "name" => "transaction_evaluation",
         # "name" => "total",
 
-        def get_average_compile_time(query_limit = 1000)
+        def average_compile_time(query_limit = 1000)
           Puppet.debug _('Querying PuppetDB for Average Compile Time')
           pql = ['from', 'reports',
                 ['extract',
@@ -116,7 +116,7 @@ module PuppetX
 
         # Query PuppetDB for facts for a node.
 
-        def get_node_facts(certname, environment)
+        def node_facts(certname, environment)
           node_facts = {}
           if recover_with_instance_method?
             recover = Puppet::Util::Pe_conf::Recover.new
@@ -137,9 +137,9 @@ module PuppetX
 
         # Return settings configured in Hiera and the Classifier, identifying duplicates and merging the results.
 
-        def get_hiera_classifier_settings(certname, settings, environment, environmentpath)
+        def hiera_classifier_settings(certname, settings, environment, environmentpath)
           duplicates = []
-          overrides_hiera, overrides_classifier = get_hiera_classifier_overrides(certname, settings, environment, environmentpath)
+          overrides_hiera, overrides_classifier = hiera_classifier_overrides(certname, settings, environment, environmentpath)
           overrides = overrides_hiera
           overrides_classifier.each do |classifier_k, classifier_v|
             next unless settings.include?(classifier_k)
@@ -160,7 +160,7 @@ module PuppetX
 
         # Extract the beating heart of a puppet compiler for lookup purposes.
 
-        def get_hiera_classifier_overrides(certname, settings, environment, _environmentpath)
+        def hiera_classifier_overrides(certname, settings, environment, _environmentpath)
           if recover_with_instance_method?
             recover = Puppet::Util::Pe_conf::Recover.new
             node_facts = recover.facts_for_node(certname, environment)

@@ -61,9 +61,6 @@ module PuppetX
       # Initialize this module class.
 
       def initialize(options)
-        # Disable this method when unit testing the supporting methods.
-        return if options[:unit_test]
-
         if options[:current] && (options[:inventory] || options[:local])
           output_error_and_exit _("The '--current' and '--inventory' or '--local' options are mutually exclusive")
         end
@@ -78,7 +75,7 @@ module PuppetX
         # Settings common to all nodes.
         @collected_settings_common = {}
 
-        # Nodes with classes from inventory or PuppetDB.
+        # Nodes with classes from Inventory or PuppetDB.
         @nodes_with_class = {}
 
         # Nodes with role.
@@ -98,30 +95,31 @@ module PuppetX
         calculate_options[:memory_per_jruby]       = string_to_megabytes(options[:memory_per_jruby])
         calculate_options[:memory_reserved_for_os] = string_to_megabytes(options[:memory_reserved_for_os])
 
+        # Do not load other PuppetX::Puppetlabs::Tune classes when unit testing this class.
+        return if options[:unit_test]
+
         @calculator = PuppetX::Puppetlabs::Tune::Calculate.new(calculate_options)
+        @inventory = PuppetX::Puppetlabs::Tune::Inventory.new
+        @query = PuppetX::Puppetlabs::Tune::Query.new
 
         # PE-15116 overrides environment and environmentpath in the 'puppet infrastructure' face.
-        # Original values are required by some methods interfacing with PuppetX::Puppetlabs::Tune::Configuration.
-        @environment     = Puppet::Util::Execution.execute('/opt/puppetlabs/puppet/bin/puppet config print environment --section master').chomp
+        # Original values are required by some methods interfacing with PuppetX::Puppetlabs::Tune::Query.
+        @environment = Puppet::Util::Execution.execute('/opt/puppetlabs/puppet/bin/puppet config print environment --section master').chomp
         @environmentpath = Puppet::Util::Execution.execute('/opt/puppetlabs/puppet/bin/puppet config print environmentpath --section master').chomp
+      end
 
-        @configurator = PuppetX::Puppetlabs::Tune::Configuration.new
-        @inventory = PuppetX::Puppetlabs::Tune::Inventory.new
+      # Query (Inventory or) PuppetDB for nodes and cache the results.
 
+      def collect_infrastructure_nodes
         # If using the local system or a file as inventory, read inventory and convert inventory roles to classes.
         if @options[:local] || @options[:inventory]
-          if @options[:local]
-            @inventory::read_inventory_from_local_system
-          end
-          if @options[:inventory]
-            @inventory::read_inventory_from_inventory_file(@options[:inventory])
-          end
+          @inventory::read_inventory_from_local_system if @options[:local]
+          @inventory::read_inventory_from_inventory_file(@options[:inventory]) if @options[:inventory]
           output_error_and_exit _('Unable to read inventory') if @inventory::nodes.empty? || @inventory::roles.empty?
           @inventory::convert_inventory_roles_to_classes
-          output_error_and_exit _('Unable to read inventory') if @inventory::classes == @inventory::default_inventory_classes
+          output_error_and_exit _('Unable to read inventory') if @inventory::classes.empty? || @inventory::classes == @inventory::default_inventory_classes
         end
 
-        # Query PuppetDB (or inventory) for classes and cache the results.
         tunable_class_names.each do |classname|
           collect_nodes_with_class(classname)
         end
@@ -140,16 +138,16 @@ module PuppetX
         @nodes_with_role['puppetdb_hosts']  = @nodes_with_class['puppetdb'] - @nodes_with_role['primary_masters'] - @nodes_with_role['replica_masters'] - @nodes_with_role['compile_masters']
         @nodes_with_role['database_hosts']  = @nodes_with_class['database'] - @nodes_with_role['primary_masters'] - @nodes_with_role['replica_masters'] - @nodes_with_role['compile_masters'] - @nodes_with_role['puppetdb_hosts']
 
-        if options[:current] && @nodes_with_role['replica_masters'].include?(Puppet[:certname])
+        if @options[:current] && @nodes_with_role['replica_masters'].include?(Puppet[:certname])
           output_error_and_exit _("The '--current' option is limited to running on the Primary Master")
         end
       end
 
       #
-      # Interfaces
+      # Interfaces to PuppetX::Puppetlabs::Tune classes.
       #
 
-      # Interface to PuppetX::Puppetlabs::Tune::Configuration and ::Inventory
+      # Interface to ::Inventory and ::Query classes.
 
       def collect_nodes_with_class(classname)
         if @inventory::classes.any?
@@ -162,29 +160,29 @@ module PuppetX
           # Key names are capitalized in PuppetDB.
           class_name_in_puppetdb = classname.split('::').map(&:capitalize).join('::')
           begin
-            @nodes_with_class[classname] = @configurator::get_infra_nodes_with_class(class_name_in_puppetdb, @environment)
+            @nodes_with_class[classname] = @query::infra_nodes_with_class(class_name_in_puppetdb, @environment)
           rescue Puppet::Error
             output_error_and_exit _('Unable to connect to PuppetDB to query classes')
           end
         end
       end
 
-      # Interface to PuppetX::Puppetlabs::Tune::Configuration and ::Inventory
+      # Interface to ::Inventory and ::Query classes.
       # Override when testing with environment variables.
 
-      def get_resources_for_node(certname)
+      def resources_for_node(certname)
         resources = {}
         if @inventory::nodes.any?
-          Puppet.debug _('Using Inventory for get_resources_for_node')
+          Puppet.debug _('Using Inventory for resources_for_node')
           output_error_and_exit _("Cannot read node: %{certname}") % { certname: certname } unless @inventory::nodes[certname] && @inventory::nodes[certname]['resources']
           node_facts = @inventory::nodes[certname]['resources']
           output_error_and_exit _("Cannot read resources for node: %{certname}") % { certname: certname } unless node_facts['cpu'] && node_facts['ram']
           resources['cpu'] = node_facts['cpu'].to_i
           resources['ram'] = string_to_bytes(node_facts['ram']).to_i
         else
-          Puppet.debug _('Using PuppetDB for get_resources_for_node')
+          Puppet.debug _('Using PuppetDB for resources_for_node')
           begin
-            node_facts = @configurator::get_node_facts(certname, @environment)
+            node_facts = @query::node_facts(certname, @environment)
           rescue Puppet::Error
             output_error_and_exit _('Unable to connect to PuppetDB to query facts')
           end
@@ -204,127 +202,24 @@ module PuppetX
         resources
       end
 
-      # Interface to PuppetX::Puppetlabs::Tune::Configuration
+      # Interface to ::Query class.
 
-      def get_current_settings_for_node(certname, setting_names)
-        @configurator::get_hiera_classifier_settings(certname, setting_names, @environment, @environmentpath)
+      def current_settings_for_node(certname, setting_names)
+        @query::hiera_classifier_settings(certname, setting_names, @environment, @environmentpath)
       rescue Puppet::Error
         output_error_and_exit _('Unable to connect to PuppetDB to query current settings')
       end
 
-      def count_active_nodes
-        @configurator::count_active_nodes
+      def active_node_count
+        @query::active_node_count
       rescue Puppet::Error
         output_error_and_exit _('Unable to connect to PuppetDB to query active nodes')
       end
 
-      def get_average_compile_time(report_limit)
-        @configurator::get_average_compile_time(report_limit)
+      def average_compile_time(report_limit)
+        @query::average_compile_time(report_limit)
       rescue Puppet::Error
         output_error_and_exit _('Unable to connect to PuppetDB to query average compile time')
-      end
-
-      #
-      # Identify
-      #
-
-      # Identify infrastructure.
-
-      def unknown_infrastructure?
-        @nodes_with_role['primary_masters'].count.zero?
-      end
-
-      def monolithic?
-        @nodes_with_role['console_hosts'].count.zero? && @nodes_with_role['puppetdb_hosts'].count.zero?
-      end
-
-      def with_ha?
-        @nodes_with_role['replica_masters'].count > 0
-      end
-
-      def with_compile_masters?
-        @nodes_with_role['compile_masters'].count > 0
-      end
-
-      def with_external_database?
-        @nodes_with_role['database_hosts'].count > 0
-      end
-
-      def with_local_and_external_databases?
-        primary_and_replica_masters_count = @nodes_with_role['primary_masters'].count + @nodes_with_role['replica_masters'].count
-        @nodes_with_class['database'].count == (2 * primary_and_replica_masters_count)
-      end
-
-      def with_puppetdb_on_all_masters?
-        primary_and_replica_masters_count = @nodes_with_role['primary_masters'].count + @nodes_with_role['replica_masters'].count
-        @nodes_with_class['puppetdb'].count == (primary_and_replica_masters_count + @nodes_with_role['compile_masters'].count)
-      end
-
-      # Identify infrastructure node.
-
-      def monolithic_master?(certname)
-        monolithic? && @nodes_with_role['primary_masters'].include?(certname)
-      end
-
-      def replica_master?(certname)
-        monolithic? && @nodes_with_role['replica_masters'].include?(certname)
-      end
-
-      def compile_master?(certname)
-        @nodes_with_role['compile_masters'].include?(certname)
-      end
-
-      # Monolithic with or without HA
-      # With PE Database Hosts (aka PostgreSQL Hosts) for pe-puppetdb on one host and the other databases on another
-      # With Compile Masters with PuppetDB
-
-      def extra_large?
-        return false unless monolithic?
-        return false unless with_compile_masters?
-        with_local_and_external_databases? && with_puppetdb_on_all_masters?
-      end
-
-      # Identify class on a node.
-
-      def node_with_class?(certname, classname)
-        return false unless certname && classname
-        @nodes_with_class[classname].count > 0 && @nodes_with_class[classname].include?(certname)
-      end
-
-      # Identify tunable classes on a node.
-
-      def get_tunable_classes_for_node(certname)
-        classes = {}
-        tunable_class_names.each do |classname|
-          classes[classname] = node_with_class?(certname, classname)
-        end
-        classes
-      end
-
-      # Identify JRuby version on a node.
-      # puppetserver::jruby_9k_enabled is a setting added to PE 2018.
-      # puppetserver::jruby_jar is a setting added to PE 2017 and is outside the scope of this code.
-
-      def with_jruby9k_enabled?(certname)
-        # Do not query PuppetDB when using inventory, return the default based upon version.
-        return pe_2018_or_newer? if @inventory::nodes.any?
-        # Does the jruby-9k.jar file exist?
-        jr9kjar = '/opt/puppetlabs/server/apps/puppetserver/jruby-9k.jar'
-        return false unless File.exist?(jr9kjar)
-        # Does the jruby_9k_enabled setting exist?
-        jruby_9k_enabled = 'puppet_enterprise::master::puppetserver::jruby_9k_enabled'
-        settings = get_current_settings_for_node(certname, [jruby_9k_enabled])
-        # The setting does not exist, return the default based upon version.
-        return pe_2018_or_newer? unless settings['params'].key?(jruby_9k_enabled)
-        # Does the jruby_9k_enabled setting equal true?
-        settings['params'][jruby_9k_enabled] == 'true'
-      end
-
-      # Identify available JRubies on a node.
-
-      def available_jrubies_for_node(certname, settings)
-        default_jrubies = [get_resources_for_node(certname)['cpu'] - 1, 4].min
-        settings['params']['puppet_enterprise::master::puppetserver::jruby_max_active_instances'] || default_jrubies
       end
 
       #
@@ -334,6 +229,7 @@ module PuppetX
       # Output current settings for each infrastructure node based upon Classifier and Hiera data.
 
       def output_current_settings
+        collect_infrastructure_nodes
         output_pe_infrastructure_error_and_exit if unknown_infrastructure?
         output_pe_infrastucture_summary(monolithic?, with_compile_masters?, with_external_database?, extra_large?)
 
@@ -341,38 +237,38 @@ module PuppetX
 
         # Primary Master: Applicable to Monolithic and Split Infrastructures.
         @nodes_with_role['primary_masters'].each do |certname|
-          settings = get_current_settings_for_node(certname, tunable_param_names)
+          settings = current_settings_for_node(certname, tunable_param_names)
           output_current_settings_for_node_with_role(certname, 'Primary Master', settings)
           available_jrubies += available_jrubies_for_node(certname, settings) unless with_compile_masters?
         end
 
         # Replica Master: Applicable to Monolithic Infrastructures.
         @nodes_with_role['replica_masters'].each do |certname|
-          settings = get_current_settings_for_node(certname, tunable_param_names)
+          settings = current_settings_for_node(certname, tunable_param_names)
           output_current_settings_for_node_with_role(certname, 'Replica Master', settings)
         end
 
         # Console Host: Specific to Split Infrastructures. By default, a list of one.
         @nodes_with_role['console_hosts'].each do |certname|
-          settings = get_current_settings_for_node(certname, tunable_param_names)
+          settings = current_settings_for_node(certname, tunable_param_names)
           output_current_settings_for_node_with_role(certname, 'Console Host', settings)
         end
 
         # PuppetDB Host: Specific to Split Infrastructures. By default, a list of one.
         @nodes_with_role['puppetdb_hosts'].each do |certname|
-          settings = get_current_settings_for_node(certname, tunable_param_names)
+          settings = current_settings_for_node(certname, tunable_param_names)
           output_current_settings_for_node_with_role(certname, 'PuppetDB Host', settings)
         end
 
         # External Database Host: Applicable to Monolithic and Split Infrastructures.
         @nodes_with_role['database_hosts'].each do |certname|
-          settings = get_current_settings_for_node(certname, tunable_param_names)
+          settings = current_settings_for_node(certname, tunable_param_names)
           output_current_settings_for_node_with_role(certname, 'External Database Host', settings)
         end
 
         # Compile Masters: Applicable to Monolithic and Split Infrastructures.
         @nodes_with_role['compile_masters'].each do |certname|
-          settings = get_current_settings_for_node(certname, tunable_param_names)
+          settings = current_settings_for_node(certname, tunable_param_names)
           output_current_settings_for_node_with_role(certname, 'Compile Master', settings)
           available_jrubies += available_jrubies_for_node(certname, settings)
         end
@@ -383,6 +279,7 @@ module PuppetX
       # Output optimized settings for each infrastructure node based upon each node's set of services.
 
       def output_optimized_settings
+        collect_infrastructure_nodes
         output_pe_infrastructure_error_and_exit if unknown_infrastructure?
         output_pe_infrastucture_summary(monolithic?, with_compile_masters?, with_external_database?, extra_large?)
 
@@ -390,7 +287,7 @@ module PuppetX
 
         # Primary Master: Applicable to Monolithic and Split Infrastructures.
         @nodes_with_role['primary_masters'].each do |certname|
-          node = get_configuration_for_node(certname)
+          node = configuration_for_node(certname)
           node['settings'] = @calculator::calculate_master_settings(node)
           collect_node_with_role(certname, 'Primary Master', node)
           available_jrubies += available_jrubies_for_node(certname, node['settings']) unless with_compile_masters?
@@ -398,35 +295,35 @@ module PuppetX
 
         # Replica Master: Applicable to Monolithic Infrastructures.
         @nodes_with_role['replica_masters'].each do |certname|
-          node = get_configuration_for_node(certname)
+          node = configuration_for_node(certname)
           node['settings'] = @calculator::calculate_master_settings(node)
           collect_node_with_role(certname, 'Replica Master', node)
         end
 
         # Console Host: Specific to Split Infrastructures. By default, a list of one.
         @nodes_with_role['console_hosts'].each do |certname|
-          node = get_configuration_for_node(certname)
+          node = configuration_for_node(certname)
           node['settings'] = @calculator::calculate_console_settings(node)
           collect_node_with_role(certname, 'Console Host', node)
         end
 
         # PuppetDB Host: Specific to Split Infrastructures. By default, a list of one.
         @nodes_with_role['puppetdb_hosts'].each do |certname|
-          node = get_configuration_for_node(certname)
+          node = configuration_for_node(certname)
           node['settings'] = @calculator::calculate_puppetdb_settings(node)
           collect_node_with_role(certname, 'PuppetDB Host', node)
         end
 
         # External Database Host: Applicable to Monolithic and Split Infrastructures.
         @nodes_with_role['database_hosts'].each do |certname|
-          node = get_configuration_for_node(certname)
+          node = configuration_for_node(certname)
           node['settings'] = @calculator::calculate_database_settings(node)
           collect_node_with_role(certname, 'External Database Host', node)
         end
 
         # Compile Masters: Applicable to Monolithic and Split Infrastructures.
         @nodes_with_role['compile_masters'].each do |certname|
-          node = get_configuration_for_node(certname)
+          node = configuration_for_node(certname)
           node['settings'] = @calculator::calculate_master_settings(node)
           collect_node_with_role(certname, 'Compile Master', node)
           available_jrubies += available_jrubies_for_node(certname, node['settings'])
@@ -445,12 +342,12 @@ module PuppetX
 
       # Return configuration for a node.
 
-      def get_configuration_for_node(certname)
+      def configuration_for_node(certname)
         node = {}
-        resources = get_resources_for_node(certname)
+        resources = resources_for_node(certname)
         output_minimum_system_requirements_error_and_exit(certname) unless meets_minimum_system_requirements?(resources)
         node['certname'] = certname,
-        node['classes'] = get_tunable_classes_for_node(certname)
+        node['classes'] = tunable_classes_for_node(certname)
         node['infrastructure'] = {
           'is_monolithic'        => monolithic?,
           'with_compile_masters' => with_compile_masters?,
@@ -611,9 +508,9 @@ module PuppetX
       def output_estimated_capacity(available_jrubies)
         return unless @options[:estimate]
         run_interval = Puppet[:runinterval]
-        active_nodes = count_active_nodes
+        active_nodes = active_node_count
         report_limit = @calculator::calculate_run_sample(active_nodes, run_interval)
-        average_compile_time = get_average_compile_time(report_limit)
+        average_compile_time = average_compile_time(report_limit)
         maximum_nodes = @calculator::calculate_maximum_nodes(average_compile_time, available_jrubies, run_interval)
         minimum_jrubies = @calculator::calculate_minimum_jrubies(active_nodes, average_compile_time, run_interval)
         output _('Puppet Infrastructure Estimated Capacity')
@@ -644,6 +541,109 @@ module PuppetX
       def output_minimum_system_requirements_error_and_exit(certname)
         Puppet.err _("%{certname} does not meet the minimum system requirements to optimize its settings") % { certname: certname }
         exit 1
+      end
+
+      #
+      # Identify
+      #
+
+      # Identify infrastructure.
+
+      def unknown_infrastructure?
+        @nodes_with_role['primary_masters'].count.zero?
+      end
+
+      def monolithic?
+        @nodes_with_role['console_hosts'].count.zero? && @nodes_with_role['puppetdb_hosts'].count.zero?
+      end
+
+      def with_ha?
+        @nodes_with_role['replica_masters'].count > 0
+      end
+
+      def with_compile_masters?
+        @nodes_with_role['compile_masters'].count > 0
+      end
+
+      def with_external_database?
+        @nodes_with_role['database_hosts'].count > 0
+      end
+
+      def with_local_and_external_databases?
+        primary_and_replica_masters_count = @nodes_with_role['primary_masters'].count + @nodes_with_role['replica_masters'].count
+        @nodes_with_class['database'].count == (2 * primary_and_replica_masters_count)
+      end
+
+      def with_puppetdb_on_all_masters?
+        primary_and_replica_masters_count = @nodes_with_role['primary_masters'].count + @nodes_with_role['replica_masters'].count
+        @nodes_with_class['puppetdb'].count == (primary_and_replica_masters_count + @nodes_with_role['compile_masters'].count)
+      end
+
+      # Identify infrastructure node.
+
+      def monolithic_master?(certname)
+        monolithic? && @nodes_with_role['primary_masters'].include?(certname)
+      end
+
+      def replica_master?(certname)
+        monolithic? && @nodes_with_role['replica_masters'].include?(certname)
+      end
+
+      def compile_master?(certname)
+        @nodes_with_role['compile_masters'].include?(certname)
+      end
+
+      # Monolithic with or without HA
+      # With PE Database Hosts (aka PostgreSQL Hosts) for pe-puppetdb on one host and the other databases on another
+      # With Compile Masters with PuppetDB
+
+      def extra_large?
+        return false unless monolithic?
+        return false unless with_compile_masters?
+        with_local_and_external_databases? && with_puppetdb_on_all_masters?
+      end
+
+      # Identify class on a node.
+
+      def node_with_class?(certname, classname)
+        return false unless certname && classname
+        @nodes_with_class[classname].count > 0 && @nodes_with_class[classname].include?(certname)
+      end
+
+      # Identify tunable classes on a node.
+
+      def tunable_classes_for_node(certname)
+        classes = {}
+        tunable_class_names.each do |classname|
+          classes[classname] = node_with_class?(certname, classname)
+        end
+        classes
+      end
+
+      # Identify JRuby version on a node.
+      # puppetserver::jruby_9k_enabled is a setting added to PE 2018.
+      # puppetserver::jruby_jar is a setting added to PE 2017 and is outside the scope of this code.
+
+      def with_jruby9k_enabled?(certname)
+        # Do not query PuppetDB when using inventory, return the default based upon version.
+        return pe_2018_or_newer? if @inventory::nodes.any?
+        # Does the jruby-9k.jar file exist?
+        jr9kjar = '/opt/puppetlabs/server/apps/puppetserver/jruby-9k.jar'
+        return false unless File.exist?(jr9kjar)
+        # Does the jruby_9k_enabled setting exist?
+        jruby_9k_enabled = 'puppet_enterprise::master::puppetserver::jruby_9k_enabled'
+        settings = current_settings_for_node(certname, [jruby_9k_enabled])
+        # The setting does not exist, return the default based upon version.
+        return pe_2018_or_newer? unless settings['params'].key?(jruby_9k_enabled)
+        # Does the jruby_9k_enabled setting equal true?
+        settings['params'][jruby_9k_enabled] == 'true'
+      end
+
+      # Identify available JRubies on a node.
+
+      def available_jrubies_for_node(certname, settings)
+        default_jrubies = [resources_for_node(certname)['cpu'] - 1, 4].min
+        settings['params']['puppet_enterprise::master::puppetserver::jruby_max_active_instances'] || default_jrubies
       end
 
       #
@@ -705,100 +705,8 @@ module PuppetX
   end
 end
 
-# The following code replaces lib/puppet/face/infrastructure/tune.rb
-#   allowing this class to be executed as a standalone script.
+# The following code allows this class to be executed as a standalone script.
 
 if File.expand_path(__FILE__) == File.expand_path($PROGRAM_NAME)
-  require 'optparse'
-  require 'puppet'
-  require 'yaml'
-
-  Puppet.initialize_settings
-  Puppet::Util::Log.newdestination :console
-
-  options = {}
-  parser = OptionParser.new do |opts|
-    opts.banner = 'Usage: tune.rb [options]'
-    opts.separator ''
-    opts.separator 'Summary: Inspect infrastructure and output optimized settings (parameters)'
-    opts.separator ''
-    opts.separator 'Options:'
-    opts.separator ''
-    options[:common] = false
-    opts.on('--common', 'Extract common settings from node-specific settings') do
-      options[:common] = true
-    end
-    options[:current] = false
-    opts.on('--current', 'Output currently-defined settings (not including defaults)') do
-      options[:current] = true
-    end
-    options[:debug] = false
-    opts.on('--debug', 'Enable logging of debug information') do
-      options[:debug] = true
-    end
-    options[:estimate] = false
-    opts.on('--estimate', 'Output estimated capacity summary') do
-      options[:estimate] = true
-    end
-    options[:force] = false
-    opts.on('--force', 'Do not enforce minimum system requirements') do
-      options[:force] = true
-    end
-    opts.on('--hiera DIRECTORY', 'Output Hiera YAML files to the specified directory') do |hi|
-      options[:hiera] = hi
-    end
-    opts.on('--inventory FILE', 'Use a YAML file to define infrastructure nodes') do |no|
-      options[:inventory] = no
-    end
-    options[:local] = false
-    opts.on('--local', 'Query the local system to define a monolithic infrastructure master node') do
-      options[:local] = true
-    end
-    opts.on('--memory_per_jruby MB', 'Amount of RAM to allocate for each Puppet Server JRuby') do |me|
-      options[:memory_per_jruby] = me
-    end
-    opts.on('--memory_reserved_for_os MB', 'Amount of RAM to reserve for the operating system') do |mo|
-      options[:memory_reserved_for_os] = mo
-    end
-    opts.on('-h', '--help', 'Display help') do
-      puts opts
-      puts
-      exit 0
-    end
-  end
-  parser.parse!
-
-  Puppet.debug = options[:debug]
-
-  Puppet.debug _("Command Options: %{options}") % { options: options }
-
-  # The location of enterprise modules varies from version to version.
-
-  enterprise_modules = ['pe_infrastructure', 'pe_install', 'pe_manager']
-  env_mod = '/opt/puppetlabs/server/data/environments/enterprise/modules'
-  ent_mod = '/opt/puppetlabs/server/data/enterprise/modules'
-  enterprise_module_paths = [env_mod, ent_mod]
-  enterprise_module_paths.each do |enterprise_module_path|
-    next unless File.directory?(enterprise_module_path)
-    enterprise_modules.each do |enterprise_module|
-      enterprise_module_lib = "#{enterprise_module_path}/#{enterprise_module}/lib"
-      next if $LOAD_PATH.include?(enterprise_module_lib)
-      Puppet.debug _("Adding %{enterprise_module} to LOAD_PATH: %{enterprise_module_lib}") % { enterprise_module: enterprise_module, enterprise_module_lib: enterprise_module_lib }
-      $LOAD_PATH.unshift(enterprise_module_lib)
-    end
-  end
-
-  require_relative 'tune/calculate'
-  require_relative 'tune/configuration'
-  require_relative 'tune/inventory'
-
-  Tune = PuppetX::Puppetlabs::Tune.new(options)
-
-  Puppet.warning "Unable to identify Database Hosts or tune PostgreSQL services in PE 2017.x and older\n" unless Tune.pe_2018_or_newer?
-
-  if options[:current]
-    Tune.output_current_settings
-  else
-    Tune.output_optimized_settings
-  end
+  require_relative 'tune/cli'
 end

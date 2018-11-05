@@ -7,7 +7,7 @@ def suppress_standard_output
 end
 
 describe PuppetX::Puppetlabs::Tune do
-  # Disable the initialize method to test just the supporting methods.
+  # Do not load other PuppetX::Puppetlabs::Tune classes when unit testing this class.
   subject(:tune) { described_class.new(:unit_test => true) }
 
   # Allows mergeups from PE 2018 LTS to STS. Revisit after PE 2018 is EOL.
@@ -195,6 +195,40 @@ describe PuppetX::Puppetlabs::Tune do
       expect(tune::node_with_class?('console', 'console')).to eq(true)
     end
 
+    it 'can detect classes on a host' do
+      nodes_with_class = {
+        'certificate_authority'          => [],
+        'master'                         => [],
+        'console'                        => ['console'],
+        'puppetdb'                       => [],
+        'database'                       => [],
+        'amq::broker'                    => [],
+        'orchestrator'                   => [],
+        'primary_master'                 => [],
+        'primary_master_replica'         => [],
+        'enabled_primary_master_replica' => [],
+        'compile_master'                 => [],
+      }
+      classes_for_node = {
+        'certificate_authority'          => false,
+        'master'                         => false,
+        'console'                        => true,
+        'puppetdb'                       => false,
+        'database'                       => false,
+        'amq::broker'                    => false,
+        'orchestrator'                   => false,
+        'primary_master'                 => false,
+        'primary_master_replica'         => false,
+        'enabled_primary_master_replica' => false,
+        'compile_master'                 => false,
+      }
+      nodes_with_class.delete('amq::broker') if pe_2019_or_newer
+      classes_for_node.delete('amq::broker') if pe_2019_or_newer
+      tune.instance_variable_set(:@nodes_with_class, nodes_with_class)
+
+      expect(tune::tunable_classes_for_node('console')).to eq(classes_for_node)
+    end
+
     # it 'can detect that JRuby9K is enabled for the puppetsever service' do
     # end
 
@@ -255,8 +289,26 @@ describe PuppetX::Puppetlabs::Tune do
       expect(tune::meets_minimum_system_requirements?(resources)).to eq(true)
     end
 
-    it 'can convert a string to bytes with a unit' do
+    it 'can convert a string to bytes with a g unit' do
       bytes_string = '16g'
+      bytes = 17179869184
+      expect(tune::string_to_bytes(bytes_string)).to eq(bytes)
+    end
+
+    it 'can convert a string to bytes with a m unit' do
+      bytes_string = '16384m'
+      bytes = 17179869184
+      expect(tune::string_to_bytes(bytes_string)).to eq(bytes)
+    end
+
+    it 'can convert a string to bytes with a k unit' do
+      bytes_string = '16777216k'
+      bytes = 17179869184
+      expect(tune::string_to_bytes(bytes_string)).to eq(bytes)
+    end
+
+    it 'can convert a string to bytes with a b unit' do
+      bytes_string = '17179869184b'
       bytes = 17179869184
       expect(tune::string_to_bytes(bytes_string)).to eq(bytes)
     end
@@ -267,16 +319,22 @@ describe PuppetX::Puppetlabs::Tune do
       expect(tune::string_to_bytes(bytes_string)).to eq(bytes)
     end
 
-    it 'can convert a string to megabytes with a unit' do
+    it 'can convert a string to megabytes with a g unit' do
       bytes_string = '1g'
-      bytes = 1024
-      expect(tune::string_to_megabytes(bytes_string)).to eq(bytes)
+      megabytes = 1024
+      expect(tune::string_to_megabytes(bytes_string)).to eq(megabytes)
+    end
+
+    it 'can convert a string to megabytes with a m unit' do
+      bytes_string = '1024m'
+      megabytes = 1024
+      expect(tune::string_to_megabytes(bytes_string)).to eq(megabytes)
     end
 
     it 'can convert a string to megabytes without a unit' do
       bytes_string = '1024'
-      bytes = 1024
-      expect(tune::string_to_megabytes(bytes_string)).to eq(bytes)
+      megabytes = 1024
+      expect(tune::string_to_megabytes(bytes_string)).to eq(megabytes)
     end
   end
 end
