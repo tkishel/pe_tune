@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+# 1.6.1
+
+- Move cli code to separate file.
+- Rename configuration class to query.
+- Handle exceptions when PuppetDV is unavailable.
+- Add spec tests.
+
 # 1.6.0
 
 - Improve estimate output and translation test.
