@@ -102,10 +102,7 @@ module PuppetX
         @inventory = PuppetX::Puppetlabs::Tune::Inventory.new
         @query = PuppetX::Puppetlabs::Tune::Query.new
 
-        # PE-15116 overrides environment and environmentpath in the 'puppet infrastructure' face.
-        # Original values are required by some methods interfacing with PuppetX::Puppetlabs::Tune::Query.
-        @environment = Puppet::Util::Execution.execute('/opt/puppetlabs/puppet/bin/puppet config print environment --section master').chomp
-        @environmentpath = Puppet::Util::Execution.execute('/opt/puppetlabs/puppet/bin/puppet config print environmentpath --section master').chomp
+        @query::reset_pe_environment(Puppet['certname'])
       end
 
       # Query (Inventory or) PuppetDB for nodes and cache the results.
@@ -156,7 +153,7 @@ module PuppetX
           # Key names are capitalized in PuppetDB.
           class_name_in_puppetdb = classname.split('::').map(&:capitalize).join('::')
           begin
-            @nodes_with_class[classname] = @query::infra_nodes_with_class(class_name_in_puppetdb, @environment)
+            @nodes_with_class[classname] = @query::infra_nodes_with_class(class_name_in_puppetdb)
           rescue Puppet::Error
             output_error_and_exit _('Unable to connect to PuppetDB to query classes')
           end
@@ -178,7 +175,7 @@ module PuppetX
         else
           Puppet.debug _('Using PuppetDB for resources_for_node')
           begin
-            node_facts = @query::node_facts(certname, @environment)
+            node_facts = @query::node_facts(certname)
           rescue Puppet::Error
             output_error_and_exit _('Unable to connect to PuppetDB to query facts')
           end
@@ -201,7 +198,7 @@ module PuppetX
       # Interface to ::Query class.
 
       def current_settings_for_node(certname, setting_names)
-        @query::hiera_classifier_settings(certname, setting_names, @environment, @environmentpath)
+        @query::hiera_classifier_settings(certname, setting_names)
       rescue Puppet::Error
         output_error_and_exit _('Unable to connect to PuppetDB to query current settings')
       end
