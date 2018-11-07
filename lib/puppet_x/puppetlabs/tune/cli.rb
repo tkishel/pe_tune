@@ -13,7 +13,7 @@ enterprise_module_paths.each do |enterprise_module_path|
   enterprise_modules.each do |enterprise_module|
     enterprise_module_lib = "#{enterprise_module_path}/#{enterprise_module}/lib"
     next if $LOAD_PATH.include?(enterprise_module_lib)
-    Puppet.debug _("Adding %{enterprise_module} to LOAD_PATH: %{enterprise_module_lib}") % { enterprise_module: enterprise_module, enterprise_module_lib: enterprise_module_lib }
+    Puppet.debug("Adding #{enterprise_module} to LOAD_PATH: #{enterprise_module_lib}")
     $LOAD_PATH.unshift(enterprise_module_lib)
   end
 end
@@ -78,7 +78,7 @@ Puppet.initialize_settings
 Puppet::Util::Log.newdestination :console
 Puppet.debug = options[:debug]
 
-Puppet.debug _("Command Options: %{options}") % { options: options }
+Puppet.debug("Command Options: #{options}")
 
 Tune = PuppetX::Puppetlabs::Tune.new(options)
 

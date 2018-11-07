@@ -54,7 +54,7 @@ module PuppetX
         # This eliminates the dependency upon PuppetDB to query node resources and classes.
 
         def read_inventory_from_local_system
-          Puppet.debug _('Querying the local system to define a monolithic infrastructure master node')
+          Puppet.debug('Querying the local system to define a monolithic infrastructure master node')
           hostname = Puppet::Util::Execution.execute('hostname -f').chomp
           cpu = Puppet::Util::Execution.execute('nproc --all').chomp
           ram = Puppet::Util::Execution.execute('free -b | grep Mem').chomp.split(' ')[1]
@@ -67,7 +67,7 @@ module PuppetX
               }
             }
           }
-          Puppet.debug _("Found resources on the local system: %{nodes}") % { nodes: nodes }
+          Puppet.debug("Found resources on the local system: #{nodes}")
           roles = {
             'puppet_master_host' => hostname
           }
@@ -86,7 +86,7 @@ module PuppetX
             Puppet.err _("The inventory file %{file} does not exist") % { file: file }
             return
           end
-          Puppet.debug _("Using the inventory file %{file} to define infrastructure nodes") % { file: file }
+          Puppet.debug("Using the inventory file #{file} to define infrastructure nodes")
           begin
             file_inventory = YAML.safe_load(File.read(file))
           rescue Psych::SyntaxError
@@ -112,14 +112,14 @@ module PuppetX
         def convert_inventory_roles_to_classes
           if @roles['database_host']
             @roles['database_host'].each do |database_host|
-              Puppet.debug _("Converting database_host role to classes for: %{host}") % { host: database_host }
+              Puppet.debug("Converting database_host role to classes for: #{database_host}")
               @classes['database'] << database_host
             end
           end
 
           if @roles['console_host']
             console_host = @roles['console_host']
-            Puppet.debug _("Converting console_host role to classes for: %{host}") % { host: console_host }
+            Puppet.debug("Converting console_host role to classes for: #{console_host}")
             @classes['console'] << console_host
           end
 
@@ -128,7 +128,7 @@ module PuppetX
 
           if @roles['puppetdb_host']
             @roles['puppetdb_host'].each do |puppetdb_host|
-              Puppet.debug _("Converting puppetdb_host role to classes for: %{host}") % { host: puppetdb_host }
+              Puppet.debug("Converting puppetdb_host role to classes for: #{puppetdb_host}")
               @classes['puppetdb'] << puppetdb_host
               @classes['database'] << @roles['puppetdb_host'].first if is_split_local_database
             end
@@ -143,7 +143,7 @@ module PuppetX
 
           if @roles['puppet_master_host']
             puppet_master_host = @roles['puppet_master_host']
-            Puppet.debug _("Converting puppet_master_host role to classes for: %{host}") % { host: puppet_master_host }
+            Puppet.debug("Converting puppet_master_host role to classes for: #{puppet_master_host}")
             @classes['primary_master'] << puppet_master_host
             @classes['master']         << puppet_master_host
             @classes['console']        << puppet_master_host if is_mono
@@ -155,7 +155,7 @@ module PuppetX
 
           if @roles['primary_master_replica']
             primary_master_replica = @roles['primary_master_replica']
-            Puppet.debug _("Converting primary_master_replica role to classes for: %{host}") % { host: primary_master_replica }
+            Puppet.debug("Converting primary_master_replica role to classes for: #{primary_master_replica}")
             @classes['primary_master_replica'] << primary_master_replica
             @classes['master']                 << primary_master_replica
             @classes['console']                << primary_master_replica
@@ -167,7 +167,7 @@ module PuppetX
 
           if @roles['compile_master']
             @roles['compile_master'].each do |compile_master|
-              Puppet.debug _("Converting compile_master role to classes for: %{host}") % { host: compile_master }
+              Puppet.debug("Converting compile_master role to classes for: #{compile_master}")
               @classes['compile_master'] << compile_master
               @classes['master']         << compile_master
               @classes['puppetdb']       << compile_master if is_extra_large

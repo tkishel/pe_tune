@@ -144,12 +144,12 @@ module PuppetX
 
       def collect_nodes_with_class(classname)
         if @inventory::classes.any?
-          Puppet.debug _('Using Inventory for collect_nodes_with_class')
+          Puppet.debug('Using Inventory for collect_nodes_with_class')
           # Key names are downcased in Inventory.
           class_name_in_inventory = classname.downcase
           @nodes_with_class[classname] = @inventory::classes[class_name_in_inventory].to_a
         else
-          Puppet.debug _('Using PuppetDB for collect_nodes_with_class')
+          Puppet.debug('Using PuppetDB for collect_nodes_with_class')
           # Key names are capitalized in PuppetDB.
           class_name_in_puppetdb = classname.split('::').map(&:capitalize).join('::')
           begin
@@ -166,14 +166,14 @@ module PuppetX
       def resources_for_node(certname)
         resources = {}
         if @inventory::nodes.any?
-          Puppet.debug _('Using Inventory for resources_for_node')
+          Puppet.debug('Using Inventory for resources_for_node')
           output_error_and_exit _("Cannot read node: %{certname}") % { certname: certname } unless @inventory::nodes[certname] && @inventory::nodes[certname]['resources']
           node_facts = @inventory::nodes[certname]['resources']
           output_error_and_exit _("Cannot read resources for node: %{certname}") % { certname: certname } unless node_facts['cpu'] && node_facts['ram']
           resources['cpu'] = node_facts['cpu'].to_i
           resources['ram'] = string_to_bytes(node_facts['ram']).to_i
         else
-          Puppet.debug _('Using PuppetDB for resources_for_node')
+          Puppet.debug('Using PuppetDB for resources_for_node')
           begin
             node_facts = @query::node_facts(certname)
           rescue Puppet::Error
@@ -185,11 +185,11 @@ module PuppetX
         end
         resources['ram'] = (resources['ram'] / 1024 / 1024).to_i
         if ENV['TEST_CPU']
-          Puppet.debug _("Using TEST_CPU=%{cpu} for %{certname}") % { cpu: ENV['TEST_CPU'], certname: certname }
+          Puppet.debug("Using TEST_CPU=#{ENV['TEST_CPU']} for #{certname}")
           resources['cpu'] = ENV['TEST_CPU'].to_i
         end
         if ENV['TEST_RAM']
-          Puppet.debug _("Using TEST_RAM=%{ram} for %{certname}") % { ram: ENV['TEST_RAM'], certname: certname }
+          Puppet.debug("Using TEST_RAM=#{ENV['TEST_RAM']} for #{certname}")
           resources['ram'] = ENV['TEST_RAM'].to_i
         end
         resources

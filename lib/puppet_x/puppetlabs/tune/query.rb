@@ -24,11 +24,11 @@ module PuppetX
           begin
             environment = catalog_environment(certname)
           rescue Puppet::Error
-            Puppet.debug _("Unable to query PuppetDB for Environment using: %{certname}") % { certname: certname }
             environment = []
           end
           if environment.empty?
-            Puppet.debug _("Querying 'puppet config print environment' for Environment") % { certname: certname }
+            Puppet.debug("No Environment found in PuppetDB using: #{certname}")
+            Puppet.debug("Querying 'puppet config print environment' for Environment")
             @pe_environment = Puppet::Util::Execution.execute('/opt/puppetlabs/puppet/bin/puppet config print environment --section master').chomp
           else
             @pe_environment = environment[0]
@@ -39,7 +39,7 @@ module PuppetX
         # Query PuppetDB for the environment of a node.
 
         def catalog_environment(certname)
-          Puppet.debug _("Querying PuppetDB for Environment using: %{certname}") % { certname: certname }
+          Puppet.debug("Querying PuppetDB for Environment using: #{certname}")
           pql = ['from', 'nodes',
                 ['extract', ['certname', 'catalog_environment'],
                   ['and',
@@ -55,7 +55,7 @@ module PuppetX
         # Query PuppetDB for nodes with a class.
 
         def infra_nodes_with_class(classname)
-          Puppet.debug _("Querying PuppetDB for Class: Puppet_enterprise::Profile::%{classname} in %{environment}") % { classname: classname, environment: @pe_environment }
+          Puppet.debug("Querying PuppetDB for Class: Puppet_enterprise::Profile::#{classname}")
           pql = ['from', 'resources',
                 ['extract', ['certname', 'parameters'],
                   ['and',
@@ -74,7 +74,7 @@ module PuppetX
         # Query PuppetDB for the count of active nodes.
 
         def active_node_count
-          Puppet.debug _('Querying PuppetDB for Active Nodes')
+          Puppet.debug('Querying PuppetDB for Active Nodes')
           pql = ['from', 'nodes',
                 ['and',
                   ['=', ['node', 'active'], true],
@@ -97,7 +97,7 @@ module PuppetX
         # "name" => "total",
 
         def average_compile_time(query_limit = 1000)
-          Puppet.debug _('Querying PuppetDB for Average Compile Time')
+          Puppet.debug('Querying PuppetDB for Average Compile Time')
           pql = ['from', 'reports',
                 ['extract',
                   ['hash', 'start_time', 'end_time', 'metrics'],
@@ -106,7 +106,7 @@ module PuppetX
               ]
           results = Puppet::Util::Puppetdb.query_puppetdb(pql)
           random_report_hash = results.sample['hash']
-          Puppet.debug _("Random report: %{report}") % { report: random_report_hash }
+          Puppet.debug("Random report: #{random_report_hash}")
           # run_times = results.map do |report|
           #   Time.parse(report['end_time']) - Time.parse(report['start_time'])
           # end
@@ -153,7 +153,7 @@ module PuppetX
           overrides_classifier.each do |classifier_k, classifier_v|
             next unless settings.include?(classifier_k)
             if overrides.key?(classifier_k)
-              Puppet.debug _("# Duplicate settings for %{certname}: %{classifier_k} Classifier: %{classifier_v} Hiera: %{hiera_v}") % { certname: certname, classifier_k: classifier_k, classifier_v: classifier_v, hiera_v: overrides_hiera[classifier_k] }
+              Puppet.debug("# Duplicate settings for #{certname}: #{classifier_k} Classifier: #{classifier_v} Hiera: #{overrides_hiera[classifier_k]}")
               duplicates.push(classifier_k)
             end
             # Classifer settings take precedence over Hiera settings.
