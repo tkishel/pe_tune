@@ -65,6 +65,10 @@ module PuppetX
           output_error_and_exit _("The '--current' and '--inventory' or '--local' options are mutually exclusive")
         end
 
+        if options[:estimate] && (options[:inventory] || options[:local])
+          output_error_and_exit _("The '--estimate' and '--inventory' or '--local' options are mutually exclusive")
+        end
+
         if options[:inventory] && options[:local]
           output_error_and_exit _("The '--inventory' and '--local' options are mutually exclusive")
         end
@@ -95,26 +99,22 @@ module PuppetX
         calculate_options[:memory_per_jruby]       = string_to_megabytes(options[:memory_per_jruby])
         calculate_options[:memory_reserved_for_os] = string_to_megabytes(options[:memory_reserved_for_os])
 
-        # Do not load other PuppetX::Puppetlabs::Tune classes when unit testing this class.
-        return if options[:unit_test]
-
         @calculator = PuppetX::Puppetlabs::Tune::Calculate.new(calculate_options)
         @inventory = PuppetX::Puppetlabs::Tune::Inventory.new
-        @query = PuppetX::Puppetlabs::Tune::Query.new
-
-        @query::reset_pe_environment(Puppet['certname'])
+        @query = PuppetX::Puppetlabs::Tune::Query.new unless using_inventory?
       end
 
       # Query (Inventory or) PuppetDB for nodes and cache the results.
 
       def collect_infrastructure_nodes
-        # If using the local system or a file as inventory, read inventory and convert inventory roles to classes.
-        if @options[:local] || @options[:inventory]
+        if using_inventory?
           @inventory::read_inventory_from_local_system if @options[:local]
           @inventory::read_inventory_from_inventory_file(@options[:inventory]) if @options[:inventory]
           output_error_and_exit _('Unable to read inventory') if @inventory::nodes.empty? || @inventory::roles.empty?
           @inventory::convert_inventory_roles_to_classes
           output_error_and_exit _('Unable to read inventory') if @inventory::classes.empty? || @inventory::classes == @inventory::default_inventory_classes
+        else
+          @query::pe_environment(Puppet['certname'])
         end
 
         tunable_class_names.each do |classname|
@@ -143,7 +143,7 @@ module PuppetX
       # Interface to ::Inventory and ::Query classes.
 
       def collect_nodes_with_class(classname)
-        if @inventory::classes.any?
+        if using_inventory?
           Puppet.debug('Using Inventory for collect_nodes_with_class')
           # Key names are downcased in Inventory.
           class_name_in_inventory = classname.downcase
@@ -165,7 +165,7 @@ module PuppetX
 
       def resources_for_node(certname)
         resources = {}
-        if @inventory::nodes.any?
+        if using_inventory?
           Puppet.debug('Using Inventory for resources_for_node')
           output_error_and_exit _("Cannot read node: %{certname}") % { certname: certname } unless @inventory::nodes[certname] && @inventory::nodes[certname]['resources']
           node_facts = @inventory::nodes[certname]['resources']
@@ -618,8 +618,8 @@ module PuppetX
       # puppetserver::jruby_jar is a setting added to PE 2017 and is outside the scope of this code.
 
       def with_jruby9k_enabled?(certname)
-        # Do not query PuppetDB when using inventory, return the default based upon version.
-        return pe_2018_or_newer? if @inventory::nodes.any?
+        # Return the default based upon version, when using Inventory.
+        return pe_2018_or_newer? if using_inventory?
         # Does the jruby-9k.jar file exist?
         jr9kjar = '/opt/puppetlabs/server/apps/puppetserver/jruby-9k.jar'
         return false unless File.exist?(jr9kjar)
@@ -642,6 +642,12 @@ module PuppetX
       #
       # Utilities
       #
+
+      # Do not query PuppetDB when using Inventory.
+
+      def using_inventory?
+        @options[:local] || @options[:inventory]
+      end
 
       # Verify minimum system requirements.
 

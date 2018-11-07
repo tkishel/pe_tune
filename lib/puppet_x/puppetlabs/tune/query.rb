@@ -1,6 +1,5 @@
 require 'puppet/util/pe_conf'
 require 'puppet/util/pe_conf/recover'
-require 'puppet/util/puppetdb'
 
 module PuppetX
   module Puppetlabs
@@ -12,14 +11,14 @@ module PuppetX
         attr_reader :environmentpath
 
         def initialize
-          @pe_environment = 'production'
-          @pe_environmentpath = '/etc/puppetlabs/code/environments'
+          @environment = 'production'
+          @environmentpath = '/etc/puppetlabs/code/environments'
         end
 
         # PE-15116 overrides 'environment' and 'environmentpath' in the 'puppet infrastructure' face.
         # The original values are required by methods in this class.
 
-        def reset_pe_environment(certname)
+        def pe_environment(certname)
           begin
             environment = catalog_environment(certname)
           rescue Puppet::Error
@@ -28,11 +27,11 @@ module PuppetX
           if environment.empty?
             Puppet.debug("No Environment found in PuppetDB using: #{certname}")
             Puppet.debug("Querying 'puppet config print environment' for Environment")
-            @pe_environment = Puppet::Util::Execution.execute('/opt/puppetlabs/puppet/bin/puppet config print environment --section master').chomp
+            @environment = Puppet::Util::Execution.execute('/opt/puppetlabs/puppet/bin/puppet config print environment --section master').chomp
           else
-            @pe_environment = environment[0]
+            @environment = environment[0]
           end
-          @pe_environmentpath = Puppet::Util::Execution.execute('/opt/puppetlabs/puppet/bin/puppet config print environmentpath --section master').chomp
+          @environmentpath = Puppet::Util::Execution.execute('/opt/puppetlabs/puppet/bin/puppet config print environmentpath --section master').chomp
         end
 
         # Query PuppetDB for the environment of a node.
@@ -46,28 +45,9 @@ module PuppetX
                   ]
                 ]
               ]
-          results = Puppet::Util::Puppetdb.query_puppetdb(pql)
+          results = query_puppetdb(pql)
           Puppet.debug(results)
           results.map { |resource| resource.fetch('catalog_environment') }
-        end
-
-        # Query PuppetDB for nodes with a class.
-
-        def infra_nodes_with_class(classname)
-          Puppet.debug("Querying PuppetDB for Class: Puppet_enterprise::Profile::#{classname}")
-          pql = ['from', 'resources',
-                ['extract', ['certname', 'parameters'],
-                  ['and',
-                    ['=', 'type', 'Class'],
-                    ['=', 'environment', @pe_environment],
-                    ['=', 'title', "Puppet_enterprise::Profile::#{classname}"],
-                    ['=', ['node', 'active'], true],
-                  ]
-                ]
-              ]
-          results = Puppet::Util::Puppetdb.query_puppetdb(pql)
-          Puppet.debug(results)
-          results.map { |resource| resource.fetch('certname') }
         end
 
         # Query PuppetDB for the count of active nodes.
@@ -79,7 +59,7 @@ module PuppetX
                   ['=', ['node', 'active'], true],
                 ]
               ]
-          results = Puppet::Util::Puppetdb.query_puppetdb(pql)
+          results = query_puppetdb(pql)
           Puppet.debug(results)
           results.count
         end
@@ -103,7 +83,7 @@ module PuppetX
                 ],
                 ['limit', query_limit]
               ]
-          results = Puppet::Util::Puppetdb.query_puppetdb(pql)
+          results = query_puppetdb(pql)
           random_report_hash = results.sample['hash']
           Puppet.debug("Random report: #{random_report_hash}")
           # run_times = results.map do |report|
@@ -122,15 +102,34 @@ module PuppetX
           avg_config_retrieval_time.ceil
         end
 
+        # Query PuppetDB for nodes with a class.
+
+        def infra_nodes_with_class(classname)
+          Puppet.debug("Querying PuppetDB for Class: Puppet_enterprise::Profile::#{classname}")
+          pql = ['from', 'resources',
+                ['extract', ['certname', 'parameters'],
+                  ['and',
+                    ['=', 'type', 'Class'],
+                    ['=', 'environment', @environment],
+                    ['=', 'title', "Puppet_enterprise::Profile::#{classname}"],
+                    ['=', ['node', 'active'], true],
+                  ]
+                ]
+              ]
+          results = query_puppetdb(pql)
+          Puppet.debug(results)
+          results.map { |resource| resource.fetch('certname') }
+        end
+
         # Query PuppetDB for facts for a node.
 
         def node_facts(certname)
           node_facts = {}
           if recover_with_instance_method?
             recover = Puppet::Util::Pe_conf::Recover.new
-            node_facts = recover.facts_for_node(certname, @pe_environment)
+            node_facts = recover.facts_for_node(certname, @environment)
           else
-            facts_hash = Puppet::Util::Pe_conf::Recover.facts_for_node(certname, @pe_environment)
+            facts_hash = Puppet::Util::Pe_conf::Recover.facts_for_node(certname, @environment)
             if facts_hash.key?('puppetversion')
               node_facts = facts_hash
             else
@@ -166,22 +165,31 @@ module PuppetX
 
         private
 
+        # If puppetdb would be required at the top of the file,
+        # then it would be autoloaded/required as part of the install process,
+        # before the puppetdb package was installed, producing an error.
+
+        def query_puppetdb(pql)
+          require 'puppet/util/puppetdb'
+          Puppet::Util::Puppetdb.query_puppetdb(pql)
+        end
+
         # Extract the beating heart of a puppet compiler for lookup purposes.
 
         def hiera_classifier_overrides(certname, settings)
           if recover_with_instance_method?
             recover = Puppet::Util::Pe_conf::Recover.new
-            node_facts = recover.facts_for_node(certname, @pe_environment)
+            node_facts = recover.facts_for_node(certname, @environment)
             node_terminus = recover.get_node_terminus
-            overrides_hiera = recover.find_hiera_overrides(certname, settings, node_facts, @pe_environment, node_terminus)
+            overrides_hiera = recover.find_hiera_overrides(certname, settings, node_facts, @environment, node_terminus)
             overrides_classifier = recover.classifier_overrides_for_node(certname, node_facts, node_facts['::trusted'])
           else
-            node_facts = Puppet::Util::Pe_conf::Recover.facts_for_node(certname, @pe_environment)
+            node_facts = Puppet::Util::Pe_conf::Recover.facts_for_node(certname, @environment)
             if recover_with_node_terminus_method?
               node_terminus = Puppet::Util::Pe_conf::Recover.get_node_terminus
-              overrides_hiera = Puppet::Util::Pe_conf::Recover.find_hiera_overrides(certname, settings, node_facts, @pe_environment, node_terminus)
+              overrides_hiera = Puppet::Util::Pe_conf::Recover.find_hiera_overrides(certname, settings, node_facts, @environment, node_terminus)
             else
-              overrides_hiera = Puppet::Util::Pe_conf::Recover.find_hiera_overrides(settings, node_facts, @pe_environment)
+              overrides_hiera = Puppet::Util::Pe_conf::Recover.find_hiera_overrides(settings, node_facts, @environment)
             end
             overrides_classifier = Puppet::Util::Pe_conf::Recover.classifier_overrides_for_node(certname, node_facts, node_facts['::trusted'])
           end

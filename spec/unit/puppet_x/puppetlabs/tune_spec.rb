@@ -7,8 +7,8 @@ def suppress_standard_output
 end
 
 describe PuppetX::Puppetlabs::Tune do
-  # Do not load other PuppetX::Puppetlabs::Tune classes when unit testing this class.
-  subject(:tune) { described_class.new(:unit_test => true) }
+  # Do not query PuppetDB when unit testing this class.
+  subject(:tune) { described_class.new(:local => true) }
 
   # Allows mergeups from PE 2018 LTS to STS. Revisit after PE 2018 is EOL.
   # pe_2018_or_newer = Gem::Version.new(Puppet.version) >= Gem::Version.new('5.5.0')
