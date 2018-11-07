@@ -12,7 +12,6 @@ module PuppetX
         attr_reader :environmentpath
 
         def initialize
-          @pe_conf = {}
           @pe_environment = 'production'
           @pe_environmentpath = '/etc/puppetlabs/code/environments'
         end
