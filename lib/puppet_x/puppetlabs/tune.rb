@@ -104,115 +104,6 @@ module PuppetX
         @query = PuppetX::Puppetlabs::Tune::Query.new unless using_inventory?
       end
 
-      # Query (Inventory or) PuppetDB for nodes and cache the results.
-
-      def collect_infrastructure_nodes
-        if using_inventory?
-          @inventory::read_inventory_from_local_system if @options[:local]
-          @inventory::read_inventory_from_inventory_file(@options[:inventory]) if @options[:inventory]
-          output_error_and_exit _('Unable to read inventory') if @inventory::nodes.empty? || @inventory::roles.empty?
-          @inventory::convert_inventory_roles_to_classes
-          output_error_and_exit _('Unable to read inventory') if @inventory::classes.empty? || @inventory::classes == @inventory::default_inventory_classes
-        else
-          @query::pe_environment(Puppet['certname'])
-        end
-
-        tunable_class_names.each do |classname|
-          collect_nodes_with_class(classname)
-        end
-
-        # Mappings vary between roles, profiles, and classes.
-        # See: https://github.com/puppetlabs/puppetlabs-pe_infrastructure/blob/irving/lib/puppet_x/puppetlabs/meep/defaults.rb
-
-        replica_masters = (@nodes_with_class['primary_master_replica'] + @nodes_with_class['enabled_primary_master_replica']).uniq
-        primary_masters = (@nodes_with_class['certificate_authority']  + @nodes_with_class['primary_master']).uniq
-        masters_and_compile_masters = (@nodes_with_class['master'] + @nodes_with_class['compile_master']).uniq
-
-        @nodes_with_role['replica_masters'] = replica_masters
-        @nodes_with_role['primary_masters'] = primary_masters               - @nodes_with_role['replica_masters']
-        @nodes_with_role['compile_masters'] = masters_and_compile_masters   - @nodes_with_role['primary_masters'] - @nodes_with_role['replica_masters']
-        @nodes_with_role['console_hosts']   = @nodes_with_class['console']  - @nodes_with_role['primary_masters'] - @nodes_with_role['replica_masters']
-        @nodes_with_role['puppetdb_hosts']  = @nodes_with_class['puppetdb'] - @nodes_with_role['primary_masters'] - @nodes_with_role['replica_masters'] - @nodes_with_role['compile_masters']
-        @nodes_with_role['database_hosts']  = @nodes_with_class['database'] - @nodes_with_role['primary_masters'] - @nodes_with_role['replica_masters'] - @nodes_with_role['compile_masters'] - @nodes_with_role['puppetdb_hosts']
-      end
-
-      #
-      # Interfaces to PuppetX::Puppetlabs::Tune classes.
-      #
-
-      # Interface to ::Inventory and ::Query classes.
-
-      def collect_nodes_with_class(classname)
-        if using_inventory?
-          Puppet.debug('Using Inventory for collect_nodes_with_class')
-          # Key names are downcased in Inventory.
-          class_name_in_inventory = classname.downcase
-          @nodes_with_class[classname] = @inventory::classes[class_name_in_inventory].to_a
-        else
-          Puppet.debug('Using PuppetDB for collect_nodes_with_class')
-          # Key names are capitalized in PuppetDB.
-          class_name_in_puppetdb = classname.split('::').map(&:capitalize).join('::')
-          @nodes_with_class[classname] = @query::infra_nodes_with_class(class_name_in_puppetdb)
-          output_error_and_exit _('Unable to connect to PuppetDB to query classes') if @nodes_with_class[classname].nil?
-        end
-      end
-
-      # Interface to ::Inventory and ::Query classes.
-      # Override when testing with environment variables.
-
-      def resources_for_node(certname)
-        resources = {}
-        if using_inventory?
-          Puppet.debug('Using Inventory for resources_for_node')
-          output_error_and_exit _("Cannot read node: %{certname}") % { certname: certname } unless @inventory::nodes[certname] && @inventory::nodes[certname]['resources']
-          node_facts = @inventory::nodes[certname]['resources']
-          output_error_and_exit _("Cannot read resources for node: %{certname}") % { certname: certname } unless node_facts['cpu'] && node_facts['ram']
-          resources['cpu'] = node_facts['cpu'].to_i
-          resources['ram'] = string_to_bytes(node_facts['ram']).to_i
-        else
-          Puppet.debug('Using PuppetDB for resources_for_node')
-          node_facts = @query::node_facts(certname)
-          output_error_and_exit _('Unable to connect to PuppetDB to query facts') if node_facts.nil?
-          output_error_and_exit _("Cannot query resources for node: %{certname}") % { certname: certname } unless node_facts['processors'] && node_facts['memory']
-          resources['cpu'] = node_facts['processors']['count'].to_i
-          resources['ram'] = node_facts['memory']['system']['total_bytes'].to_i
-        end
-        resources['ram'] = (resources['ram'] / 1024 / 1024).to_i
-        if ENV['TEST_CPU']
-          Puppet.debug("Using TEST_CPU=#{ENV['TEST_CPU']} for #{certname}")
-          resources['cpu'] = ENV['TEST_CPU'].to_i
-        end
-        if ENV['TEST_RAM']
-          Puppet.debug("Using TEST_RAM=#{ENV['TEST_RAM']} for #{certname}")
-          resources['ram'] = ENV['TEST_RAM'].to_i
-        end
-        resources
-      end
-
-      # Interface to ::Query class.
-
-      def current_settings_for_node(certname, setting_names)
-        result = @query::hiera_classifier_settings(certname, setting_names)
-        output_error_and_exit _('Unable to connect to PuppetDB to query current node settings') if result.nil?
-        result
-      end
-
-      def active_node_count
-        result = @query::active_node_count
-        output_error_and_exit _('Unable to connect to PuppetDB to query active nodes') if result.nil?
-        result
-      end
-
-      def average_compile_time(report_limit)
-        result = @query::average_compile_time(report_limit)
-        output_error_and_exit _('Unable to connect to PuppetDB to query average compile time') if result.nil?
-        result
-      end
-
-      #
-      # Output
-      #
-
       # Output current settings for each infrastructure node based upon Classifier and Hiera data.
 
       def output_current_settings
@@ -381,6 +272,115 @@ module PuppetX
           end
         end
       end
+
+      #
+      # Interfaces to PuppetX::Puppetlabs::Tune classes.
+      #
+
+      # Interface to ::Inventory and ::Query classes.
+
+      def collect_infrastructure_nodes
+        if using_inventory?
+          @inventory::read_inventory_from_local_system if @options[:local]
+          @inventory::read_inventory_from_inventory_file(@options[:inventory]) if @options[:inventory]
+          output_error_and_exit _('Unable to read inventory') if @inventory::nodes.empty? || @inventory::roles.empty?
+          @inventory::convert_inventory_roles_to_classes
+          output_error_and_exit _('Unable to read inventory') if @inventory::classes.empty? || @inventory::classes == @inventory::default_inventory_classes
+        else
+          @query::pe_environment(Puppet['certname'])
+        end
+
+        tunable_class_names.each do |classname|
+          collect_nodes_with_class(classname)
+        end
+
+        # Mappings vary between roles, profiles, and classes.
+        # See: https://github.com/puppetlabs/puppetlabs-pe_infrastructure/blob/irving/lib/puppet_x/puppetlabs/meep/defaults.rb
+
+        replica_masters = (@nodes_with_class['primary_master_replica'] + @nodes_with_class['enabled_primary_master_replica']).uniq
+        primary_masters = (@nodes_with_class['certificate_authority']  + @nodes_with_class['primary_master']).uniq
+        masters_and_compile_masters = (@nodes_with_class['master'] + @nodes_with_class['compile_master']).uniq
+
+        @nodes_with_role['replica_masters'] = replica_masters
+        @nodes_with_role['primary_masters'] = primary_masters               - @nodes_with_role['replica_masters']
+        @nodes_with_role['compile_masters'] = masters_and_compile_masters   - @nodes_with_role['primary_masters'] - @nodes_with_role['replica_masters']
+        @nodes_with_role['console_hosts']   = @nodes_with_class['console']  - @nodes_with_role['primary_masters'] - @nodes_with_role['replica_masters']
+        @nodes_with_role['puppetdb_hosts']  = @nodes_with_class['puppetdb'] - @nodes_with_role['primary_masters'] - @nodes_with_role['replica_masters'] - @nodes_with_role['compile_masters']
+        @nodes_with_role['database_hosts']  = @nodes_with_class['database'] - @nodes_with_role['primary_masters'] - @nodes_with_role['replica_masters'] - @nodes_with_role['compile_masters'] - @nodes_with_role['puppetdb_hosts']
+      end
+
+      # Interface to ::Inventory and ::Query classes.
+
+      def collect_nodes_with_class(classname)
+        if using_inventory?
+          Puppet.debug('Using Inventory for collect_nodes_with_class')
+          # Key names are downcased in Inventory.
+          class_name_in_inventory = classname.downcase
+          @nodes_with_class[classname] = @inventory::classes[class_name_in_inventory].to_a
+        else
+          Puppet.debug('Using PuppetDB for collect_nodes_with_class')
+          # Key names are capitalized in PuppetDB.
+          class_name_in_puppetdb = classname.split('::').map(&:capitalize).join('::')
+          @nodes_with_class[classname] = @query::infra_nodes_with_class(class_name_in_puppetdb)
+          output_error_and_exit _('Unable to connect to PuppetDB to query classes') if @nodes_with_class[classname].nil?
+        end
+      end
+
+      # Interface to ::Inventory and ::Query classes.
+      # Override when testing with environment variables.
+
+      def resources_for_node(certname)
+        resources = {}
+        if using_inventory?
+          Puppet.debug('Using Inventory for resources_for_node')
+          output_error_and_exit _("Cannot read node: %{certname}") % { certname: certname } unless @inventory::nodes[certname] && @inventory::nodes[certname]['resources']
+          node_facts = @inventory::nodes[certname]['resources']
+          output_error_and_exit _("Cannot read resources for node: %{certname}") % { certname: certname } unless node_facts['cpu'] && node_facts['ram']
+          resources['cpu'] = node_facts['cpu'].to_i
+          resources['ram'] = string_to_bytes(node_facts['ram']).to_i
+        else
+          Puppet.debug('Using PuppetDB for resources_for_node')
+          node_facts = @query::node_facts(certname)
+          output_error_and_exit _('Unable to connect to PuppetDB to query facts') if node_facts.nil?
+          output_error_and_exit _("Cannot query resources for node: %{certname}") % { certname: certname } unless node_facts['processors'] && node_facts['memory']
+          resources['cpu'] = node_facts['processors']['count'].to_i
+          resources['ram'] = node_facts['memory']['system']['total_bytes'].to_i
+        end
+        resources['ram'] = (resources['ram'] / 1024 / 1024).to_i
+        if ENV['TEST_CPU']
+          Puppet.debug("Using TEST_CPU=#{ENV['TEST_CPU']} for #{certname}")
+          resources['cpu'] = ENV['TEST_CPU'].to_i
+        end
+        if ENV['TEST_RAM']
+          Puppet.debug("Using TEST_RAM=#{ENV['TEST_RAM']} for #{certname}")
+          resources['ram'] = ENV['TEST_RAM'].to_i
+        end
+        resources
+      end
+
+      # Interface to ::Query class.
+
+      def current_settings_for_node(certname, setting_names)
+        result = @query::hiera_classifier_settings(certname, setting_names)
+        output_error_and_exit _('Unable to connect to PuppetDB to query current node settings') if result.nil?
+        result
+      end
+
+      def active_node_count
+        result = @query::active_node_count
+        output_error_and_exit _('Unable to connect to PuppetDB to query active nodes') if result.nil?
+        result
+      end
+
+      def average_compile_time(report_limit)
+        result = @query::average_compile_time(report_limit)
+        output_error_and_exit _('Unable to connect to PuppetDB to query average compile time') if result.nil?
+        result
+      end
+
+      #
+      # Output
+      #
 
       # Output Hiera YAML files.
 
