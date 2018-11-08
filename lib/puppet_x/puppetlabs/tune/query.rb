@@ -19,17 +19,13 @@ module PuppetX
         # The original values are required by methods in this class.
 
         def pe_environment(certname)
-          begin
-            environment = catalog_environment(certname)
-          rescue Puppet::Error
-            environment = []
-          end
-          if environment.empty?
+          environment = catalog_environment(certname)
+          if environment
+            @environment = environment
+          else
             Puppet.debug("No Environment found in PuppetDB using: #{certname}")
             Puppet.debug("Querying 'puppet config print environment' for Environment")
             @environment = Puppet::Util::Execution.execute('/opt/puppetlabs/puppet/bin/puppet config print environment --section master').chomp
-          else
-            @environment = environment[0]
           end
           @environmentpath = Puppet::Util::Execution.execute('/opt/puppetlabs/puppet/bin/puppet config print environmentpath --section master').chomp
         end
@@ -46,8 +42,9 @@ module PuppetX
                 ]
               ]
           results = query_puppetdb(pql)
+          return nil if results.nil?
           Puppet.debug(results)
-          results.map { |resource| resource.fetch('catalog_environment') }
+          results[0]['catalog_environment']
         end
 
         # Query PuppetDB for the count of active nodes.
@@ -60,6 +57,7 @@ module PuppetX
                 ]
               ]
           results = query_puppetdb(pql)
+          return nil if results.nil?
           Puppet.debug(results)
           results.count
         end
@@ -84,6 +82,7 @@ module PuppetX
                 ['limit', query_limit]
               ]
           results = query_puppetdb(pql)
+          return nil if results.nil?
           random_report_hash = results.sample['hash']
           Puppet.debug("Random report: #{random_report_hash}")
           # run_times = results.map do |report|
@@ -117,6 +116,7 @@ module PuppetX
                 ]
               ]
           results = query_puppetdb(pql)
+          return nil if results.nil?
           Puppet.debug(results)
           results.map { |resource| resource.fetch('certname') }
         end
@@ -139,7 +139,9 @@ module PuppetX
               end
             end
           end
-          node_facts
+          return node_facts
+        rescue Puppet::Error
+          return nil
         end
 
         # Return settings configured in Hiera and the Classifier, identifying duplicates and merging the results.
@@ -158,7 +160,9 @@ module PuppetX
             # Hiera settings include pe.conf.
             overrides[classifier_k] = classifier_v
           end
-          { 'params' => overrides, 'duplicates' => duplicates }
+          return { 'params' => overrides, 'duplicates' => duplicates }
+        rescue Puppet::Error
+          return nil
         end
 
         # Internal helper methods.
@@ -171,7 +175,9 @@ module PuppetX
 
         def query_puppetdb(pql)
           require 'puppet/util/puppetdb'
-          Puppet::Util::Puppetdb.query_puppetdb(pql)
+          return Puppet::Util::Puppetdb.query_puppetdb(pql)
+        rescue Puppet::Error
+          return nil
         end
 
         # Extract the beating heart of a puppet compiler for lookup purposes.

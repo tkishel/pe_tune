@@ -152,11 +152,8 @@ module PuppetX
           Puppet.debug('Using PuppetDB for collect_nodes_with_class')
           # Key names are capitalized in PuppetDB.
           class_name_in_puppetdb = classname.split('::').map(&:capitalize).join('::')
-          begin
-            @nodes_with_class[classname] = @query::infra_nodes_with_class(class_name_in_puppetdb)
-          rescue Puppet::Error
-            output_error_and_exit _('Unable to connect to PuppetDB to query classes')
-          end
+          @nodes_with_class[classname] = @query::infra_nodes_with_class(class_name_in_puppetdb)
+          output_error_and_exit _('Unable to connect to PuppetDB to query classes') if @nodes_with_class[classname].nil?
         end
       end
 
@@ -174,11 +171,8 @@ module PuppetX
           resources['ram'] = string_to_bytes(node_facts['ram']).to_i
         else
           Puppet.debug('Using PuppetDB for resources_for_node')
-          begin
-            node_facts = @query::node_facts(certname)
-          rescue Puppet::Error
-            output_error_and_exit _('Unable to connect to PuppetDB to query facts')
-          end
+          node_facts = @query::node_facts(certname)
+          output_error_and_exit _('Unable to connect to PuppetDB to query facts') if node_facts.nil?
           output_error_and_exit _("Cannot query resources for node: %{certname}") % { certname: certname } unless node_facts['processors'] && node_facts['memory']
           resources['cpu'] = node_facts['processors']['count'].to_i
           resources['ram'] = node_facts['memory']['system']['total_bytes'].to_i
@@ -198,21 +192,21 @@ module PuppetX
       # Interface to ::Query class.
 
       def current_settings_for_node(certname, setting_names)
-        @query::hiera_classifier_settings(certname, setting_names)
-      rescue Puppet::Error
-        output_error_and_exit _('Unable to connect to PuppetDB to query current settings')
+        result = @query::hiera_classifier_settings(certname, setting_names)
+        output_error_and_exit _('Unable to connect to PuppetDB to query current node settings') if result.nil?
+        result
       end
 
       def active_node_count
-        @query::active_node_count
-      rescue Puppet::Error
-        output_error_and_exit _('Unable to connect to PuppetDB to query active nodes')
+        result = @query::active_node_count
+        output_error_and_exit _('Unable to connect to PuppetDB to query active nodes') if result.nil?
+        result
       end
 
       def average_compile_time(report_limit)
-        @query::average_compile_time(report_limit)
-      rescue Puppet::Error
-        output_error_and_exit _('Unable to connect to PuppetDB to query average compile time')
+        result = @query::average_compile_time(report_limit)
+        output_error_and_exit _('Unable to connect to PuppetDB to query average compile time') if result.nil?
+        result
       end
 
       #
