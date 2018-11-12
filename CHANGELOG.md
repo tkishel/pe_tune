@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+# 2.0.0
+
+- Implement as a module with a face and a task.
+
 # 1.7.0
 
 - Refactor use of PuppetDB
