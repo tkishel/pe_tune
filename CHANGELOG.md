@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+# 2.0.1
+
+- Rename task.
+- Note that the name of this module (and its face and task) are in flux.
+
 # 2.0.0
 
 - Implement as a module with a face and a task.
