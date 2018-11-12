@@ -2,7 +2,8 @@ require 'optparse'
 require 'puppet'
 require 'yaml'
 
-# The location of enterprise modules varies from version to version.
+# Load puppet enterprise modules.
+# Note that the location of enterprise modules varies from version to version.
 
 enterprise_modules = ['pe_infrastructure', 'pe_install', 'pe_manager']
 env_mod = '/opt/puppetlabs/server/data/environments/enterprise/modules'
@@ -17,6 +18,8 @@ enterprise_module_paths.each do |enterprise_module_path|
     $LOAD_PATH.unshift(enterprise_module_lib)
   end
 end
+
+# Load this module's classes (instead of those in pe_manager).
 
 require_relative 'calculate'
 require_relative 'inventory'

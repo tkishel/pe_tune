@@ -1,6 +1,7 @@
 require 'puppet/indirector/face'
 
-# The location of enterprise modules varies from version to version.
+# Load puppet enterprise modules.
+# Note that the location of enterprise modules varies from version to version.
 
 enterprise_modules = ['pe_infrastructure', 'pe_install', 'pe_manager']
 env_mod = '/opt/puppetlabs/server/data/environments/enterprise/modules'
@@ -16,13 +17,14 @@ enterprise_module_paths.each do |enterprise_module_path|
   end
 end
 
-require 'puppet_x/puppetlabs/tune'
-require 'puppet_x/puppetlabs/tune/calculate'
-require 'puppet_x/puppetlabs/tune/inventory'
-require 'puppet_x/puppetlabs/tune/query'
+# Load this module's classes (instead of those in pe_manager).
+
+require_relative '../../puppet_x/puppetlabs/tune'
+require_relative '../../puppet_x/puppetlabs/tune/calculate'
+require_relative '../../puppet_x/puppetlabs/tune/inventory'
+require_relative '../../puppet_x/puppetlabs/tune/query'
 
 Puppet::Face.define(:tune, '1.0.0') do
-
   action(:pe) do
     summary _('Inspect infrastructure and output optimized settings')
 
