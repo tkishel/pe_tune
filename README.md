@@ -14,36 +14,35 @@ This module provides a script that outputs optimized settings for Puppet Enterpr
 
 ## Setup
 
-Install this module on the Primary Master:
+Install this module on the Primary Master.
+
+For example:
 
 ```shell
-git clone https://github.com/tkishel/pe_tune.git
-chmod +x ./pe_tune/lib/puppet_x/puppetlabs/tune.rb
+git clone https://github.com/tkishel/pe_tune.git /etc/puppetlabs/code/modules/pe_tune
 ```
 
 ## Usage
 
-1. Run the `./pe_tune/lib/puppet_x/puppetlabs/tune.rb` script as root on the Primary Master.
+1. Run the `puppet tune pe` as root on the Primary Master.
 1. Verify the optimized settings.
 1. Add the optimized settings to Hiera.
 1. Remove any duplicate settings from the Console.
-1. Run `puppet agent -t` on each Puppet Enterprise infrastructure host to apply the optimized settings.
+1. Run `puppet agent -t` on each Puppet Enterprise infrastructure node to apply the optimized settings.
 
 #### Parameters
 
 ##### `--common`
 
-Extract common settings from node-specific settings when outputting optimized settings.
+Extract common settings from node-specific settings.
 
-In this case, a common settings is defined as one that does not need to be defined for a specific node.
+A common setting is one with a value that is not unique to a specific node.
 
 ##### `--current`
 
-Output currently-defined settings (not including defaults) in JSON format and exit.
+Output currently-defined settings in JSON format, and exit.
 
-Settings may be defined either in the Classifier (the Console) or in Hiera, with Classifier settings taking precedence over Hiera settings. Best practice is to define settings in Hiera (preferred) or the Classifier, but not both.
-
-The output of this option also identifies duplicate settings found in both the Classifier and Hiera.
+Settings may be defined either in the Classifier (the Console) or in Hiera, with Classifier settings taking precedence over Hiera settings. Best practice is to define settings in Hiera (preferred) or the Classifier, but not both. The output of this option also identifies duplicate settings found in both the Classifier and Hiera.
 
 ##### `--debug`
 
@@ -51,41 +50,39 @@ Enable logging of debug information.
 
 ##### `--hiera DIRECTORY`
 
-Output optimized settings as Hiera YAML files to the specified directory
+Output optimized settings to the specified directory as YAML files for use in Hiera.
 
-Note: Do not specify a directory in your current Hiera hierarchy, which should be managed (and would be overwritten) by Code Manager. Instead: specify a temporary directory, verify the settings in resulting files, and merge them into the control repository that contains your Hiera hierarchy.
+Note: Do not specify a directory in your Hiera hierarchy, which should be managed by Code Manager. Instead: specify a temporary directory, verify the settings in resulting files, and merge them into the control repository that contains your Hiera hierarchy.
 
 ##### `--force`
 
-Do not enforce minimum system requirements (4 CPU / 8 GB RAM) for infrastructure hosts.
+Do not enforce minimum system requirements (4 CPU / 8 GB RAM) for infrastructure nodes.
 
 ##### `--inventory FILE`
 
-Use a YAML file to define infrastructure nodes.
+Use the specified YAML file to define infrastructure nodes.
 
-This eliminates the dependency upon PuppetDB to query node resources and classes.
-
-Nodes can be defined by infrastructure 'roles' or 'profiles'.
+This eliminates a dependency upon PuppetDB to query node facts and classes.
 
 Refer to the examples directory for details.
 
 ##### `--local`
 
-Query the local system to define a monolithic infrastructure master node.
+Use the local system to define a monolithic master infrastructure node.
 
-This eliminates the dependency upon PuppetDB to query node resources and classes.
+This eliminates a dependency upon PuppetDB to query node facts and classes.
 
 ##### `--memory_per_jruby MB`
 
-Amount of RAM to allocate for each Puppet Server JRuby.
+Amount of RAM to allocate for each JRuby.
 
 ##### `--memory_reserved_for_os MB`
 
-Amount of RAM to reserve for the operating system.
+Amount of RAM to reserve for the OS.
 
 ## Reference
 
-This module reads the configuration files on the Primary Master, queries PuppetDB for node group membership to identify PE Infrastructure hosts, queries PuppetDB for processor and memory facts for each PE Infrastructure host, and outputs optimized settings in YAML format use in Hiera.
+This module reads the configuration files on the Primary Master, queries PuppetDB for node group membership to identify PE Infrastructure nodes, queries PuppetDB for processor and memory facts for each PE Infrastructure node, and outputs optimized settings in YAML format use in Hiera.
 
 ### Output
 
@@ -94,7 +91,7 @@ By default, settings are output to STDOUT.
 For example:
 
 ```shell
-[root@master ~] ./pe_tune/lib/puppet_x/puppetlabs/tune.rb
+[root@master ~] puppet tune pe
 # Puppet Infrastructure Summary: Found a Monolithic Infrastructure
 
 # Found 8 CPU(s) / 16384 MB RAM for Primary Master pe-master.puppetdebug.vlan
@@ -123,7 +120,7 @@ puppet_enterprise::profile::orchestrator::java_args:
 # JVM Summary: Using 768 MB per Puppet Server JRuby for pe-master.puppetdebug.vlan
 ```
 
-This module outputs node-specific settings by default. With a monolithic infrastructure, the output could be saved to a common/default YAML file. With a split infrastructure, the output would need to be saved to node-specific YAML files included in a node-specific hierarchy.
+This module outputs node-specific settings by default. That output needs to be saved to node-specific YAML files included in a node-specific hierarchy.
 
 For example:
 

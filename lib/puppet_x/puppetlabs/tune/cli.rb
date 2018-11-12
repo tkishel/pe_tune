@@ -26,7 +26,7 @@ options = {}
 parser = OptionParser.new do |opts|
   opts.banner = 'Usage: tune.rb [options]'
   opts.separator ''
-  opts.separator 'Summary: Inspect infrastructure and output optimized settings (parameters)'
+  opts.separator 'Summary: Inspect infrastructure and output optimized settings'
   opts.separator ''
   opts.separator 'Options:'
   opts.separator ''
@@ -35,7 +35,7 @@ parser = OptionParser.new do |opts|
     options[:common] = true
   end
   options[:current] = false
-  opts.on('--current', 'Output currently-defined settings (not including defaults)') do
+  opts.on('--current', 'Output currently-defined settings, and exit') do
     options[:current] = true
   end
   options[:debug] = false
@@ -43,7 +43,7 @@ parser = OptionParser.new do |opts|
     options[:debug] = true
   end
   options[:estimate] = false
-  opts.on('--estimate', 'Output estimated capacity summary') do
+  opts.on('--estimate', 'Output an estimated capacity summary') do
     options[:estimate] = true
   end
   options[:force] = false
@@ -53,17 +53,17 @@ parser = OptionParser.new do |opts|
   opts.on('--hiera DIRECTORY', 'Output Hiera YAML files to the specified directory') do |hi|
     options[:hiera] = hi
   end
-  opts.on('--inventory FILE', 'Use a YAML file to define infrastructure nodes') do |no|
+  opts.on('--inventory FILE', 'Use the specified YAML file to define infrastructure nodes') do |no|
     options[:inventory] = no
   end
   options[:local] = false
-  opts.on('--local', 'Query the local system to define a monolithic infrastructure master node') do
+  opts.on('--local', 'Use the local system to define a monolithic master infrastructure node') do
     options[:local] = true
   end
-  opts.on('--memory_per_jruby MB', 'Amount of RAM to allocate for each Puppet Server JRuby') do |me|
+  opts.on('--memory_per_jruby MB', 'Amount of RAM to allocate for each JRuby') do |me|
     options[:memory_per_jruby] = me
   end
-  opts.on('--memory_reserved_for_os MB', 'Amount of RAM to reserve for the operating system') do |mo|
+  opts.on('--memory_reserved_for_os MB', 'Amount of RAM to reserve for the OS') do |mo|
     options[:memory_reserved_for_os] = mo
   end
   opts.on('-h', '--help', 'Display help') do
@@ -77,13 +77,9 @@ parser.parse!
 Puppet.initialize_settings
 Puppet::Util::Log.newdestination :console
 Puppet.debug = options[:debug]
-
 Puppet.debug("Command Options: #{options}")
-
 Tune = PuppetX::Puppetlabs::Tune.new(options)
-
 Puppet.warning "Unable to identify Database Hosts or tune PostgreSQL services in PE 2017.x and older\n" unless Tune.pe_2018_or_newer?
-
 if options[:current]
   Tune.output_current_settings
 else
