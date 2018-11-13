@@ -137,7 +137,7 @@ end
 params = read_parameters
 
 command = 'puppet'
-options = ['tune', 'pe',
+options = ['pe_tune', 'tune',
   params['common'],
   params['hiera'],
   params['memory_per_jruby'],

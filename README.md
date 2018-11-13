@@ -24,7 +24,7 @@ git clone https://github.com/tkishel/pe_tune.git /etc/puppetlabs/code/modules/pe
 
 ## Usage
 
-1. Run the `puppet tune pe` as root on the Primary Master.
+1. Run the `puppet pe_tune tune` as root on the Primary Master.
 1. Verify the optimized settings.
 1. Add the optimized settings to Hiera.
 1. Remove any duplicate settings from the Console.
@@ -91,7 +91,7 @@ By default, settings are output to STDOUT.
 For example:
 
 ```shell
-[root@master ~] puppet tune pe
+[root@master ~] puppet pe_tune tune
 # Puppet Infrastructure Summary: Found a Monolithic Infrastructure
 
 # Found 8 CPU(s) / 16384 MB RAM for Primary Master pe-master.puppetdebug.vlan

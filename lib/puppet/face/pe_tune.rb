@@ -24,10 +24,15 @@ require_relative '../../puppet_x/puppetlabs/tune/calculate'
 require_relative '../../puppet_x/puppetlabs/tune/inventory'
 require_relative '../../puppet_x/puppetlabs/tune/query'
 
-Puppet::Face.define(:tune, '1.0.0') do
-  action(:pe) do
-    summary _('Inspect infrastructure and output optimized settings')
+Puppet::Face.define(:pe_tune, '1.0.0') do
+  summary _('Inspect infrastructure and output optimized settings')
+  description <<-'DESC'
+    Collects information about your Puppet Enterprise installation.
+    Outputs optimized settings for services based upon CPU and RAM.
+  DESC
 
+  action(:tune) do
+    summary _('Inspect infrastructure and output optimized settings')
     description <<-'DESC'
       Collects information about your Puppet Enterprise installation.
       Outputs optimized settings for services based upon CPU and RAM.
