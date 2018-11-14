@@ -10,7 +10,7 @@
 
 ## Description
 
-This module provides a script that outputs optimized settings for Puppet Enterprise services based upon available hardware resources.
+This module provides a Puppet subcommand that outputs settings for Puppet Enterprise services based upon available hardware resources.
 
 ## Setup
 
@@ -24,7 +24,7 @@ git clone https://github.com/tkishel/pe_tune.git /etc/puppetlabs/code/modules/pe
 
 ## Usage
 
-1. Run the `puppet pe_tune tune` as root on the Primary Master.
+1. Run the `puppet pe_tune tune` command as root on the Primary Master.
 1. Verify the optimized settings.
 1. Add the optimized settings to Hiera.
 1. Remove any duplicate settings from the Console.
@@ -34,15 +34,15 @@ git clone https://github.com/tkishel/pe_tune.git /etc/puppetlabs/code/modules/pe
 
 ##### `--common`
 
-Extract common settings from node-specific settings.
+Extract common settings from per-node settings.
 
 A common setting is one with a value that is not unique to a specific node.
 
 ##### `--current`
 
-Output currently-defined settings in JSON format, and exit.
+Output currently defined settings, in JSON format, and exit.
 
-Settings may be defined either in the Classifier (the Console) or in Hiera, with Classifier settings taking precedence over Hiera settings. Best practice is to define settings in Hiera (preferred) or the Classifier, but not both. The output of this option also identifies duplicate settings found in both the Classifier and Hiera.
+Settings may be defined either in the Classifier (the Console) or in Hiera, with Classifier settings taking precedence over Hiera settings. This option also identifies duplicate settings found in both the Classifier and Hiera. Best practice is to define settings in Hiera (preferred) or the Classifier, but not both.
 
 ##### `--debug`
 
@@ -50,7 +50,7 @@ Enable logging of debug information.
 
 ##### `--hiera DIRECTORY`
 
-Output optimized settings to the specified directory as YAML files for use in Hiera.
+Output optimized settings to the specified directory, as YAML files, for use in Hiera.
 
 Note: Do not specify a directory in your Hiera hierarchy, which should be managed by Code Manager. Instead: specify a temporary directory, verify the settings in resulting files, and merge them into the control repository that contains your Hiera hierarchy.
 
@@ -64,7 +64,7 @@ Use the specified YAML file to define infrastructure nodes.
 
 This eliminates a dependency upon PuppetDB to query node facts and classes.
 
-Refer to the examples directory for details.
+Refer to the examples directory of this module for details.
 
 ##### `--local`
 
@@ -86,7 +86,7 @@ This module reads the configuration files on the Primary Master, queries PuppetD
 
 ### Output
 
-By default, settings are output to STDOUT.
+By default, optimized settings are output to STDOUT.
 
 For example:
 
@@ -120,7 +120,7 @@ puppet_enterprise::profile::orchestrator::java_args:
 # JVM Summary: Using 768 MB per Puppet Server JRuby for pe-master.puppetdebug.vlan
 ```
 
-This module outputs node-specific settings by default. That output needs to be saved to node-specific YAML files included in a node-specific hierarchy.
+This outputs node-specific settings by default. That output needs to be saved to node-specific YAML files in a node-specific hierarchy.
 
 For example:
 

@@ -25,21 +25,21 @@ require_relative '../../puppet_x/puppetlabs/tune/inventory'
 require_relative '../../puppet_x/puppetlabs/tune/query'
 
 Puppet::Face.define(:pe_tune, '1.0.0') do
-  summary _('Inspect infrastructure and output optimized settings')
+  summary _('Inspect infrastructure and output settings')
   description <<-'DESC'
     Collects information about your Puppet Enterprise installation.
-    Outputs optimized settings for services based upon CPU and RAM.
+    Outputs current or optimized settings that tune Puppet Enterprise services.
   DESC
 
   action(:tune) do
-    summary _('Inspect infrastructure and output optimized settings')
+    summary _('Inspect infrastructure and output settings')
     description <<-'DESC'
       Collects information about your Puppet Enterprise installation.
-      Outputs optimized settings for services based upon CPU and RAM.
+      Outputs current or optimized settings that tune Puppet Enterprise services.
     DESC
 
     option '--common' do
-      summary _('Extract common settings from node-specific settings')
+      summary _('Extract common settings from node settings')
       default_to { false }
     end
 
@@ -59,17 +59,17 @@ Puppet::Face.define(:pe_tune, '1.0.0') do
     end
 
     option '--hiera DIRECTORY' do
-      summary _('Output Hiera YAML files to the specified directory')
+      summary _('Output Hiera YAML files to a directory')
       default_to { nil }
     end
 
     option '--inventory FILE' do
-      summary _('Use the specified YAML file to define infrastructure nodes')
+      summary _('Use a YAML file to define nodes')
       default_to { nil }
     end
 
     option '--local' do
-      summary _('Use the local system to define a monolithic master infrastructure node')
+      summary _('Use the local system to define a node')
       default_to { false }
     end
 

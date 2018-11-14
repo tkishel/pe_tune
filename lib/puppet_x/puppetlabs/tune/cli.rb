@@ -29,16 +29,16 @@ options = {}
 parser = OptionParser.new do |opts|
   opts.banner = 'Usage: tune.rb [options]'
   opts.separator ''
-  opts.separator 'Summary: Inspect infrastructure and output optimized settings'
+  opts.separator 'Summary: Inspect infrastructure and output settings'
   opts.separator ''
   opts.separator 'Options:'
   opts.separator ''
   options[:common] = false
-  opts.on('--common', 'Extract common settings from node-specific settings') do
+  opts.on('--common', 'Extract common settings from node settings') do
     options[:common] = true
   end
   options[:current] = false
-  opts.on('--current', 'Output currently-defined settings, and exit') do
+  opts.on('--current', 'Output currently defined settings, and exit') do
     options[:current] = true
   end
   options[:debug] = false
@@ -53,14 +53,14 @@ parser = OptionParser.new do |opts|
   opts.on('--force', 'Do not enforce minimum system requirements') do
     options[:force] = true
   end
-  opts.on('--hiera DIRECTORY', 'Output Hiera YAML files to the specified directory') do |hi|
+  opts.on('--hiera DIRECTORY', 'Output Hiera YAML files to a directory') do |hi|
     options[:hiera] = hi
   end
-  opts.on('--inventory FILE', 'Use the specified YAML file to define infrastructure nodes') do |no|
+  opts.on('--inventory FILE', 'Use a YAML file to define nodes') do |no|
     options[:inventory] = no
   end
   options[:local] = false
-  opts.on('--local', 'Use the local system to define a monolithic master infrastructure node') do
+  opts.on('--local', 'Use the local system to define a node') do
     options[:local] = true
   end
   opts.on('--memory_per_jruby MB', 'Amount of RAM to allocate for each JRuby') do |me|
