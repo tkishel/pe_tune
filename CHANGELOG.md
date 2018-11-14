@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+# 2.0.2
+
+- Update face documentation.
+
 # 2.0.1
 
 - Rename task.
