@@ -10,6 +10,8 @@
 
 ## Description
 
+> The fault, dear Brutus, is not in our stars, but in our defaults, that we are under-allocated.
+
 This module provides a Puppet subcommand that outputs settings for Puppet Enterprise services based upon available hardware resources.
 
 ## Setup
