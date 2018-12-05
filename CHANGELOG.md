@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+# 2.1.0
+
+- Rename face.
+
 # 2.0.2
 
 - Update face documentation.
