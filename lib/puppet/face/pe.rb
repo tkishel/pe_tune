@@ -24,7 +24,7 @@ require_relative '../../puppet_x/puppetlabs/tune/calculate'
 require_relative '../../puppet_x/puppetlabs/tune/inventory'
 require_relative '../../puppet_x/puppetlabs/tune/query'
 
-Puppet::Face.define(:pe_tune, '1.0.0') do
+Puppet::Face.define(:pe, '1.0.0') do
   summary _('Inspect infrastructure and output settings')
   description <<-'DESC'
     Collects information about your Puppet Enterprise installation.

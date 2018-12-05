@@ -1,5 +1,5 @@
 {
-  "description": "Run 'puppet tune pe' on the primary master",
+  "description": "Run 'puppet pe tune' on the primary master",
   "input_method": "stdin",
   "supports_noop": false,
   "parameters": {

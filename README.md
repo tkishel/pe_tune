@@ -12,7 +12,7 @@
 
 > The fault, dear Brutus, is not in our stars, but in our defaults, that we are under-allocated.
 
-This module provides a Puppet subcommand that outputs settings for Puppet Enterprise services based upon available hardware resources.
+This module provides a Puppet subcommand that outputs optimized settings for Puppet Enterprise services based upon available hardware resources.
 
 ## Setup
 
@@ -26,7 +26,7 @@ git clone https://github.com/tkishel/pe_tune.git /etc/puppetlabs/code/modules/pe
 
 ## Usage
 
-1. Run the `puppet pe_tune tune` command as root on the Primary Master.
+1. Run the `puppet pe tune` command as root on the Primary Master.
 1. Verify the optimized settings.
 1. Add the optimized settings to Hiera.
 1. Remove any duplicate settings from the Console.
@@ -36,7 +36,7 @@ git clone https://github.com/tkishel/pe_tune.git /etc/puppetlabs/code/modules/pe
 
 ##### `--common`
 
-Extract common settings from per-node settings.
+Extract common settings from node-specific settings.
 
 A common setting is one with a value that is not unique to a specific node.
 
@@ -84,7 +84,7 @@ Amount of RAM to reserve for the OS.
 
 ## Reference
 
-This module reads the configuration files on the Primary Master, queries PuppetDB for node group membership to identify PE Infrastructure nodes, queries PuppetDB for processor and memory facts for each PE Infrastructure node, and outputs optimized settings in YAML format use in Hiera.
+This module queries PuppetDB for node group membership to identify PE Infrastructure nodes, queries PuppetDB for processor and memory facts for each PE Infrastructure node, and outputs optimized settings in YAML format use in Hiera.
 
 ### Output
 
@@ -93,7 +93,7 @@ By default, optimized settings are output to STDOUT.
 For example:
 
 ```shell
-[root@master ~] puppet pe_tune tune
+[root@pe-master ~] puppet pe tune
 # Puppet Infrastructure Summary: Found a Monolithic Infrastructure
 
 # Found 8 CPU(s) / 16384 MB RAM for Primary Master pe-master.puppetdebug.vlan
