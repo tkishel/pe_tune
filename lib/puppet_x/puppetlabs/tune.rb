@@ -702,4 +702,8 @@ end
 
 if File.expand_path(__FILE__) == File.expand_path($PROGRAM_NAME)
   require_relative 'tune/cli'
+else
+  require 'puppet_x/puppetlabs/tune/calculate'
+  require 'puppet_x/puppetlabs/tune/inventory'
+  require 'puppet_x/puppetlabs/tune/query'
 end
