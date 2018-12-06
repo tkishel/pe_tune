@@ -6,13 +6,15 @@
 1. [Setup - Getting started with this module](#setup)
 1. [Usage - Command parameters and how to use it](#usage)
 1. [Reference - How the module works and how to use its output](#reference)
-1. [Limitations - Supported versions and infrastructures](#limitations)
+1. [Limitations - Supported infrastructures and versions](#limitations)
 
 ## Description
 
 > The fault, dear Brutus, is not in our stars, but in our defaults, that we are under-allocated.
 
-This module provides a Puppet subcommand that outputs optimized settings for Puppet Enterprise services based upon available hardware resources.
+This module provides a Puppet subcommand `puppet pe tune` that outputs optimized settings for Puppet Enterprise services based upon available hardware resources.
+
+Puppet Enterprise 2018.1.3 and newer includes the functionality of this module via the `puppet infrastructure tune` subcommand. To use this module with Puppet Enterprise 2018.1.3 and newer, refer to [Limitations](#limitations).
 
 ## Setup
 
@@ -26,7 +28,7 @@ git clone https://github.com/tkishel/pe_tune.git /etc/puppetlabs/code/modules/pe
 
 ## Usage
 
-1. Run the `puppet pe tune` command as root on the Primary Master.
+1. Run the `puppet pe tune` subcommand as root on the Primary Master.
 1. Verify the optimized settings.
 1. Add the optimized settings to Hiera.
 1. Remove any duplicate settings from the Console.
@@ -54,7 +56,7 @@ Enable logging of debug information.
 
 Output optimized settings to the specified directory, as YAML files, for use in Hiera.
 
-Note: Do not specify a directory in your Hiera hierarchy, which should be managed by Code Manager. Instead: specify a temporary directory, verify the settings in resulting files, and merge them into the control repository that contains your Hiera hierarchy.
+> Do not specify a directory in your Hiera hierarchy, which should be managed by Code Manager. Instead: specify a temporary directory, verify the settings in resulting files, and merge them into the control repository that contains your Hiera hierarchy.
 
 ##### `--force`
 
@@ -70,7 +72,7 @@ Refer to the examples directory of this module for details.
 
 ##### `--local`
 
-Use the local system to define a monolithic master infrastructure node.
+Use the local system to define a monolithic infrastructure master node.
 
 This eliminates a dependency upon PuppetDB to query node facts and classes.
 
@@ -88,7 +90,7 @@ This module queries PuppetDB for node group membership to identify PE Infrastruc
 
 ### Output
 
-By default, optimized settings are output to STDOUT.
+By default, settings are output to STDOUT.
 
 For example:
 
@@ -122,7 +124,7 @@ puppet_enterprise::profile::orchestrator::java_args:
 # JVM Summary: Using 768 MB per Puppet Server JRuby for pe-master.puppetdebug.vlan
 ```
 
-This outputs node-specific settings by default. That output needs to be saved to node-specific YAML files in a node-specific hierarchy.
+By default, this subcommand outputs node-specific settings to be saved to node-specific YAML files in a node-specific hierarchy.
 
 For example:
 
@@ -163,6 +165,23 @@ For more information, review:
 
 ## Limitations
 
+### Infrastructure Support
+
+Support is limited to the following infrastructures:
+
+* Monolithic Master
+* Monolithic Master with Compile Masters
+* Monolithic Master with External PostgreSQL
+* Monolithic Master with Compile Masters with External PostgreSQL
+* Monolithic Master with HA
+* Monolithic Master with Compile Masters with HA
+* Split Infrastructure
+* Split Infrastructure with Compile Masters
+* Split Infrastructure with External PostgreSQL
+* Split Infrastructure with Compile Masters with External PostgreSQL
+
+### Version Support
+
 Support is limited to the following versions:
 
 * PE 2016.4.x (\*)
@@ -170,17 +189,24 @@ Support is limited to the following versions:
 * PE 2018.x.x
 * PE 2019.x.x
 
-\* Unable to identify Database Hosts or tune PostgreSQL services in these versions.
+\* In these versions, this module is unable to identify PE Database hosts or tune PE PostgreSQL services.
 
-Support is limited to the following infrastructures:
+#### Puppet Enterprise 2018.1.3 and Newer
 
-* Monolithic Infrastructure
-* Monolithic with Compile Masters
-* Monolithic with External PostgreSQL
-* Monolithic with Compile Masters with External PostgreSQL
-* Monolithic with HA
-* Monolithic with Compile Masters with HA
-* Split Infrastructure
-* Split with Compile Masters
-* Split with External PostgreSQL
-* Split with Compile Masters with External PostgreSQL
+This module is the upstream version of the `puppet infrastructure tune` subcommand built into Puppet Enterprise 2018.1.3 and newer. Installing this module in Puppet Enterprise 2018.1.3 and newer will cause the built-in `puppet infrastructure tune` subcommand to fail with the following error.
+
+```shell
+[root@pe-master ~]# puppet infrastructure tune
+Error: uninitialized constant PuppetX::Puppetlabs::Tune::Calculate
+Error: Try 'puppet infrastructure help tune' for usage
+```
+
+To avoid that error, install and run this module outside the modulepath.
+
+For example:
+
+```shell
+mkdir -p /tmp/puppet_modules
+git clone https://github.com/tkishel/pe_tune.git /tmp/puppet_modules/pe_tune
+puppet pe tune --modulepath /tmp/puppet_modules
+```
