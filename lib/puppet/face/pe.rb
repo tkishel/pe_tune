@@ -83,6 +83,11 @@ Puppet::Face.define(:pe, '1.0.0') do
       default_to { nil }
     end
 
+    option '--use_current_memory_per_jruby' do
+      summary _('Use currently defined settings to determine memory_per_jruby')
+      default_to { false }
+    end
+
     when_invoked do |*args|
       options = args.pop
       Puppet.debug("Command Options: #{options}")

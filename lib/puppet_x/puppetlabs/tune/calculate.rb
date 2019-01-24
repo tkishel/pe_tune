@@ -46,8 +46,15 @@ module PuppetX
           ram_console                 = fit_to_memory(node['resources']['ram'], 512, 768, 1024)
           ram_orchestrator            = fit_to_memory(node['resources']['ram'], 512, 768, 1024)
           ram_activemq                = fit_to_memory(node['resources']['ram'], 512, 1024, 2048)
-          ram_per_puppetserver_jruby  = @options[:memory_per_jruby] if @options[:memory_per_jruby] != 0
           minimum_ram_os              = memory_reserved_for_os
+
+          # Use the specified value, if defined; or use the currently specified value, if defined.
+
+          if @options[:memory_per_jruby] != 0
+            ram_per_puppetserver_jruby = @options[:memory_per_jruby]
+          else
+            ram_per_puppetserver_jruby = node['current_memory_per_jruby'] if node['current_memory_per_jruby'] != 0
+          end
 
           # Reallocate resources between puppetserver and puppetdb, if this host is a monolithic master or replica master with compile masters.
 

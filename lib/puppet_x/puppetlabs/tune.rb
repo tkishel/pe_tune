@@ -94,6 +94,8 @@ module PuppetX
         @options[:inventory] = options[:inventory]
         @options[:local]     = options[:local]
 
+        @options[:use_current_memory_per_jruby] = options[:use_current_memory_per_jruby]
+
         # Options specific to the Calculate class.
         calculate_options = {}
         calculate_options[:memory_per_jruby]       = string_to_megabytes(options[:memory_per_jruby])
@@ -166,6 +168,7 @@ module PuppetX
         # Primary Master: Applicable to Monolithic and Split Infrastructures.
         @nodes_with_role['primary_masters'].each do |certname|
           node = configuration_for_node(certname)
+          node['current_memory_per_jruby'] = current_memory_per_jruby_for_node(certname)
           node['settings'] = @calculator::calculate_master_settings(node)
           collect_node_with_role(certname, 'Primary Master', node)
           available_jrubies += available_jrubies_for_node(certname, node['settings']) unless with_compile_masters?
@@ -174,6 +177,7 @@ module PuppetX
         # Replica Master: Applicable to Monolithic Infrastructures.
         @nodes_with_role['replica_masters'].each do |certname|
           node = configuration_for_node(certname)
+          node['current_memory_per_jruby'] = current_memory_per_jruby_for_node(certname)
           node['settings'] = @calculator::calculate_master_settings(node)
           collect_node_with_role(certname, 'Replica Master', node)
         end
@@ -202,6 +206,7 @@ module PuppetX
         # Compile Masters: Applicable to Monolithic and Split Infrastructures.
         @nodes_with_role['compile_masters'].each do |certname|
           node = configuration_for_node(certname)
+          node['current_memory_per_jruby'] = current_memory_per_jruby_for_node(certname)
           node['settings'] = @calculator::calculate_master_settings(node)
           collect_node_with_role(certname, 'Compile Master', node)
           available_jrubies += available_jrubies_for_node(certname, node['settings'])
@@ -631,6 +636,22 @@ module PuppetX
       def available_jrubies_for_node(certname, settings)
         default_jrubies = [resources_for_node(certname)['cpu'] - 1, 4].min
         settings['params']['puppet_enterprise::master::puppetserver::jruby_max_active_instances'] || default_jrubies
+      end
+
+      # Identify current memory_per_jruby on a node.
+
+      def current_memory_per_jruby_for_node(certname)
+        return 0 if @options[:local]
+        return 0 unless @options[:use_current_memory_per_jruby]
+        settings = current_settings_for_node(certname, tunable_param_names)
+        return 0 unless settings['params']
+        return 0 unless settings['params']['puppet_enterprise::profile::master::java_args']
+        return 0 unless settings['params']['puppet_enterprise::profile::master::java_args']['Xmx']
+        return 0 unless settings['params']['puppet_enterprise::master::puppetserver::jruby_max_active_instances']
+        jxmx = settings['params']['puppet_enterprise::profile::master::java_args']['Xmx']
+        jmai = settings['params']['puppet_enterprise::master::puppetserver::jruby_max_active_instances']
+        return 0 unless jxmx && jmai
+        (string_to_megabytes(jxmx) / jmai).to_i
       end
 
       #
