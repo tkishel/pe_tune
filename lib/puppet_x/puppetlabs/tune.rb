@@ -170,7 +170,7 @@ module PuppetX
           node = configuration_for_node(certname)
           node['current_memory_per_jruby'] = current_memory_per_jruby_for_node(certname)
           node['settings'] = @calculator::calculate_master_settings(node)
-          collect_node_with_role(certname, 'Primary Master', node)
+          collect_optimized_node(certname, 'Primary Master', node)
           available_jrubies += available_jrubies_for_node(certname, node['settings']) unless with_compile_masters?
         end
 
@@ -179,28 +179,28 @@ module PuppetX
           node = configuration_for_node(certname)
           node['current_memory_per_jruby'] = current_memory_per_jruby_for_node(certname)
           node['settings'] = @calculator::calculate_master_settings(node)
-          collect_node_with_role(certname, 'Replica Master', node)
+          collect_optimized_node(certname, 'Replica Master', node)
         end
 
         # Console Host: Specific to Split Infrastructures. By default, a list of one.
         @nodes_with_role['console_hosts'].each do |certname|
           node = configuration_for_node(certname)
           node['settings'] = @calculator::calculate_console_settings(node)
-          collect_node_with_role(certname, 'Console Host', node)
+          collect_optimized_node(certname, 'Console Host', node)
         end
 
         # PuppetDB Host: Specific to Split Infrastructures. By default, a list of one.
         @nodes_with_role['puppetdb_hosts'].each do |certname|
           node = configuration_for_node(certname)
           node['settings'] = @calculator::calculate_puppetdb_settings(node)
-          collect_node_with_role(certname, 'PuppetDB Host', node)
+          collect_optimized_node(certname, 'PuppetDB Host', node)
         end
 
         # External Database Host: Applicable to Monolithic and Split Infrastructures.
         @nodes_with_role['database_hosts'].each do |certname|
           node = configuration_for_node(certname)
           node['settings'] = @calculator::calculate_database_settings(node)
-          collect_node_with_role(certname, 'External Database Host', node)
+          collect_optimized_node(certname, 'External Database Host', node)
         end
 
         # Compile Masters: Applicable to Monolithic and Split Infrastructures.
@@ -208,7 +208,7 @@ module PuppetX
           node = configuration_for_node(certname)
           node['current_memory_per_jruby'] = current_memory_per_jruby_for_node(certname)
           node['settings'] = @calculator::calculate_master_settings(node)
-          collect_node_with_role(certname, 'Compile Master', node)
+          collect_optimized_node(certname, 'Compile Master', node)
           available_jrubies += available_jrubies_for_node(certname, node['settings'])
         end
 
@@ -216,7 +216,7 @@ module PuppetX
 
         collect_optimized_settings_common_to_all_nodes
         @collected_nodes.each do |certname, properties|
-          output_optimized_settings_for_collected_node(certname, properties)
+          output_optimized_settings_for_node(certname, properties)
         end
         output_common_settings
         output_estimated_capacity(available_jrubies)
@@ -248,7 +248,7 @@ module PuppetX
 
       # Collect node for output to <certname>.yaml.
 
-      def collect_node_with_role(certname, role, node)
+      def collect_optimized_node(certname, role, node)
         output_minimum_system_requirements_error_and_exit(certname) unless node['settings']
         properties = {
           'resources' => node['resources'],
@@ -460,7 +460,7 @@ module PuppetX
 
       # Output optimized information for a node.
 
-      def output_optimized_settings_for_collected_node(certname, node)
+      def output_optimized_settings_for_node(certname, node)
         output _("Found %{cpu} CPU(s) / %{ram} MB RAM for %{role} %{certname}") % { cpu: node['resources']['cpu'], ram: node['resources']['ram'], role: node['role'], certname: certname }
         unless node['settings']['params'].empty?
           output _("Specify the following optimized settings in Hiera in nodes/%{certname}.yaml") % { certname: certname }
