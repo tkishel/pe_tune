@@ -118,39 +118,43 @@ module PuppetX
         # Primary Master: Applicable to Monolithic and Split Infrastructures.
         @nodes_with_role['primary_masters'].each do |certname|
           settings = current_settings_for_node(certname, tunable_param_names)
-          output_current_settings_for_node_with_role(certname, 'Primary Master', settings)
+          collect_current_node(certname, 'Primary Master', settings)
           available_jrubies += available_jrubies_for_node(certname, settings) unless with_compile_masters?
         end
 
         # Replica Master: Applicable to Monolithic Infrastructures.
         @nodes_with_role['replica_masters'].each do |certname|
           settings = current_settings_for_node(certname, tunable_param_names)
-          output_current_settings_for_node_with_role(certname, 'Replica Master', settings)
+          collect_current_node(certname, 'Replica Master', settings)
         end
 
         # Console Host: Specific to Split Infrastructures. By default, a list of one.
         @nodes_with_role['console_hosts'].each do |certname|
           settings = current_settings_for_node(certname, tunable_param_names)
-          output_current_settings_for_node_with_role(certname, 'Console Host', settings)
+          collect_current_node(certname, 'Console Host', settings)
         end
 
         # PuppetDB Host: Specific to Split Infrastructures. By default, a list of one.
         @nodes_with_role['puppetdb_hosts'].each do |certname|
           settings = current_settings_for_node(certname, tunable_param_names)
-          output_current_settings_for_node_with_role(certname, 'PuppetDB Host', settings)
+          collect_current_node(certname, 'PuppetDB Host', settings)
         end
 
         # External Database Host: Applicable to Monolithic and Split Infrastructures.
         @nodes_with_role['database_hosts'].each do |certname|
           settings = current_settings_for_node(certname, tunable_param_names)
-          output_current_settings_for_node_with_role(certname, 'External Database Host', settings)
+          collect_current_node(certname, 'External Database Host', settings)
         end
 
         # Compile Masters: Applicable to Monolithic and Split Infrastructures.
         @nodes_with_role['compile_masters'].each do |certname|
           settings = current_settings_for_node(certname, tunable_param_names)
-          output_current_settings_for_node_with_role(certname, 'Compile Master', settings)
+          collect_current_node(certname, 'Compile Master', settings)
           available_jrubies += available_jrubies_for_node(certname, settings)
+        end
+
+        @collected_nodes.each do |certname, node|
+          output_current_settings_for_node(certname, node)
         end
 
         output_estimated_capacity(available_jrubies)
@@ -215,11 +219,13 @@ module PuppetX
         # Output collected information.
 
         collect_optimized_settings_common_to_all_nodes
-        @collected_nodes.each do |certname, properties|
-          output_optimized_settings_for_node(certname, properties)
+        @collected_nodes.each do |certname, node|
+          output_optimized_settings_for_node(certname, node)
         end
         output_common_settings
+
         output_estimated_capacity(available_jrubies)
+
         output_settings_to_files
       end
 
@@ -244,6 +250,16 @@ module PuppetX
           'with_jruby9k_enabled' => with_jruby9k_enabled?(certname),
         }
         node
+      end
+
+      #
+
+      def collect_current_node(certname, role, settings)
+        properties = {
+          'role'      => role,
+          'settings'  => settings,
+        }
+        @collected_nodes[certname] = properties
       end
 
       # Collect node for output to <certname>.yaml.
@@ -439,19 +455,19 @@ module PuppetX
 
       # Output current information for a node.
 
-      def output_current_settings_for_node_with_role(certname, role, settings)
-        if settings['params'].empty?
-          output _("Found default settings for %{role} %{certname}") % { role: role, certname: certname }
+      def output_current_settings_for_node(certname, node)
+        if node['settings']['params'].empty?
+          output _("Found default settings for %{role} %{certname}") % { role: node['role'], certname: certname }
         else
-          output _("Found defined settings for %{role} %{certname}") % { role: role, certname: certname }
+          output _("Found defined settings for %{role} %{certname}") % { role: node['role'], certname: certname }
           output_line
-          output_data(JSON.pretty_generate(settings['params']))
+          output_data(JSON.pretty_generate(node['settings']['params']))
         end
         output_line
-        unless settings['duplicates'].count.zero?
+        unless node['settings']['duplicates'].count.zero?
           output _('Found duplicate defined settings in Hiera and in the Classifier (Console):')
           output_line
-          output_data(settings['duplicates'].join("\n"))
+          output_data(node['settings']['duplicates'].join("\n"))
           output_line
           output _('Define settings in Hiera (preferred) or the Classifier, but not both.')
           output _('Note that Hiera includes settings defined in pe.conf.')
