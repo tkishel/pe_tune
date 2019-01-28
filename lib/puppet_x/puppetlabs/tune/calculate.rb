@@ -52,8 +52,8 @@ module PuppetX
 
           if @options[:memory_per_jruby] != 0
             ram_per_puppetserver_jruby = @options[:memory_per_jruby]
-          else
-            ram_per_puppetserver_jruby = node['current_memory_per_jruby'] if node['current_memory_per_jruby'] != 0
+          elsif node['current_memory_per_jruby'] != 0
+            ram_per_puppetserver_jruby = node['current_memory_per_jruby']
           end
 
           # Reallocate resources between puppetserver and puppetdb, if this host is a monolithic master or replica master with compile masters.
