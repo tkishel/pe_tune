@@ -153,8 +153,7 @@ module PuppetX
           overrides_classifier.each do |classifier_k, classifier_v|
             next unless settings.include?(classifier_k)
             if overrides.key?(classifier_k)
-              Puppet.debug("# Duplicate settings for #{certname}: #{classifier_k} Classifier: #{classifier_v} Hiera: #{overrides_hiera[classifier_k]}")
-              duplicates.push(classifier_k)
+              duplicates.push("#{classifier_k} ... Hiera: #{overrides_hiera[classifier_k]} ... Classifier: #{classifier_v} ")
             end
             # Classifer settings take precedence over Hiera settings.
             # Hiera settings include pe.conf.
