@@ -52,7 +52,7 @@ module PuppetX
 
           if @options[:memory_per_jruby] != 0
             ram_per_puppetserver_jruby = @options[:memory_per_jruby]
-          elsif node['current_memory_per_jruby'] != 0
+          elsif node['current_memory_per_jruby'] && node['current_memory_per_jruby'] != 0
             ram_per_puppetserver_jruby = node['current_memory_per_jruby']
           end
 
