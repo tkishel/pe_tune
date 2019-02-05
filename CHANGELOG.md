@@ -2,10 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+# 2.2.1
+
+- Output details for duplicates.
+
 # 2.2.0
 
 - Add use_current_memory_per_jruby option.
--- Buffer collection of current settings.
+- Buffer collection of current settings.
 
 # 2.1.0
 

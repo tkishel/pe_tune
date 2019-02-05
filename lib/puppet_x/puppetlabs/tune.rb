@@ -252,7 +252,7 @@ module PuppetX
         node
       end
 
-      #
+      # Collect node for output.
 
       def collect_current_node(certname, role, settings)
         properties = {
