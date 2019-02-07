@@ -124,24 +124,23 @@ module PuppetX
         # Query PuppetDB for facts for a node.
 
         def node_facts(certname)
-          node_facts = {}
-          if recover_with_instance_method?
-            recover = Puppet::Util::Pe_conf::Recover.new
-            node_facts = recover.facts_for_node(certname, @environment)
-          else
-            facts_hash = Puppet::Util::Pe_conf::Recover.facts_for_node(certname, @environment)
-            if facts_hash.key?('puppetversion')
-              node_facts = facts_hash
-            else
-              # Prior to PE-22444, facts are returned as a Hash with elements in this format: {"name"=>"puppetversion", "value"=>"4.10.10"} => nil
-              facts_hash.each do |fact, _nil|
-                node_facts[fact['name']] = fact['value']
-              end
-            end
+          Puppet.debug("Querying PuppetDB for Facts for: #{certname}")
+          pql = ['from', 'facts',
+                ['extract', ['name', 'value'],
+                  ['and',
+                    ['=', 'certname', certname],
+                    ['=', 'environment', @environment],
+                  ]
+                ]
+              ]
+          results = query_puppetdb(pql)
+          return nil if results.nil?
+          Puppet.debug(results)
+          facts = {}
+          results.each do |fact, _nil|
+            facts[fact['name']] = fact['value']
           end
-          return node_facts
-        rescue Puppet::Error
-          return nil
+          facts
         end
 
         # Return settings configured in Hiera and the Classifier, identifying duplicates and merging the results.
@@ -149,6 +148,8 @@ module PuppetX
         def hiera_classifier_settings(certname, settings)
           duplicates = []
           overrides_hiera, overrides_classifier = hiera_classifier_overrides(certname, settings)
+          Puppet.debug("Settings from Hiera for: #{certname}: #{overrides_hiera}")
+          Puppet.debug("Settings from Classifier for: #{certname}: #{overrides_classifier}")
           overrides = overrides_hiera
           overrides_classifier.each do |classifier_k, classifier_v|
             next unless settings.include?(classifier_k)
