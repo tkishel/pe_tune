@@ -56,6 +56,8 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         node['type']['with_jruby9k_enabled'] = true
         node['classes'].delete('amq::broker')
         settings['params']['puppet_enterprise::master::puppetserver::reserved_code_cache'] = '256m'
+        settings['totals']['RAM']['used'] += 256
+        settings['totals']['RAM']['used'] -= settings['params']['puppet_enterprise::profile::amq::broker::heap_mb']
         settings['params'].delete('puppet_enterprise::profile::amq::broker::heap_mb')
       end
 
@@ -108,6 +110,8 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         node['type']['with_jruby9k_enabled'] = true
         node['classes'].delete('amq::broker')
         settings['params']['puppet_enterprise::master::puppetserver::reserved_code_cache'] = '512m'
+        settings['totals']['RAM']['used'] += 512
+        settings['totals']['RAM']['used'] -= settings['params']['puppet_enterprise::profile::amq::broker::heap_mb']
         settings['params'].delete('puppet_enterprise::profile::amq::broker::heap_mb')
       end
 
@@ -159,7 +163,9 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       if pe_2019_or_newer
         node['type']['with_jruby9k_enabled'] = true
         node['classes'].delete('amq::broker')
-        settings['params']['puppet_enterprise::master::puppetserver::reserved_code_cache'] = '1024m'
+        settings['params']['puppet_enterprise::master::puppetserver::reserved_code_cache'] = '640m'
+        settings['totals']['RAM']['used'] += 640
+        settings['totals']['RAM']['used'] -= settings['params']['puppet_enterprise::profile::amq::broker::heap_mb']
         settings['params'].delete('puppet_enterprise::profile::amq::broker::heap_mb')
       end
 
@@ -211,7 +217,9 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       if pe_2019_or_newer
         node['type']['with_jruby9k_enabled'] = true
         node['classes'].delete('amq::broker')
-        settings['params']['puppet_enterprise::master::puppetserver::reserved_code_cache'] = '2048m'
+        settings['params']['puppet_enterprise::master::puppetserver::reserved_code_cache'] = '1408m'
+        settings['totals']['RAM']['used'] += 1408
+        settings['totals']['RAM']['used'] -= settings['params']['puppet_enterprise::profile::amq::broker::heap_mb']
         settings['params'].delete('puppet_enterprise::profile::amq::broker::heap_mb')
       end
 
@@ -260,6 +268,15 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       }
       settings = { 'params' => params, 'totals' => totals }
 
+      if pe_2019_or_newer
+        node['type']['with_jruby9k_enabled'] = true
+        node['classes'].delete('amq::broker')
+        settings['params']['puppet_enterprise::master::puppetserver::reserved_code_cache'] = '512m'
+        settings['totals']['RAM']['used'] += 512
+        settings['totals']['RAM']['used'] -= settings['params']['puppet_enterprise::profile::amq::broker::heap_mb']
+        settings['params'].delete('puppet_enterprise::profile::amq::broker::heap_mb')
+      end
+
       expect(calculator::calculate_master_settings(node)).to eq(settings)
     end
 
@@ -305,9 +322,12 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       settings = { 'params' => params, 'totals' => totals }
 
       if pe_2019_or_newer
+        node['type']['with_jruby9k_enabled'] = true
         node['classes'].delete('amq::broker')
+        settings['params']['puppet_enterprise::master::puppetserver::reserved_code_cache'] = '512m'
+        settings['totals']['RAM']['used'] += 512
+        settings['totals']['RAM']['used'] -= settings['params']['puppet_enterprise::profile::amq::broker::heap_mb']
         settings['params'].delete('puppet_enterprise::profile::amq::broker::heap_mb')
-        settings['totals']['RAM']['used'] -= 512
       end
 
       expect(calculator::calculate_master_settings(node)).to eq(settings)

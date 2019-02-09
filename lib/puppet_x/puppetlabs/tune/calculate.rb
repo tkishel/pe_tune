@@ -36,7 +36,10 @@ module PuppetX
           minimum_cpu_jrubies         = 2
           minimum_ram_puppetserver    = 1024
           ram_per_puppetserver_jruby  = fit_to_memory(node['resources']['ram'], 512, 768, 1024)
-          ram_puppetserver_code_cache = fit_to_memory(node['resources']['ram'], 512, 1024, 2048)
+          minimum_ram_code_cache      = 512
+          maximum_ram_code_cache      = 2048
+          ram_per_jruby_code_cache    = 128
+          ram_puppetserver_code_cache = fit_to_memory(node['resources']['ram'], minimum_ram_code_cache, 1024, maximum_ram_code_cache)  # Estimate, prior to fit_to_jrubies.
           percent_ram_database        = 25
           minimum_ram_database        = fit_to_memory(node['resources']['ram'], 2048, 3072, 4096)
           maximum_ram_database        = 16384
@@ -65,10 +68,6 @@ module PuppetX
               percent_ram_puppetdb     = 20
             end
           end
-
-          # Reallocate resources from puppetserver depending upon jruby version.
-
-          ram_puppetserver_code_cache = 0 unless node['type']['with_jruby9k_enabled']
 
           # Reallocate resources depending upon services active on this host.
 
@@ -107,6 +106,10 @@ module PuppetX
             ram_activemq                = 256
           end
 
+          # Reallocate resources from puppetserver depending upon jruby version.
+
+          ram_puppetserver_code_cache = 0 unless node['type']['with_jruby9k_enabled']
+
           settings = initialize_settings(node)
 
           if node['classes']['database']
@@ -143,6 +146,8 @@ module PuppetX
             settings['totals']['RAM']['used'] += ram_puppetdb
           end
 
+          # Consider subtracting ram_puppetserver_code_cache estimate from available_ram_for_puppetserver.
+
           available_ram_for_puppetserver = node['resources']['ram'] - minimum_ram_os - settings['totals']['RAM']['used']
           if available_ram_for_puppetserver < minimum_ram_puppetserver
             Puppet.debug("Error: available_ram_for_puppetserver: #{available_ram_for_puppetserver} < minimum_ram_puppetserver: #{minimum_ram_puppetserver}")
@@ -157,8 +162,17 @@ module PuppetX
           ram_jrubies = (jruby_max_active_instances * ram_per_puppetserver_jruby)
           ram_puppetserver = [ram_jrubies, minimum_ram_puppetserver].max
           settings['params']['puppet_enterprise::profile::master::java_args'] = { 'Xms' => "#{ram_puppetserver}m", 'Xmx' => "#{ram_puppetserver}m" }
-          settings['params']['puppet_enterprise::master::puppetserver::reserved_code_cache'] = "#{ram_puppetserver_code_cache}m" if ram_puppetserver_code_cache > 0
-          settings['totals']['RAM']['used'] += ram_puppetserver + ram_puppetserver_code_cache
+          settings['totals']['RAM']['used'] += ram_puppetserver
+
+          if node['type']['with_jruby9k_enabled']
+            # Recalulate ram_puppetserver_code_cache estimate.
+            unless ram_puppetserver_code_cache == 256
+              code_cache_by_ram_per_jruby = jruby_max_active_instances * ram_per_jruby_code_cache
+              ram_puppetserver_code_cache = value_within_min_max(code_cache_by_ram_per_jruby, minimum_ram_code_cache, maximum_ram_code_cache)
+            end
+            settings['params']['puppet_enterprise::master::puppetserver::reserved_code_cache'] = "#{ram_puppetserver_code_cache}m"
+            settings['totals']['RAM']['used'] += ram_puppetserver_code_cache
+          end
 
           if node['classes']['console']
             settings['params']['puppet_enterprise::profile::console::java_args'] = { 'Xms' => "#{ram_console}m", 'Xmx' => "#{ram_console}m" }
