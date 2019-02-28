@@ -37,6 +37,10 @@ parser = OptionParser.new do |opts|
   opts.on('--common', 'Extract common settings from node settings') do
     options[:common] = true
   end
+  options[:compare] = false
+  opts.on('--compare', 'Output comparison of currently defined and optimized settings, and exit') do
+    options[:compare] = true
+  end
   options[:current] = false
   opts.on('--current', 'Output currently defined settings, and exit') do
     options[:current] = true
@@ -87,7 +91,12 @@ Puppet.debug = options[:debug]
 Puppet.debug("Command Options: #{options}")
 Tune = PuppetX::Puppetlabs::Tune.new(options)
 Puppet.warning "Unable to identify Database Hosts or tune PostgreSQL services in PE 2017.x and older\n" unless Tune.pe_2018_or_newer?
-if options[:current]
+
+Tune.output_infrastructure
+
+if options[:compare]
+  Tune.output_compare_current_and_optimized_settings
+elsif options[:current]
   Tune.output_current_settings
 else
   Tune.output_optimized_settings

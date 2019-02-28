@@ -43,6 +43,11 @@ Puppet::Face.define(:pe, '1.0.0') do
       default_to { false }
     end
 
+    option '--compare' do
+      summary _('Output comparison of currently defined and optimized settings, and exit')
+      default_to { false }
+    end
+
     option '--current' do
       summary _('Output currently defined settings, and exit')
       default_to { false }
@@ -92,11 +97,17 @@ Puppet::Face.define(:pe, '1.0.0') do
       options = args.pop
       Puppet.debug("Command Options: #{options}")
       Tune = PuppetX::Puppetlabs::Tune.new(options)
-      if options[:current]
+
+      Tune.output_infrastructure
+
+      if options[:compare]
+        Tune.output_compare_current_and_optimized_settings
+      elsif options[:current]
         Tune.output_current_settings
       else
         Tune.output_optimized_settings
       end
+
       return
     end
   end

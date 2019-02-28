@@ -79,6 +79,9 @@ module PuppetX
         # Settings common to all nodes.
         @collected_settings_common = {}
 
+        # Properties for each node.
+        @current_collected_nodes = {}
+
         # Nodes with classes from Inventory or PuppetDB.
         @nodes_with_class = {}
 
@@ -106,13 +109,79 @@ module PuppetX
         @query = PuppetX::Puppetlabs::Tune::Query.new unless using_inventory?
       end
 
-      # Output current settings for each infrastructure node based upon Classifier and Hiera data.
+      # Output current infrastructure.
 
-      def output_current_settings
+      def output_infrastructure
         collect_infrastructure_nodes
+
         output_pe_infrastructure_error_and_exit if unknown_infrastructure?
         output_pe_infrastucture_summary(monolithic?, with_compile_masters?, with_external_database?, extra_large?)
+      end
 
+      # Output current settings for each infrastructure node.
+
+      def output_current_settings
+        current_available_jrubies = collect_current_settings
+
+        @current_collected_nodes.each do |certname, node|
+          output_current_settings_for_node(certname, node)
+        end
+
+        output_estimated_capacity(current_available_jrubies)
+      end
+
+      # Output optimized settings for each infrastructure node.
+
+      def output_optimized_settings
+        optimized_available_jrubies = collect_optimized_settings
+
+        collect_optimized_settings_common_to_all_nodes
+        @collected_nodes.each do |certname, node|
+          output_optimized_settings_for_node(certname, node)
+        end
+        output_common_settings
+
+        output_estimated_capacity(optimized_available_jrubies)
+
+        output_settings_to_files
+      end
+
+      # Output comparison of currently defined and optimized settings for each infrastructure node.
+
+      def output_compare_current_and_optimized_settings
+        collect_current_settings
+        collect_optimized_settings
+
+        @current_collected_nodes.each do |certname, current_node|
+          optimized_node = @collected_nodes[certname]
+          differences = ''
+          optimized_node['settings']['params'].each do |param, _value|
+            if param.end_with?('::java_args')
+              cur = "Xmx: #{current_node['settings']['params'][param]['Xmx']}\tXms: #{current_node['settings']['params'][param]['Xms']}"
+              opt = "Xmx: #{optimized_node['settings']['params'][param]['Xmx']}\tXms: #{optimized_node['settings']['params'][param]['Xms']}"
+            else
+              cur = current_node['settings']['params'][param]
+              opt = optimized_node['settings']['params'][param]
+            end
+            unless cur == opt
+              differences << "#{param}\n  defined:\t#{cur}\n  optimized:\t#{opt}\n\n"
+            end
+          end
+          if differences.empty?
+            output _('Defined and optimized settings match for %{role} %{certname}') % { role: optimized_node['role'], certname: certname }
+          else
+            output _('Defined and optimized settings vary for %{role} %{certname}') % { role: optimized_node['role'], certname: certname }
+            output_line
+            output_data(differences.chomp)
+            output _("Rerun this command with and without '--current' for details.")
+          end
+          output_line
+        end
+      end
+
+      # Collect current settings for each infrastructure node based upon Classifier and Hiera data.
+
+      def collect_current_settings
         available_jrubies = 0
 
         # Primary Master: Applicable to Monolithic and Split Infrastructures.
@@ -153,20 +222,12 @@ module PuppetX
           available_jrubies += available_jrubies_for_node(certname, settings)
         end
 
-        @collected_nodes.each do |certname, node|
-          output_current_settings_for_node(certname, node)
-        end
-
-        output_estimated_capacity(available_jrubies)
+        available_jrubies
       end
 
-      # Output optimized settings for each infrastructure node based upon each node's set of services.
+      # Collect optimized settings for each infrastructure node based upon each node's set of services.
 
-      def output_optimized_settings
-        collect_infrastructure_nodes
-        output_pe_infrastructure_error_and_exit if unknown_infrastructure?
-        output_pe_infrastucture_summary(monolithic?, with_compile_masters?, with_external_database?, extra_large?)
-
+      def collect_optimized_settings
         available_jrubies = 0
 
         # Primary Master: Applicable to Monolithic and Split Infrastructures.
@@ -216,17 +277,7 @@ module PuppetX
           available_jrubies += available_jrubies_for_node(certname, node['settings'])
         end
 
-        # Output collected information.
-
-        collect_optimized_settings_common_to_all_nodes
-        @collected_nodes.each do |certname, node|
-          output_optimized_settings_for_node(certname, node)
-        end
-        output_common_settings
-
-        output_estimated_capacity(available_jrubies)
-
-        output_settings_to_files
+        available_jrubies
       end
 
       # Return configuration for a node.
@@ -259,7 +310,7 @@ module PuppetX
           'role'      => role,
           'settings'  => settings,
         }
-        @collected_nodes[certname] = properties
+        @current_collected_nodes[certname] = properties
       end
 
       # Collect node for output to <certname>.yaml.
@@ -462,6 +513,7 @@ module PuppetX
           output _("Found defined settings for %{role} %{certname}") % { role: node['role'], certname: certname }
           output_line
           output_data(JSON.pretty_generate(node['settings']['params']))
+          # output_data(node['settings']['params'].to_yaml)
         end
         output_line
         unless node['settings']['duplicates'].count.zero?
@@ -481,6 +533,7 @@ module PuppetX
         unless node['settings']['params'].empty?
           output _("Specify the following optimized settings in Hiera in nodes/%{certname}.yaml") % { certname: certname }
           output_line
+          # output_data(JSON.pretty_generate(node['settings']['params']))
           output_data(node['settings']['params'].to_yaml)
         end
         unless node['settings']['totals'].empty?
