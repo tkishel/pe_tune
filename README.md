@@ -48,6 +48,10 @@ Extract common settings from node-specific settings.
 
 A common setting is one with a value that is not unique to a specific node.
 
+##### `--compare`
+
+Output comparison of currently defined and optimized settings, and exit.
+
 ##### `--current`
 
 Output currently defined settings, in JSON format, and exit.
