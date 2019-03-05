@@ -84,7 +84,7 @@ module PuppetX
           maximum_cpu_jrubies = [minimum_cpu_jrubies, (node['resources']['cpu'] * (percent_cpu_jrubies * 0.01) - 1).to_i].max
 
           # The Vegas Renormalization: allow for testing with vmpooler (2 CPU / 6 GB RAM) VMs.
-          # Requires use of TEST_CPU=8 and TEST_RAM=16384, or the '--force' option.
+          # Requires use the '--force' option.
 
           if node['resources']['cpu'] < 4
             minimum_cpu_threads = 1
@@ -94,16 +94,16 @@ module PuppetX
           end
 
           if node['resources']['ram'] < 8096
-            minimum_ram_database        = 256
-            maximum_ram_database        = 256
-            minimum_ram_puppetdb        = 256
-            maximum_ram_puppetdb        = 256
-            ram_puppetserver_code_cache = 256
-            minimum_ram_puppetserver    = 256
-            ram_per_puppetserver_jruby  = 256
-            ram_console                 = 256
-            ram_orchestrator            = 256
-            ram_activemq                = 256
+            minimum_ram_database        = 2048
+            maximum_ram_database        = 2048
+            minimum_ram_puppetdb        = 512
+            maximum_ram_puppetdb        = 512
+            ram_puppetserver_code_cache = 512
+            minimum_ram_puppetserver    = 512
+            ram_per_puppetserver_jruby  = 512
+            ram_console                 = 512
+            ram_orchestrator            = 512
+            ram_activemq                = 512
           end
 
           # Reallocate resources from puppetserver depending upon jruby version.

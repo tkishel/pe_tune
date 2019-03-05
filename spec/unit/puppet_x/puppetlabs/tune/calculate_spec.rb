@@ -36,27 +36,27 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       node = { 'resources' => resources, 'infrastructure' => infrastructure, 'type' => type, 'classes' => classes }
 
       params = {
-        'puppet_enterprise::profile::database::shared_buffers'                => '256MB',
+        'puppet_enterprise::profile::database::shared_buffers'                => '2048MB',
         'puppet_enterprise::puppetdb::command_processing_threads'             => 1,
         'puppet_enterprise::master::puppetserver::jruby_max_active_instances' => 1,
-        'puppet_enterprise::profile::master::java_args'                       => { 'Xms' => '256m', 'Xmx' => '256m' },
-        'puppet_enterprise::profile::puppetdb::java_args'                     => { 'Xms' => '256m',  'Xmx' => '256m' },
-        'puppet_enterprise::profile::console::java_args'                      => { 'Xms' => '256m',  'Xmx' => '256m' },
-        'puppet_enterprise::profile::orchestrator::java_args'                 => { 'Xms' => '256m',  'Xmx' => '256m' },
-        'puppet_enterprise::profile::amq::broker::heap_mb'                    => 256,
+        'puppet_enterprise::profile::master::java_args'                       => { 'Xms' => '512m', 'Xmx' => '512m' },
+        'puppet_enterprise::profile::puppetdb::java_args'                     => { 'Xms' => '512m',  'Xmx' => '512m' },
+        'puppet_enterprise::profile::console::java_args'                      => { 'Xms' => '512m',  'Xmx' => '512m' },
+        'puppet_enterprise::profile::orchestrator::java_args'                 => { 'Xms' => '512m',  'Xmx' => '512m' },
+        'puppet_enterprise::profile::amq::broker::heap_mb'                    => 512,
       }
       totals = {
         'CPU'          => { 'total' => 2,    'used' => 2 },
-        'RAM'          => { 'total' => 6144, 'used' => 1536 },
-        'MB_PER_JRUBY' => 256,
+        'RAM'          => { 'total' => 6144, 'used' => 4608 },
+        'MB_PER_JRUBY' => 512,
       }
       settings = { 'params' => params, 'totals' => totals }
 
       if pe_2019_or_newer
         node['type']['with_jruby9k_enabled'] = true
         node['classes'].delete('amq::broker')
-        settings['params']['puppet_enterprise::master::puppetserver::reserved_code_cache'] = '256m'
-        settings['totals']['RAM']['used'] += 256
+        settings['params']['puppet_enterprise::master::puppetserver::reserved_code_cache'] = '512m'
+        settings['totals']['RAM']['used'] += 512
         settings['totals']['RAM']['used'] -= settings['params']['puppet_enterprise::profile::amq::broker::heap_mb']
         settings['params'].delete('puppet_enterprise::profile::amq::broker::heap_mb')
       end
