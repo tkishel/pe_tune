@@ -217,6 +217,7 @@ For example:
 
 ```shell
 mkdir -p /tmp/puppet_modules
-git clone https://github.com/tkishel/pe_tune.git /tmp/puppet_modules/pe_tune
+git clone https://github.com/tkishel/pe_tune.git /tmp/puppet_modules/pe_tune || \
+wget -q -O - https://api.github.com/repos/tkishel/pe_tune/releases/latest | grep -oP '"tarball_url": "\K(.*)(?=")' | wget -q -i - -O - | tar -xzf - && mv tkishel-pe_tune* /tmp/puppet_modules/pe_tune
 puppet pe tune --modulepath /tmp/puppet_modules
 ```
