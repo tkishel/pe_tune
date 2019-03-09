@@ -21,6 +21,7 @@ end
 
 require_relative '../../puppet_x/puppetlabs/tune'
 require_relative '../../puppet_x/puppetlabs/tune/calculate'
+require_relative '../../puppet_x/puppetlabs/tune/conf'
 require_relative '../../puppet_x/puppetlabs/tune/inventory'
 require_relative '../../puppet_x/puppetlabs/tune/query'
 
@@ -86,6 +87,11 @@ Puppet::Face.define(:pe, '1.0.0') do
     option '--memory_reserved_for_os MB' do
       summary _('Amount of RAM to reserve for the OS')
       default_to { nil }
+    end
+
+    option '--pe_conf' do
+      summary _('Output HOCON to pe.conf')
+      default_to { false }
     end
 
     option '--use_current_memory_per_jruby' do

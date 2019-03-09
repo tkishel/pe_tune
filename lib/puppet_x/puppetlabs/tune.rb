@@ -73,6 +73,10 @@ module PuppetX
           output_error_and_exit _("The '--inventory' and '--local' options are mutually exclusive")
         end
 
+        if options[:pe_conf] && !options[:local]
+          output_error_and_exit _("The '--pe_conf' option requires the '--local' option")
+        end
+
         # Properties for each node.
         @collected_nodes = {}
 
@@ -96,6 +100,7 @@ module PuppetX
         @options[:hiera]     = options[:hiera]
         @options[:inventory] = options[:inventory]
         @options[:local]     = options[:local]
+        @options[:pe_conf]   = options[:pe_conf]
 
         @options[:use_current_memory_per_jruby] = options[:use_current_memory_per_jruby]
 
@@ -105,6 +110,7 @@ module PuppetX
         calculate_options[:memory_reserved_for_os] = string_to_megabytes(options[:memory_reserved_for_os])
 
         @calculator = PuppetX::Puppetlabs::Tune::Calculate.new(calculate_options)
+        @conf = PuppetX::Puppetlabs::Tune::Conf.new('/etc/puppetlabs/enterprise') if @options[:pe_conf]
         @inventory = PuppetX::Puppetlabs::Tune::Inventory.new
         @query = PuppetX::Puppetlabs::Tune::Query.new unless using_inventory?
       end
@@ -143,7 +149,8 @@ module PuppetX
 
         output_estimated_capacity(optimized_available_jrubies)
 
-        output_settings_to_files
+        output_settings_to_hiera
+        output_settings_to_pe_conf
       end
 
       # Output comparison of currently defined and optimized settings for each infrastructure node.
@@ -316,7 +323,7 @@ module PuppetX
       # Collect node for output to <certname>.yaml.
 
       def collect_optimized_node(certname, role, node)
-        output_minimum_system_requirements_error_and_exit(certname) unless node['settings']
+        output_minimum_system_requirements_error_and_exit(certname) if node['settings'].empty?
         properties = {
           'resources' => node['resources'],
           'role'      => role,
@@ -456,7 +463,7 @@ module PuppetX
 
       # Output Hiera YAML files.
 
-      def output_settings_to_files
+      def output_settings_to_hiera
         return unless @options[:hiera]
         hiera_directory = @options[:hiera]
         hiera_subdirectory = "#{hiera_directory}/nodes"
@@ -475,6 +482,18 @@ module PuppetX
         return if @collected_settings_common.empty?
         output_file = "#{@options[:hiera]}/common.yaml"
         File.write(output_file, @collected_settings_common.to_yaml)
+      end
+
+      # Output HOCON to pe.conf.
+
+      def output_settings_to_pe_conf
+        return unless @options[:pe_conf] && @options[:local]
+        @collected_nodes.each do |_certname, properties|
+          next if properties['settings']['params'].empty?
+          @conf::write(properties['settings']['params'])
+          output _("Merged optimized settings to: %{output_file}") % { output_file: '/etc/puppetlabs/enterprise/pe.conf' }
+          output_line
+        end
       end
 
       # Consolidate output.
@@ -795,6 +814,7 @@ if File.expand_path(__FILE__) == File.expand_path($PROGRAM_NAME)
   require_relative 'tune/cli'
 else
   require 'puppet_x/puppetlabs/tune/calculate'
+  require 'puppet_x/puppetlabs/tune/conf'
   require 'puppet_x/puppetlabs/tune/inventory'
   require 'puppet_x/puppetlabs/tune/query'
 end

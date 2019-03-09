@@ -22,6 +22,7 @@ end
 # Load this module's classes (instead of those in pe_manager).
 
 require_relative 'calculate'
+require_relative 'conf'
 require_relative 'inventory'
 require_relative 'query'
 
@@ -72,6 +73,10 @@ parser = OptionParser.new do |opts|
   end
   opts.on('--memory_reserved_for_os MB', 'Amount of RAM to reserve for the OS') do |mo|
     options[:memory_reserved_for_os] = mo
+  end
+  options[:pe_conf] = false
+  opts.on('--pe_conf', 'Output HOCON to pe.conf') do
+    options[:pe_conf] = true
   end
   options[:use_current_memory_per_jruby] = false
   opts.on('--use_current_memory_per_jruby', 'Use currently defined settings to determine memory_per_jruby') do
