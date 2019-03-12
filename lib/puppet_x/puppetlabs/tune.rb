@@ -488,10 +488,14 @@ module PuppetX
 
       def output_settings_to_pe_conf
         return unless @options[:pe_conf] && @options[:local]
+        output_file = '/etc/puppetlabs/enterprise/conf.d/pe.conf'
         @collected_nodes.each do |_certname, properties|
           next if properties['settings']['params'].empty?
-          @conf::write(properties['settings']['params'])
-          output _("Merged optimized settings to: %{output_file}") % { output_file: '/etc/puppetlabs/enterprise/pe.conf' }
+          if @conf::write(properties['settings']['params'])
+            output _("Merged optimized settings to: %{output_file}") % { output_file: output_file }
+          else
+            output _("Unable to output settings to: %{output_file} ... existing settings found.") % { output_file: output_file }
+          end
           output_line
         end
       end
