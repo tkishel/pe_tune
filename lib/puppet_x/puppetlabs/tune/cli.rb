@@ -35,15 +35,15 @@ parser = OptionParser.new do |opts|
   opts.separator 'Options:'
   opts.separator ''
   options[:common] = false
-  opts.on('--common', 'Extract common settings from node settings') do
+  opts.on('--common', 'Extract common settings from node-specific settings') do
     options[:common] = true
   end
   options[:compare] = false
-  opts.on('--compare', 'Output comparison of currently defined and optimized settings, and exit') do
+  opts.on('--compare', 'Output comparison of currently-defined and optimized settings, and exit') do
     options[:compare] = true
   end
   options[:current] = false
-  opts.on('--current', 'Output currently defined settings, and exit') do
+  opts.on('--current', 'Output currently-defined settings, and exit') do
     options[:current] = true
   end
   options[:debug] = false
@@ -79,7 +79,7 @@ parser = OptionParser.new do |opts|
     options[:pe_conf] = true
   end
   options[:use_current_memory_per_jruby] = false
-  opts.on('--use_current_memory_per_jruby', 'Use currently defined settings to determine memory_per_jruby') do
+  opts.on('--use_current_memory_per_jruby', 'Use currently-defined settings to determine memory_per_jruby') do
     options[:use_current_memory_per_jruby] = true
   end
   opts.on('-h', '--help', 'Display help') do

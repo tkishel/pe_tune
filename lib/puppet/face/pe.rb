@@ -40,17 +40,17 @@ Puppet::Face.define(:pe, '1.0.0') do
     DESC
 
     option '--common' do
-      summary _('Extract common settings from node settings')
+      summary _('Extract common settings from node-specific settings')
       default_to { false }
     end
 
     option '--compare' do
-      summary _('Output comparison of currently defined and optimized settings, and exit')
+      summary _('Output comparison of currently-defined and optimized settings, and exit')
       default_to { false }
     end
 
     option '--current' do
-      summary _('Output currently defined settings, and exit')
+      summary _('Output currently-defined settings, and exit')
       default_to { false }
     end
 
@@ -95,7 +95,7 @@ Puppet::Face.define(:pe, '1.0.0') do
     end
 
     option '--use_current_memory_per_jruby' do
-      summary _('Use currently defined settings to determine memory_per_jruby')
+      summary _('Use currently-defined settings to determine memory_per_jruby')
       default_to { false }
     end
 

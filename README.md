@@ -4,7 +4,7 @@
 
 1. [Description - What the module does and why it is useful](#description)
 1. [Setup - Getting started with this module](#setup)
-1. [Usage - Command parameters and how to use it](#usage)
+1. [Usage - Command parameters and how to use them](#usage)
 1. [Reference - How the module works and how to use its output](#reference)
 1. [Limitations - Supported infrastructures and versions](#limitations)
 
@@ -14,19 +14,20 @@
 
 This module provides a Puppet subcommand `puppet pe tune` that outputs optimized settings for Puppet Enterprise services based upon available system resources.
 
-Puppet Enterprise 2018.1.3 and newer includes the functionality of this module via the `puppet infrastructure tune` subcommand. To use this module with Puppet Enterprise 2018.1.3 and newer, refer to [Limitations](#limitations).
+Puppet Enterprise 2018.1.3 and newer includes the functionality of this module via the `puppet infrastructure tune` subcommand.
+To use this module with Puppet Enterprise 2018.1.3 and newer, refer to [Limitations](#limitations).
 
 ## Setup
 
 Install this module on the Primary Master.
 
-For example:
+For example, to install the latest version:
 
 ```shell
-git clone https://github.com/tkishel/pe_tune.git /etc/puppetlabs/code/modules/pe_tune
+git clone --depth=1 --branch=master https://github.com/tkishel/pe_tune.git /etc/puppetlabs/code/modules/pe_tune
 ```
 
-Or:
+Or to install the latest release:
 
 ```shell
 wget -q -O - https://api.github.com/repos/tkishel/pe_tune/releases/latest | grep -oP '"tarball_url": "\K(.*)(?=")' | wget -q -i - -O - | tar -xzf - && mv tkishel-pe_tune* /etc/puppetlabs/code/modules/pe_tune
@@ -46,17 +47,20 @@ wget -q -O - https://api.github.com/repos/tkishel/pe_tune/releases/latest | grep
 
 Extract common settings from node-specific settings.
 
-A common setting is one with a value that is not unique to a specific node.
+A common setting is one with a value that is identical on multiple nodes.
+This option extracts and outputs common settings separately from node-specific settings, potentially reducing the number of node-specific settings.
 
 ##### `--compare`
 
-Output comparison of currently defined and optimized settings, and exit.
+Output a comparison of currently-defined and optimized settings, and exit.
 
 ##### `--current`
 
-Output currently defined settings, in JSON format, and exit.
+Output currently-defined settings, in JSON format, and exit.
 
-Settings may be defined either in the Classifier (the Console) or in Hiera, with Classifier settings taking precedence over Hiera settings. This option also identifies duplicate settings found in both the Classifier and Hiera. Best practice is to define settings in Hiera (preferred) or the Classifier, but not both.
+Settings may be defined either in the Classifier (the Console) or in Hiera, with Classifier settings taking precedence over Hiera settings.
+This option also identifies duplicate settings found in both the Classifier and Hiera.
+Best practice is to define settings in Hiera (preferred) or the Classifier, but not both.
 
 ##### `--debug`
 
@@ -78,7 +82,7 @@ Use the specified YAML file to define infrastructure nodes.
 
 This eliminates a dependency upon PuppetDB to query node facts and classes.
 
-Refer to the examples directory of this module for details.
+Refer to the [examples](examples) directory of this module for details.
 
 ##### `--local`
 
@@ -94,9 +98,13 @@ Amount of RAM to allocate for each JRuby.
 
 Amount of RAM to reserve for the OS.
 
+##### `--use_current_memory_per_jruby`
+
+Use currently-defined settings to determine memory_per_jruby.
+
 ## Reference
 
-This module queries PuppetDB for node group membership to identify PE Infrastructure hosts, queries PuppetDB for facts for each of those hosts to identify system resources, and outputs optimized settings for PE services (in YAML format) use in Hiera.
+This subcommand queries PuppetDB for node group membership to identify PE Infrastructure hosts, queries PuppetDB for facts for each of those hosts to identify system resources, and outputs optimized settings for PE services (in YAML format) use in Hiera.
 
 ### Output
 
@@ -134,7 +142,7 @@ puppet_enterprise::profile::orchestrator::java_args:
 # JVM Summary: Using 768 MB per Puppet Server JRuby for pe-master.puppetdebug.vlan
 ```
 
-By default, this subcommand outputs node-specific settings to be saved to node-specific YAML files in a node-specific hierarchy.
+By default, this subcommand outputs node-specific settings for use in node-specific YAML files in a node-specific hierarchy.
 
 For example:
 
@@ -211,13 +219,13 @@ Error: uninitialized constant PuppetX::Puppetlabs::Tune::Calculate
 Error: Try 'puppet infrastructure help tune' for usage
 ```
 
-To avoid that error, install and run this module outside the modulepath.
+To avoid that error, install this module and run this subcommand outside the `modulepath`.
 
 For example:
 
 ```shell
 mkdir -p /tmp/puppet_modules
-git clone https://github.com/tkishel/pe_tune.git /tmp/puppet_modules/pe_tune || \
+git clone --depth=1 --branch=master https://github.com/tkishel/pe_tune.git /tmp/puppet_modules/pe_tune || \
 wget -q -O - https://api.github.com/repos/tkishel/pe_tune/releases/latest | grep -oP '"tarball_url": "\K(.*)(?=")' | wget -q -i - -O - | tar -xzf - && mv tkishel-pe_tune* /tmp/puppet_modules/pe_tune
 puppet pe tune --modulepath /tmp/puppet_modules
 ```
