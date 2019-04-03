@@ -25,9 +25,9 @@ module PuppetX
           else
             Puppet.debug("No Environment found in PuppetDB using: #{certname}")
             Puppet.debug("Querying 'puppet config print environment' for Environment")
-            @environment = Puppet::Util::Execution.execute('/opt/puppetlabs/puppet/bin/puppet config print environment --section master').chomp
+            @environment = Puppet::Util::Execution.execute('/opt/puppetlabs/puppet/bin/puppet config print environment --section master', 'combine' => false).chomp
           end
-          @environmentpath = Puppet::Util::Execution.execute('/opt/puppetlabs/puppet/bin/puppet config print environmentpath --section master').chomp
+          @environmentpath = Puppet::Util::Execution.execute('/opt/puppetlabs/puppet/bin/puppet config print environmentpath --section master', 'combine' => false).chomp
         end
 
         # Query PuppetDB for the environment of a node.

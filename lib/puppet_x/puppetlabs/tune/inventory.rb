@@ -55,9 +55,9 @@ module PuppetX
 
         def read_inventory_from_local_system
           Puppet.debug('Querying the local system to define a monolithic infrastructure master node')
-          hostname = Puppet::Util::Execution.execute('hostname -f').chomp
-          cpu = Puppet::Util::Execution.execute('nproc --all').chomp
-          ram = Puppet::Util::Execution.execute('free -b | grep Mem').chomp.split(' ')[1]
+          hostname = Puppet::Util::Execution.execute('hostname -f', 'combine' => false).chomp
+          cpu = Puppet::Util::Execution.execute('nproc --all', 'combine' => false).chomp
+          ram = Puppet::Util::Execution.execute('free -b | grep Mem', 'combine' => false).chomp.split(' ')[1]
           ram << 'b'
           nodes = {
             hostname => {

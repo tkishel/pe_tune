@@ -36,9 +36,9 @@ describe PuppetX::Puppetlabs::Tune::Inventory do
     end
 
     it 'can use the local system as inventory' do
-      allow(Puppet::Util::Execution).to receive(:execute).with('hostname -f').and_return('master.example.com')
-      allow(Puppet::Util::Execution).to receive(:execute).with('nproc --all').and_return('4')
-      allow(Puppet::Util::Execution).to receive(:execute).with('free -b | grep Mem').and_return('Mem: 8589934592')
+      allow(Puppet::Util::Execution).to receive(:execute).with('hostname -f', 'combine' => false).and_return('master.example.com')
+      allow(Puppet::Util::Execution).to receive(:execute).with('nproc --all', 'combine' => false).and_return('4')
+      allow(Puppet::Util::Execution).to receive(:execute).with('free -b | grep Mem', 'combine' => false).and_return('Mem: 8589934592')
       output = {
         'nodes' => {
           'master.example.com' => {
