@@ -1,3 +1,5 @@
+# https://github.com/npwalker/pe_databases/blob/master/manifests/postgresql_settings.pp
+
 def other_database_tunable_param_names
   [
     'puppet_enterprise::profile::database::autovacuum_max_workers',

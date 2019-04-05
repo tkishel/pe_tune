@@ -6,11 +6,7 @@
 #   https://puppet.com/docs/pe/latest/configuring/tuning_monolithic.html
 #
 # It does not optimize the following settings in puppetlabs-puppet_enterprise:
-#   puppet_enterprise::profile::database::autovacuum_max_workers
-#   puppet_enterprise::profile::database::autovacuum_work_mem
-#   puppet_enterprise::profile::database::maintenance_work_mem
 #   puppet_enterprise::profile::database::effective_cache_size
-#   puppet_enterprise::profile::database::work_mem
 #
 # It accepts the following overrides via ENV:
 #   export TEST_CPU=8; export TEST_RAM=16384;
@@ -28,7 +24,11 @@ module PuppetX
           'puppet_enterprise::profile::amq::broker::heap_mb',
           'puppet_enterprise::profile::console::java_args',
           'puppet_enterprise::profile::database::shared_buffers',
+          'puppet_enterprise::profile::database::autovacuum_max_workers',
+          'puppet_enterprise::profile::database::autovacuum_work_mem',
+          'puppet_enterprise::profile::database::maintenance_work_mem',
           'puppet_enterprise::profile::database::max_connections',
+          'puppet_enterprise::profile::database::work_mem',
           'puppet_enterprise::profile::master::java_args',
           'puppet_enterprise::profile::orchestrator::java_args',
           'puppet_enterprise::profile::puppetdb::java_args',

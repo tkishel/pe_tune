@@ -246,14 +246,20 @@ module PuppetX
           settings
         end
 
-        # External PostgreSQL Hosts in Monolithic and Split Infrastructures
+        # External PostgreSQL Hosts in Monolithic and/or PuppetDB Hosts in Split Infrastructures
         # Services: pe-postgresql
 
         def calculate_database_settings(node)
-          percent_ram_database    = 25
-          minimum_ram_database    = fit_to_memory(node['resources']['ram'], 2048, 3072, 4096)
-          maximum_ram_database    = 16384
-          default_max_connections = 500
+          percent_ram_database               = 25
+          minimum_ram_database               = fit_to_memory(node['resources']['ram'], 2048, 3072, 4096)
+          maximum_ram_database               = 16384
+          percent_cpu_autovacuum_max_workers = 33.3
+          minimum_cpu_autovacuum_max_workers = 3
+          maximum_cpu_autovacuum_max_workers = 8
+          maintenance_work_mem_divisor       = 3.0 # Divide by 3 if External or Split, as opposed to 8 if Monolithic.
+          maximum_ram_maintenance_work_mem   = 1024
+          double_default_max_connections     = 1000
+          double_default_work_mem            = '8MB'
 
           settings = initialize_settings(node)
 
@@ -262,10 +268,17 @@ module PuppetX
           settings['params']['puppet_enterprise::profile::database::shared_buffers'] = "#{ram_database}MB"
           settings['totals']['RAM']['used'] += ram_database
 
-          # Increase max_connections for postgresql, if this is an extra large reference architecture, as each puppetdb service uses connections.
-          if node['infrastructure']['with_extra_large']
-            settings['params']['puppet_enterprise::profile::database::max_connections'] = (default_max_connections * 2)
-          end
+          cpu_autovacuum_max_workers = calculate_cpu(node['resources']['cpu'], 0, percent_cpu_autovacuum_max_workers, minimum_cpu_autovacuum_max_workers, maximum_cpu_autovacuum_max_workers)
+          ram_maintenance_work_mem   = [maximum_ram_maintenance_work_mem, (node['resources']['ram'] / maintenance_work_mem_divisor).to_i].min
+          ram_autovacuum_work_mem    = (ram_maintenance_work_mem / cpu_autovacuum_max_workers).to_i
+
+          # The following settings are not steady-state allocations so are not added to settings['totals'].
+
+          settings['params']['puppet_enterprise::profile::database::autovacuum_max_workers'] = cpu_autovacuum_max_workers
+          settings['params']['puppet_enterprise::profile::database::autovacuum_work_mem']    = "#{ram_autovacuum_work_mem}MB"
+          settings['params']['puppet_enterprise::profile::database::maintenance_work_mem']   = "#{ram_maintenance_work_mem}MB"
+          settings['params']['puppet_enterprise::profile::database::max_connections']        = double_default_max_connections
+          settings['params']['puppet_enterprise::profile::database::work_mem']               = double_default_work_mem
 
           settings
         end
