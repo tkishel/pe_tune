@@ -367,6 +367,8 @@ module PuppetX
           output_error_and_exit _('Unable to read inventory') if @inventory::classes.empty? || @inventory::classes == @inventory::default_inventory_classes
         else
           @query::pe_environment(Puppet['certname'])
+          output_error_and_exit _('Unable to read environment') if @query::environment.empty?
+          output_error_and_exit _('Unable to read environmentpath') if @query::environmentpath.empty?
         end
 
         tunable_class_names.each do |classname|
@@ -611,6 +613,7 @@ module PuppetX
 
       def output_error_and_exit(message)
         Puppet.err(message)
+        Puppet.err _('Rerun this command with --debug for more information')
         exit 1
       end
 
