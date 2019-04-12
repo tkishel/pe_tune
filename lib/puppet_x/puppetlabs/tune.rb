@@ -113,7 +113,7 @@ module PuppetX
         calculate_options[:memory_reserved_for_os] = string_to_megabytes(options[:memory_reserved_for_os])
 
         @calculator = PuppetX::Puppetlabs::Tune::Calculate.new(calculate_options)
-        @conf = PuppetX::Puppetlabs::Tune::Conf.new('/etc/puppetlabs/enterprise') if @options[:pe_conf]
+        @pe_conf = PuppetX::Puppetlabs::Tune::PEConf.new('/etc/puppetlabs/enterprise') if @options[:pe_conf]
         @inventory = PuppetX::Puppetlabs::Tune::Inventory.new
         @query = PuppetX::Puppetlabs::Tune::Query.new unless using_inventory?
       end
@@ -147,7 +147,6 @@ module PuppetX
         collect_optimized_settings_common_to_all_nodes
         @collected_nodes.each do |certname, node|
           output_optimized_settings_for_node(certname, node) unless @options[:quiet]
-
         end
         output_common_settings unless @options[:quiet]
 
@@ -493,14 +492,13 @@ module PuppetX
       # Output HOCON to pe.conf.
 
       def output_settings_to_pe_conf
-        return unless @options[:pe_conf] && @options[:local]
-        output_file = '/etc/puppetlabs/enterprise/conf.d/pe.conf'
+        return unless @options[:pe_conf]
         @collected_nodes.each do |_certname, properties|
           next if properties['settings']['params'].empty?
-          if @conf::write(properties['settings']['params'])
-            output _("Merged optimized settings to: %{output_file}") % { output_file: output_file }
+          if @pe_conf::write(properties['settings']['params'])
+            output _("Merged optimized settings to: %{output_file}") % { output_file: @pe_conf::file }
           else
-            output _("Unable to output optimized settings to: %{output_file} ... conflicting settings found.") % { output_file: output_file }
+            output _("Unable to output optimized settings to: %{output_file}: conflicting settings found.") % { output_file: @pe_conf::file }
           end
           output_line
         end
@@ -827,7 +825,7 @@ if File.expand_path(__FILE__) == File.expand_path($PROGRAM_NAME)
   require_relative 'tune/cli'
 else
   require 'puppet_x/puppetlabs/tune/calculate'
-  require 'puppet_x/puppetlabs/tune/conf'
   require 'puppet_x/puppetlabs/tune/inventory'
+  require 'puppet_x/puppetlabs/tune/peconf'
   require 'puppet_x/puppetlabs/tune/query'
 end

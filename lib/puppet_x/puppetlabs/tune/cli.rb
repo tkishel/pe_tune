@@ -22,8 +22,8 @@ end
 # Load this module's classes (instead of those in pe_manager).
 
 require_relative 'calculate'
-require_relative 'conf'
 require_relative 'inventory'
+require_relative 'peconf'
 require_relative 'query'
 
 options = {}

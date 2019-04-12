@@ -3,14 +3,18 @@ module PuppetX
     # Tune optimized settings.
     class Tune
       # Interface to PuppetX::Puppetlabs::Meep
-      class Conf
+      class PEConf
+        attr_reader :file
+
         def initialize(meep_config_path)
+          @file = "#{meep_config_path}/conf.d/pe.conf"
           require 'puppet_x/puppetlabs/meep/config'
+          # An error is raised if the file does not exist. Create?
           @meep_meep = PuppetX::Puppetlabs::Meep::Modify.new(meep_config_path)
         end
 
         def write(settings)
-          # In this revision, do not merge existing and optimized settings.
+          # For now, do not merge existing and optimized settings.
           settings.each do |key, _optimized|
             previous = @meep_meep::get_in_pe_conf(key)
             if previous
@@ -18,6 +22,7 @@ module PuppetX
               return false
             end
           end
+
           settings.each do |key, optimized|
             previous = @meep_meep::get_in_pe_conf(key)
             Puppet.debug("Previous value in pe.conf for #{key}: #{previous}")
