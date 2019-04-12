@@ -211,21 +211,34 @@ Support is limited to the following versions:
 
 #### Puppet Enterprise 2018.1.3 and Newer
 
-This module is the upstream version of the `puppet infrastructure tune` subcommand built into Puppet Enterprise 2018.1.3 and newer. Installing this module in Puppet Enterprise 2018.1.3 and newer will cause the built-in `puppet infrastructure tune` subcommand to fail with the following error.
+This module is the upstream version of the `puppet infrastructure tune` subcommand built into Puppet Enterprise 2018.1.3 and newer. Installing this module in Puppet Enterprise 2018.1.3 and newer will result in a conflict with the built-in `puppet infrastructure tune` subcommand.
 
-```shell
-[root@pe-master ~]# puppet infrastructure tune
-Error: uninitialized constant PuppetX::Puppetlabs::Tune::Calculate
-Error: Try 'puppet infrastructure help tune' for usage
-```
-
-To avoid that error, install this module and run this subcommand outside the `modulepath`.
+To avoid that conflict, install this module and run this subcommand outside the `modulepath`.
 
 For example:
 
 ```shell
 mkdir -p /tmp/puppet_modules
-git clone --depth=1 --branch=master https://github.com/tkishel/pe_tune.git /tmp/puppet_modules/pe_tune || \
+(which git > /dev/null 2>&1 && git clone --depth=1 --branch=master https://github.com/tkishel/pe_tune.git /tmp/puppet_modules/pe_tune) || \
 wget -q -O - https://api.github.com/repos/tkishel/pe_tune/releases/latest | grep -oP '"tarball_url": "\K(.*)(?=")' | wget -q -i - -O - | tar -xzf - && mv tkishel-pe_tune* /tmp/puppet_modules/pe_tune
+```
+
+```
 puppet pe tune --modulepath /tmp/puppet_modules
+```
+
+#### Puppet Enterprise 2018.1.2 and Older
+
+This module may not be able to query PuppetDB in older versions of Puppet Enterprise.
+
+To avoid that error, install this module and run the command outside the `modulepath`.
+
+```shell
+mkdir -p /tmp/puppet_modules
+(which git > /dev/null 2>&1 && git clone --depth=1 --branch=master https://github.com/tkishel/pe_tune.git /tmp/puppet_modules/pe_tune) || \
+wget -q -O - https://api.github.com/repos/tkishel/pe_tune/releases/latest | grep -oP '"tarball_url": "\K(.*)(?=")' | wget -q -i - -O - | tar -xzf - && mv tkishel-pe_tune* /tmp/puppet_modules/pe_tune
+```
+
+```shell
+/tmp/puppet_modules/pe_tune/lib/puppet_x/puppetlabs/tune.rb
 ```
