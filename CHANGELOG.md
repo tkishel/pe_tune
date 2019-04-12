@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+# 2.4.0
+
+- Add flag to write to pe.conf.
+- Discard STDERR when setting variables from command line commands.
+- Tune more PostgreSQL settings.
+- Avoid PuppetDB queries on older versions of PE.
+
 # 2.3.0
 
 - Implement compare option.
