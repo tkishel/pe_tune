@@ -712,6 +712,8 @@ module PuppetX
       # puppetserver::jruby_jar is a setting added to PE 2017 and is outside the scope of this code.
 
       def with_jruby9k_enabled?(certname)
+        # Avoid the fragile PuppetDB query (in current_settings_for_node) in older versions of PE.
+        return false unless pe_2018_or_newer?
         # Return the default based upon version, when using Inventory.
         return pe_2018_or_newer? if using_inventory?
         # Does the jruby-9k.jar file exist?
