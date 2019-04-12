@@ -102,6 +102,9 @@ module PuppetX
         @options[:local]     = options[:local]
         @options[:pe_conf]   = options[:pe_conf]
 
+        # Internal option. Shh!
+        @options[:quiet]     = (@options[:hiera] || @options[:pe_conf])
+
         @options[:use_current_memory_per_jruby] = options[:use_current_memory_per_jruby]
 
         # Options specific to the Calculate class.
@@ -143,11 +146,12 @@ module PuppetX
 
         collect_optimized_settings_common_to_all_nodes
         @collected_nodes.each do |certname, node|
-          output_optimized_settings_for_node(certname, node)
-        end
-        output_common_settings
+          output_optimized_settings_for_node(certname, node) unless @options[:quiet]
 
-        output_estimated_capacity(optimized_available_jrubies)
+        end
+        output_common_settings unless @options[:quiet]
+
+        output_estimated_capacity(optimized_available_jrubies) unless @options[:quiet]
 
         output_settings_to_hiera
         output_settings_to_pe_conf
@@ -496,7 +500,7 @@ module PuppetX
           if @conf::write(properties['settings']['params'])
             output _("Merged optimized settings to: %{output_file}") % { output_file: output_file }
           else
-            output _("Unable to output settings to: %{output_file} ... existing settings found.") % { output_file: output_file }
+            output _("Unable to output optimized settings to: %{output_file} ... conflicting settings found.") % { output_file: output_file }
           end
           output_line
         end
