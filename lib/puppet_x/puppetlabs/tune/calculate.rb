@@ -125,6 +125,8 @@ module PuppetX
               minimum_cpu_threads = 1
               maximum_cpu_threads = 3
               percent_cpu_threads = 25
+              # Disable PuppetDB garbage collection on compile masters.
+              settings['params']['puppet_enterprise::profile::puppetdb::gc_interval'] = 0
             end
 
             command_processing_threads = calculate_cpu(node['resources']['cpu'], settings['totals']['CPU']['used'], percent_cpu_threads, minimum_cpu_threads, maximum_cpu_threads)
