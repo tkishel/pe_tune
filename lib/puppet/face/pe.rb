@@ -21,9 +21,9 @@ end
 
 require_relative '../../puppet_x/puppetlabs/tune'
 require_relative '../../puppet_x/puppetlabs/tune/calculate'
-require_relative '../../puppet_x/puppetlabs/tune/conf'
 require_relative '../../puppet_x/puppetlabs/tune/inventory'
 require_relative '../../puppet_x/puppetlabs/tune/query'
+require_relative '../../puppet_x/puppetlabs/tune/peconf'
 
 Puppet::Face.define(:pe, '1.0.0') do
   summary _('Inspect infrastructure and output settings')
