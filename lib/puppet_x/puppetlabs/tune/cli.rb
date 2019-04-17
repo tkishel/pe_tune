@@ -97,6 +97,7 @@ Puppet.debug("Command Options: #{options}")
 Tune = PuppetX::Puppetlabs::Tune.new(options)
 Puppet.warning "Unable to identify Database Hosts or tune PostgreSQL services in PE 2017.x and older\n" unless Tune.pe_2018_or_newer?
 
+Tune.collect_infrastructure_nodes
 Tune.output_infrastructure
 
 if options[:compare]

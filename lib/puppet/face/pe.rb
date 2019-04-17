@@ -104,6 +104,7 @@ Puppet::Face.define(:pe, '1.0.0') do
       Puppet.debug("Command Options: #{options}")
       Tune = PuppetX::Puppetlabs::Tune.new(options)
 
+      Tune.collect_infrastructure_nodes
       Tune.output_infrastructure
 
       if options[:compare]

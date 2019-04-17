@@ -121,8 +121,6 @@ module PuppetX
       # Output current infrastructure.
 
       def output_infrastructure
-        collect_infrastructure_nodes
-
         output_pe_infrastructure_error_and_exit if unknown_infrastructure?
         output_pe_infrastucture_summary(monolithic?, with_compile_masters?, with_external_database?, extra_large?)
       end
