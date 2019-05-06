@@ -39,10 +39,10 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'puppet_enterprise::profile::database::shared_buffers'                => '2048MB',
         'puppet_enterprise::puppetdb::command_processing_threads'             => 1,
         'puppet_enterprise::master::puppetserver::jruby_max_active_instances' => 1,
-        'puppet_enterprise::profile::master::java_args'                       => { 'Xms' => '512m', 'Xmx' => '512m' },
-        'puppet_enterprise::profile::puppetdb::java_args'                     => { 'Xms' => '512m',  'Xmx' => '512m' },
-        'puppet_enterprise::profile::console::java_args'                      => { 'Xms' => '512m',  'Xmx' => '512m' },
-        'puppet_enterprise::profile::orchestrator::java_args'                 => { 'Xms' => '512m',  'Xmx' => '512m' },
+        'puppet_enterprise::profile::master::java_args'                       => { 'Xms' => '512m', 'Xmx' => '512m', 'XX:+UseG1GC' => '' },
+        'puppet_enterprise::profile::puppetdb::java_args'                     => { 'Xms' => '512m', 'Xmx' => '512m', 'XX:+UseG1GC' => '' },
+        'puppet_enterprise::profile::console::java_args'                      => { 'Xms' => '512m', 'Xmx' => '512m', 'XX:+UseG1GC' => '' },
+        'puppet_enterprise::profile::orchestrator::java_args'                 => { 'Xms' => '512m', 'Xmx' => '512m', 'XX:+UseG1GC' => '' },
         'puppet_enterprise::profile::amq::broker::heap_mb'                    => 512,
       }
       totals = {
@@ -93,10 +93,10 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'puppet_enterprise::profile::database::shared_buffers'                => '2048MB',
         'puppet_enterprise::puppetdb::command_processing_threads'             => 1,
         'puppet_enterprise::master::puppetserver::jruby_max_active_instances' => 2,
-        'puppet_enterprise::profile::master::java_args'                       => { 'Xms' => '1024m', 'Xmx' => '1024m' },
-        'puppet_enterprise::profile::puppetdb::java_args'                     => { 'Xms' => '512m',  'Xmx' => '512m' },
-        'puppet_enterprise::profile::console::java_args'                      => { 'Xms' => '512m',  'Xmx' => '512m' },
-        'puppet_enterprise::profile::orchestrator::java_args'                 => { 'Xms' => '512m',  'Xmx' => '512m' },
+        'puppet_enterprise::profile::master::java_args'                       => { 'Xms' => '1024m', 'Xmx' => '1024m', 'XX:+UseG1GC' => '' },
+        'puppet_enterprise::profile::puppetdb::java_args'                     => { 'Xms' => '512m',  'Xmx' => '512m',  'XX:+UseG1GC' => '' },
+        'puppet_enterprise::profile::console::java_args'                      => { 'Xms' => '512m',  'Xmx' => '512m',  'XX:+UseG1GC' => '' },
+        'puppet_enterprise::profile::orchestrator::java_args'                 => { 'Xms' => '512m',  'Xmx' => '512m',  'XX:+UseG1GC' => '' },
         'puppet_enterprise::profile::amq::broker::heap_mb'                    => 512,
       }
       totals = {
@@ -147,10 +147,10 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'puppet_enterprise::profile::database::shared_buffers'                => '3840MB',
         'puppet_enterprise::puppetdb::command_processing_threads'             => 2,
         'puppet_enterprise::master::puppetserver::jruby_max_active_instances' => 5,
-        'puppet_enterprise::profile::master::java_args'                       => { 'Xms' => '3840m', 'Xmx' => '3840m' },
-        'puppet_enterprise::profile::puppetdb::java_args'                     => { 'Xms' => '1152m', 'Xmx' => '1152m' },
-        'puppet_enterprise::profile::console::java_args'                      => { 'Xms' => '768m',  'Xmx' => '768m' },
-        'puppet_enterprise::profile::orchestrator::java_args'                 => { 'Xms' => '768m',  'Xmx' => '768m' },
+        'puppet_enterprise::profile::master::java_args'                       => { 'Xms' => '3840m', 'Xmx' => '3840m', 'XX:+UseG1GC' => '' },
+        'puppet_enterprise::profile::puppetdb::java_args'                     => { 'Xms' => '1152m', 'Xmx' => '1152m', 'XX:+UseG1GC' => '' },
+        'puppet_enterprise::profile::console::java_args'                      => { 'Xms' => '768m',  'Xmx' => '768m',  'XX:+UseG1GC' => '' },
+        'puppet_enterprise::profile::orchestrator::java_args'                 => { 'Xms' => '768m',  'Xmx' => '768m',  'XX:+UseG1GC' => '' },
         'puppet_enterprise::profile::amq::broker::heap_mb'                    => 1024,
       }
       totals = {
@@ -201,10 +201,10 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'puppet_enterprise::profile::database::shared_buffers'                => '7936MB',
         'puppet_enterprise::puppetdb::command_processing_threads'             => 4,
         'puppet_enterprise::master::puppetserver::jruby_max_active_instances' => 11,
-        'puppet_enterprise::profile::master::java_args'                       => { 'Xms' => '11264m', 'Xmx' => '11264m' },
-        'puppet_enterprise::profile::puppetdb::java_args'                     => { 'Xms' => '2380m',  'Xmx' => '2380m' },
-        'puppet_enterprise::profile::console::java_args'                      => { 'Xms' => '1024m',  'Xmx' => '1024m' },
-        'puppet_enterprise::profile::orchestrator::java_args'                 => { 'Xms' => '1024m',  'Xmx' => '1024m' },
+        'puppet_enterprise::profile::master::java_args'                       => { 'Xms' => '11264m', 'Xmx' => '11264m', 'XX:+UseG1GC' => '' },
+        'puppet_enterprise::profile::puppetdb::java_args'                     => { 'Xms' => '2380m',  'Xmx' => '2380m',  'XX:+UseG1GC' => '' },
+        'puppet_enterprise::profile::console::java_args'                      => { 'Xms' => '1024m',  'Xmx' => '1024m',  'XX:+UseG1GC' => '' },
+        'puppet_enterprise::profile::orchestrator::java_args'                 => { 'Xms' => '1024m',  'Xmx' => '1024m',  'XX:+UseG1GC' => '' },
         'puppet_enterprise::profile::amq::broker::heap_mb'                    => 2048,
       }
       totals = {
@@ -255,10 +255,10 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'puppet_enterprise::profile::database::shared_buffers'                => '2048MB',
         'puppet_enterprise::puppetdb::command_processing_threads'             => 2,
         'puppet_enterprise::master::puppetserver::jruby_max_active_instances' => 2,
-        'puppet_enterprise::profile::master::java_args'                       => { 'Xms' => '1024m', 'Xmx' => '1024m' },
-        'puppet_enterprise::profile::puppetdb::java_args'                     => { 'Xms' => '1024m', 'Xmx' => '1024m' },
-        'puppet_enterprise::profile::console::java_args'                      => { 'Xms' => '512m',  'Xmx' => '512m' },
-        'puppet_enterprise::profile::orchestrator::java_args'                 => { 'Xms' => '512m',  'Xmx' => '512m' },
+        'puppet_enterprise::profile::master::java_args'                       => { 'Xms' => '1024m', 'Xmx' => '1024m', 'XX:+UseG1GC' => '' },
+        'puppet_enterprise::profile::puppetdb::java_args'                     => { 'Xms' => '1024m', 'Xmx' => '1024m', 'XX:+UseG1GC' => '' },
+        'puppet_enterprise::profile::console::java_args'                      => { 'Xms' => '512m',  'Xmx' => '512m',  'XX:+UseG1GC' => '' },
+        'puppet_enterprise::profile::orchestrator::java_args'                 => { 'Xms' => '512m',  'Xmx' => '512m',  'XX:+UseG1GC' => '' },
         'puppet_enterprise::profile::amq::broker::heap_mb'                    => 512,
       }
       totals = {
@@ -308,10 +308,10 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       params = {
         'puppet_enterprise::puppetdb::command_processing_threads'             => 2,
         'puppet_enterprise::master::puppetserver::jruby_max_active_instances' => 2,
-        'puppet_enterprise::profile::master::java_args'                       => { 'Xms' => '1024m', 'Xmx' => '1024m' },
-        'puppet_enterprise::profile::puppetdb::java_args'                     => { 'Xms' => '1433m', 'Xmx' => '1433m' },
-        'puppet_enterprise::profile::console::java_args'                      => { 'Xms' => '512m',  'Xmx' => '512m' },
-        'puppet_enterprise::profile::orchestrator::java_args'                 => { 'Xms' => '512m',  'Xmx' => '512m' },
+        'puppet_enterprise::profile::master::java_args'                       => { 'Xms' => '1024m', 'Xmx' => '1024m', 'XX:+UseG1GC' => '' },
+        'puppet_enterprise::profile::puppetdb::java_args'                     => { 'Xms' => '1433m', 'Xmx' => '1433m', 'XX:+UseG1GC' => '' },
+        'puppet_enterprise::profile::console::java_args'                      => { 'Xms' => '512m',  'Xmx' => '512m',  'XX:+UseG1GC' => '' },
+        'puppet_enterprise::profile::orchestrator::java_args'                 => { 'Xms' => '512m',  'Xmx' => '512m',  'XX:+UseG1GC' => '' },
         'puppet_enterprise::profile::amq::broker::heap_mb'                    => 512,
       }
       totals = {
@@ -362,8 +362,8 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
 
       params = {
         'puppet_enterprise::master::puppetserver::jruby_max_active_instances' => 3,
-        'puppet_enterprise::profile::master::java_args'                       => { 'Xms' => '1536m', 'Xmx' => '1536m' },
-        'puppet_enterprise::profile::orchestrator::java_args'                 => { 'Xms' => '512m',  'Xmx' => '512m' },
+        'puppet_enterprise::profile::master::java_args'                       => { 'Xms' => '1536m', 'Xmx' => '1536m', 'XX:+UseG1GC' => '' },
+        'puppet_enterprise::profile::orchestrator::java_args'                 => { 'Xms' => '512m',  'Xmx' => '512m',  'XX:+UseG1GC' => '' },
       }
       totals = {
         'CPU'          => { 'total' => 4,    'used' => 3 },
@@ -383,7 +383,7 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       node = { 'resources' => resources, 'infrastructure' => {}, 'type' => {}, 'classes' => {} }
 
       params = {
-        'puppet_enterprise::profile::console::java_args' => { 'Xms' => '4096m', 'Xmx' => '4096m' },
+        'puppet_enterprise::profile::console::java_args' => { 'Xms' => '4096m', 'Xmx' => '4096m', 'XX:+UseG1GC' => '' },
       }
       totals = {
         'CPU' => { 'total' => 4,    'used' => 0 },
@@ -411,7 +411,7 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
 
       params = {
         'puppet_enterprise::puppetdb::command_processing_threads'      => 2,
-        'puppet_enterprise::profile::puppetdb::java_args'              => { 'Xms' => '1280m', 'Xmx' => '1280m' },
+        'puppet_enterprise::profile::puppetdb::java_args'              => { 'Xms' => '1280m', 'Xmx' => '1280m', 'XX:+UseG1GC' => '' },
         'puppet_enterprise::profile::database::shared_buffers'         => '2048MB',
         'puppet_enterprise::profile::database::autovacuum_max_workers' => 3,
         'puppet_enterprise::profile::database::autovacuum_work_mem'    => '341MB',
@@ -444,7 +444,7 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
 
       params = {
         'puppet_enterprise::puppetdb::command_processing_threads' => 2,
-        'puppet_enterprise::profile::puppetdb::java_args'         => { 'Xms' => '3584m', 'Xmx' => '3584m' },
+        'puppet_enterprise::profile::puppetdb::java_args'         => { 'Xms' => '3584m', 'Xmx' => '3584m', 'XX:+UseG1GC' => '' },
       }
       totals = {
         'CPU' => { 'total' => 4, 'used' => 2 },
@@ -484,7 +484,7 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
 
       params = {
         'puppet_enterprise::master::puppetserver::jruby_max_active_instances' => 7,
-        'puppet_enterprise::profile::master::java_args'                       => { 'Xms' => '5376m', 'Xmx' => '5376m' },
+        'puppet_enterprise::profile::master::java_args'                       => { 'Xms' => '5376m', 'Xmx' => '5376m', 'XX:+UseG1GC' => '' },
       }
       totals = {
         'CPU'          => { 'total' => 8,    'used' => 7 },
@@ -522,9 +522,9 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
 
       params = {
         'puppet_enterprise::puppetdb::command_processing_threads'             => 4,
-        'puppet_enterprise::profile::puppetdb::java_args'                     => { 'Xms' => '3174m', 'Xmx' => '3174m' },
+        'puppet_enterprise::profile::puppetdb::java_args'                     => { 'Xms' => '3174m',  'Xmx' => '3174m',  'XX:+UseG1GC' => '' },
         'puppet_enterprise::master::puppetserver::jruby_max_active_instances' => 11,
-        'puppet_enterprise::profile::master::java_args'                       => { 'Xms' => '11264m', 'Xmx' => '11264m' },
+        'puppet_enterprise::profile::master::java_args'                       => { 'Xms' => '11264m', 'Xmx' => '11264m', 'XX:+UseG1GC' => '' },
       }
       totals = {
         'CPU'          => { 'total' => 16,    'used' => 15 },
@@ -597,9 +597,9 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'puppet_enterprise::puppetdb::write_maximum_pool_size'                => 2,
         'puppet_enterprise::puppetdb::read_maximum_pool_size'                 => 4,
         'puppet_enterprise::profile::puppetdb::gc_interval'                   => 0,
-        'puppet_enterprise::profile::puppetdb::java_args'                     => { 'Xms' => '716m', 'Xmx' => '716m' },
+        'puppet_enterprise::profile::puppetdb::java_args'                     => { 'Xms' => '716m',  'Xmx' => '716m',  'XX:+UseG1GC' => '' },
         'puppet_enterprise::master::puppetserver::jruby_max_active_instances' => 2,
-        'puppet_enterprise::profile::master::java_args'                       => { 'Xms' => '1024m', 'Xmx' => '1024m' },
+        'puppet_enterprise::profile::master::java_args'                       => { 'Xms' => '1024m', 'Xmx' => '1024m', 'XX:+UseG1GC' => '' },
       }
       totals = {
         'CPU'          => { 'total' => 4,     'used' => 3 },
@@ -641,9 +641,9 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'puppet_enterprise::puppetdb::write_maximum_pool_size'                => 4,
         'puppet_enterprise::puppetdb::read_maximum_pool_size'                 => 8,
         'puppet_enterprise::profile::puppetdb::gc_interval'                   => 0,
-        'puppet_enterprise::profile::puppetdb::java_args'                     => { 'Xms' => '1536m', 'Xmx' => '1536m' },
+        'puppet_enterprise::profile::puppetdb::java_args'                     => { 'Xms' => '1536m', 'Xmx' => '1536m', 'XX:+UseG1GC' => '' },
         'puppet_enterprise::master::puppetserver::jruby_max_active_instances' => 5,
-        'puppet_enterprise::profile::master::java_args'                       => { 'Xms' => '3840m', 'Xmx' => '3840m' },
+        'puppet_enterprise::profile::master::java_args'                       => { 'Xms' => '3840m', 'Xmx' => '3840m', 'XX:+UseG1GC' => '' },
       }
       totals = {
         'CPU'          => { 'total' => 8,     'used' => 7 },
@@ -685,9 +685,9 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'puppet_enterprise::puppetdb::write_maximum_pool_size'                => 6,
         'puppet_enterprise::puppetdb::read_maximum_pool_size'                 => 12,
         'puppet_enterprise::profile::puppetdb::gc_interval'                   => 0,
-        'puppet_enterprise::profile::puppetdb::java_args'                     => { 'Xms' => '3174m', 'Xmx' => '3174m' },
+        'puppet_enterprise::profile::puppetdb::java_args'                     => { 'Xms' => '3174m',  'Xmx' => '3174m',  'XX:+UseG1GC' => '' },
         'puppet_enterprise::master::puppetserver::jruby_max_active_instances' => 11,
-        'puppet_enterprise::profile::master::java_args'                       => { 'Xms' => '11264m', 'Xmx' => '11264m' },
+        'puppet_enterprise::profile::master::java_args'                       => { 'Xms' => '11264m', 'Xmx' => '11264m', 'XX:+UseG1GC' => '' },
       }
       totals = {
         'CPU'          => { 'total' => 16,    'used' => 14 },

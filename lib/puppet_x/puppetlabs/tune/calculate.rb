@@ -144,7 +144,7 @@ module PuppetX
 
             ram_puppetdb = calculate_ram(node['resources']['ram'], settings['totals']['RAM']['used'], percent_ram_puppetdb, minimum_ram_puppetdb, maximum_ram_puppetdb)
             return unless ram_puppetdb
-            settings['params']['puppet_enterprise::profile::puppetdb::java_args'] = { 'Xms' => "#{ram_puppetdb}m", 'Xmx' => "#{ram_puppetdb}m" }
+            settings['params']['puppet_enterprise::profile::puppetdb::java_args'] = { 'Xms' => "#{ram_puppetdb}m", 'Xmx' => "#{ram_puppetdb}m", 'XX:+UseG1GC' => '' }
             settings['totals']['RAM']['used'] += ram_puppetdb
           end
 
@@ -163,7 +163,7 @@ module PuppetX
 
           ram_jrubies = (jruby_max_active_instances * ram_per_puppetserver_jruby)
           ram_puppetserver = [ram_jrubies, minimum_ram_puppetserver].max
-          settings['params']['puppet_enterprise::profile::master::java_args'] = { 'Xms' => "#{ram_puppetserver}m", 'Xmx' => "#{ram_puppetserver}m" }
+          settings['params']['puppet_enterprise::profile::master::java_args'] = { 'Xms' => "#{ram_puppetserver}m", 'Xmx' => "#{ram_puppetserver}m", 'XX:+UseG1GC' => '' }
           settings['totals']['RAM']['used'] += ram_puppetserver
 
           if node['type']['with_jruby9k_enabled']
@@ -177,12 +177,12 @@ module PuppetX
           end
 
           if node['classes']['console']
-            settings['params']['puppet_enterprise::profile::console::java_args'] = { 'Xms' => "#{ram_console}m", 'Xmx' => "#{ram_console}m" }
+            settings['params']['puppet_enterprise::profile::console::java_args'] = { 'Xms' => "#{ram_console}m", 'Xmx' => "#{ram_console}m", 'XX:+UseG1GC' => '' }
             settings['totals']['RAM']['used'] += ram_console
           end
 
           if node['classes']['orchestrator']
-            settings['params']['puppet_enterprise::profile::orchestrator::java_args'] = { 'Xms' => "#{ram_orchestrator}m", 'Xmx' => "#{ram_orchestrator}m" }
+            settings['params']['puppet_enterprise::profile::orchestrator::java_args'] = { 'Xms' => "#{ram_orchestrator}m", 'Xmx' => "#{ram_orchestrator}m", 'XX:+UseG1GC' => '' }
             settings['totals']['RAM']['used'] += ram_orchestrator
           end
 
@@ -208,7 +208,7 @@ module PuppetX
 
           ram_console = calculate_ram(node['resources']['ram'], settings['totals']['RAM']['used'], percent_ram_console, minimum_ram_console, maximum_ram_console)
           return unless ram_console
-          settings['params']['puppet_enterprise::profile::console::java_args'] = { 'Xms' => "#{ram_console}m", 'Xmx' => "#{ram_console}m" }
+          settings['params']['puppet_enterprise::profile::console::java_args'] = { 'Xms' => "#{ram_console}m", 'Xmx' => "#{ram_console}m", 'XX:+UseG1GC' => '' }
           settings['totals']['RAM']['used'] += ram_console
 
           settings
@@ -242,7 +242,7 @@ module PuppetX
 
           ram_puppetdb = calculate_ram(node['resources']['ram'], settings['totals']['RAM']['used'], percent_ram_puppetdb, minimum_ram_puppetdb, maximum_ram_puppetdb)
           return unless ram_puppetdb
-          settings['params']['puppet_enterprise::profile::puppetdb::java_args'] = { 'Xms' => "#{ram_puppetdb}m", 'Xmx' => "#{ram_puppetdb}m" }
+          settings['params']['puppet_enterprise::profile::puppetdb::java_args'] = { 'Xms' => "#{ram_puppetdb}m", 'Xmx' => "#{ram_puppetdb}m", 'XX:+UseG1GC' => '' }
           settings['totals']['RAM']['used'] += ram_puppetdb
 
           settings
