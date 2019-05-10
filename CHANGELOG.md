@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+# 2.4.1
+
+- Do not output settings to stdout when outputting to files.
+- Disable puppetdb garbage collection on compile masters.
+- Add UseG1G.
+- Support 2 CPU / 6 GB systems.
+
 # 2.4.0
 
 - Add flag to write to pe.conf.
