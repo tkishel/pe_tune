@@ -273,19 +273,19 @@ describe PuppetX::Puppetlabs::Tune do
     it 'can enforce minimum system requirements' do
       tune.instance_variable_set(:@options, :force => false)
 
-      resources = { 'cpu' => 3, 'ram' => 8192 }
+      resources = { 'cpu' => 1, 'ram' => 4096 }
       expect(tune::meets_minimum_system_requirements?(resources)).to eq(false)
 
-      resources = { 'cpu' => 4, 'ram' => 4096 }
+      resources = { 'cpu' => 2, 'ram' => 4096 }
       expect(tune::meets_minimum_system_requirements?(resources)).to eq(false)
 
-      resources = { 'cpu' => 4, 'ram' => 8192 }
+      resources = { 'cpu' => 2, 'ram' => 6144 }
       expect(tune::meets_minimum_system_requirements?(resources)).to eq(true)
     end
 
     it 'can disable minimum system requirements' do
       tune.instance_variable_set(:@options, :force => true)
-      resources = { 'cpu' => 3, 'ram' => 8191 }
+      resources = { 'cpu' => 1, 'ram' => 4096 }
 
       expect(tune::meets_minimum_system_requirements?(resources)).to eq(true)
     end
