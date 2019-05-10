@@ -765,8 +765,8 @@ module PuppetX
 
       def meets_minimum_system_requirements?(resources)
         return true if @options[:force]
-        # Round down (8192 -> 7680) to mirror fit_to_memory_percentage in calculate.rb.
-        resources['cpu'] >= 4 && resources['ram'] >= 7680
+        # Round down (6144 -> 5678) account for vm overhead; see also fit_to_memory_percentage in calculate.rb.
+        resources['cpu'] >= 2 && resources['ram'] >= 5678
       end
 
       # Versions
