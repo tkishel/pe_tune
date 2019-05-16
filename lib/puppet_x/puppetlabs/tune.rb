@@ -9,7 +9,7 @@
 #   puppet_enterprise::profile::database::effective_cache_size
 #
 # It accepts the following overrides via ENV:
-#   export TEST_CPU=8; export TEST_RAM=16384;
+#   export TEST_CPU=2; export TEST_RAM=6144;
 # These are necessary to accomodate manual testing and pe_acceptance_tests/acceptance/tests/faces/infrastructure/tune.rb.
 
 module PuppetX
