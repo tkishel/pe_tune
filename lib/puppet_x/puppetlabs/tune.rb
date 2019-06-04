@@ -163,28 +163,26 @@ module PuppetX
         @current_collected_nodes.each do |certname, current_node|
           optimized_node = @collected_nodes[certname]
           if current_node['settings']['params'].empty?
-            output _('No defined settings to compare for %{role} %{certname}') % { role: optimized_node['role'], certname: certname }
+            output _('No currently defined settings to compare for %{role} %{certname}') % { role: optimized_node['role'], certname: certname }
             next
           end
           differences = ''
           optimized_node['settings']['params'].each do |param, _value|
             if param.end_with?('::java_args')
-              cur_gc = current_node['settings']['params'][param].key?('XX:+UseG1GC') ? 'XX:+UseG1GC' : ''
-              opt_gc = optimized_node['settings']['params'][param].key?('XX:+UseG1GC') ? 'XX:+UseG1GC' : ''
-              cur = "Xmx: #{current_node['settings']['params'][param]['Xmx']}\tXms: #{current_node['settings']['params'][param]['Xms']}\t#{cur_gc}"
-              opt = "Xmx: #{optimized_node['settings']['params'][param]['Xmx']}\tXms: #{optimized_node['settings']['params'][param]['Xms']}\t#{opt_gc}"
+              cur = "Xmx: #{current_node['settings']['params'][param]['Xmx']}\tXms: #{current_node['settings']['params'][param]['Xms']}"
+              opt = "Xmx: #{optimized_node['settings']['params'][param]['Xmx']}\tXms: #{optimized_node['settings']['params'][param]['Xms']}"
             else
               cur = current_node['settings']['params'][param]
               opt = optimized_node['settings']['params'][param]
             end
             unless cur == opt
-              differences << "#{param}\n  defined:\t#{cur}\n  optimized:\t#{opt}\n\n"
+              differences << "#{param}\n  current:\t#{cur}\n  optimized:\t#{opt}\n\n"
             end
           end
           if differences.empty?
-            output _('Defined and optimized settings match for %{role} %{certname}') % { role: optimized_node['role'], certname: certname }
+            output _('Currently defined and optimized settings match for %{role} %{certname}') % { role: optimized_node['role'], certname: certname }
           else
-            output _('Defined and optimized settings vary for %{role} %{certname}') % { role: optimized_node['role'], certname: certname }
+            output _('Currently defined and optimized settings vary for %{role} %{certname}') % { role: optimized_node['role'], certname: certname }
             output_line
             output_data(differences.chomp)
           end
