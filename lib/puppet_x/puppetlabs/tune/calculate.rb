@@ -255,7 +255,7 @@ module PuppetX
           settings['params']['puppet_enterprise::profile::database::shared_buffers'] = "#{ram_database}MB"
           settings['totals']['RAM']['used'] += ram_database
 
-          cpu_autovacuum_max_workers = calculate_cpu(node['resources']['cpu'], 0, percent_cpu_autovacuum_max_workers, minimum_cpu_autovacuum_max_workers, maximum_cpu_autovacuum_max_workers)
+          cpu_autovacuum_max_workers = percent_value_within_min_max(percent_cpu_autovacuum_max_workers, maximum_cpu_autovacuum_max_workers, minimum_cpu_autovacuum_max_workers, maximum_cpu_autovacuum_max_workers)
           ram_maintenance_work_mem   = [maximum_ram_maintenance_work_mem, (node['resources']['ram'] / maintenance_work_mem_divisor).to_i].min
           ram_autovacuum_work_mem    = (ram_maintenance_work_mem / cpu_autovacuum_max_workers).to_i
 
@@ -367,7 +367,7 @@ module PuppetX
         def fit_to_memory(memory, small, medium, large)
           # Round up to the nearest power of two (31500 -> 32768) if within a percentage.
           target_memory = nearest_power_of_two(memory)
-          if within_percent?(memory, target_memory, @defaults[:fit_to_memory_percentage])
+          if (memory < target_memory) && within_percent?(memory, target_memory, @defaults[:fit_to_memory_percentage])
             Puppet.debug("Rounding #{memory} up to #{target_memory} for fit_to_memory")
             memory = target_memory
           end
