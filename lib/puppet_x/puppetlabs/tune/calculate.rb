@@ -246,7 +246,7 @@ module PuppetX
           maintenance_work_mem_divisor       = 3.0 # Divide by 3 if External or Split, as opposed to 8 if Monolithic.
           maximum_ram_maintenance_work_mem   = 1024
           double_default_max_connections     = 1000
-          double_default_work_mem            = '8MB'
+          double_default_work_mem            = 8
 
           settings = initialize_settings(node)
 
@@ -265,7 +265,8 @@ module PuppetX
           settings['params']['puppet_enterprise::profile::database::autovacuum_work_mem']    = "#{ram_autovacuum_work_mem}MB"
           settings['params']['puppet_enterprise::profile::database::maintenance_work_mem']   = "#{ram_maintenance_work_mem}MB"
           settings['params']['puppet_enterprise::profile::database::max_connections']        = double_default_max_connections
-          settings['params']['puppet_enterprise::profile::database::work_mem']               = double_default_work_mem
+          settings['params']['puppet_enterprise::profile::database::work_mem']               = "#{double_default_work_mem}MB"
+          settings['params']['puppet_enterprise::profile::database::log_temp_files']         = double_default_work_mem * 1024
 
           settings
         end

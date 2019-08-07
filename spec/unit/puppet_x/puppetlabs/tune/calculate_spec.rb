@@ -418,6 +418,7 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'puppet_enterprise::profile::database::maintenance_work_mem'   => '1024MB',
         'puppet_enterprise::profile::database::max_connections'        => 1000,
         'puppet_enterprise::profile::database::work_mem'               => '8MB',
+        'puppet_enterprise::profile::database::log_temp_files'         => 8192,
       }
       totals = {
         'CPU' => { 'total' => 4,    'used' => 2 },
@@ -555,6 +556,7 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'puppet_enterprise::profile::database::maintenance_work_mem'   => '1024MB',
         'puppet_enterprise::profile::database::max_connections'        => 1000,
         'puppet_enterprise::profile::database::work_mem'               => '8MB',
+        'puppet_enterprise::profile::database::log_temp_files'         => 8192,
       }
       totals = {
         'CPU' => { 'total' => 4,    'used' => 0 },
@@ -718,6 +720,7 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'puppet_enterprise::profile::database::maintenance_work_mem'   => '1024MB',
         'puppet_enterprise::profile::database::max_connections'        => 1000,
         'puppet_enterprise::profile::database::work_mem'               => '8MB',
+        'puppet_enterprise::profile::database::log_temp_files'         => 8192,
       }
       totals = {
         'CPU' => { 'total' => 4,    'used' => 0 },

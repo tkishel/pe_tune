@@ -54,6 +54,7 @@ def calculate_database_settings(node)
   settings['params']['puppet_enterprise::profile::database::log_temp_files']         = log_temp_files
   settings['params']['puppet_enterprise::profile::database::maintenance_work_mem']   = "#{ram_maintenance_work_mem}MB"
   settings['params']['puppet_enterprise::profile::database::work_mem']               = "#{ram_work_mem}MB"
+  settings['params']['puppet_enterprise::profile::database::log_temp_files']         = ram_work_mem * 1024
 
   settings
 end
