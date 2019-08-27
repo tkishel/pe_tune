@@ -9,6 +9,11 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
   # Allows mergeups from PE 2018 LTS to STS. Revisit after PE 2018 is EOL.
   pe_2019_or_newer = Gem::Version.new(Puppet.version) >= Gem::Version.new('6.0.0')
 
+  pe_2019_2_or_newer = Gem::Version.new(Puppet.version) >= Gem::Version.new('6.8.0')
+
+  ram_per_jruby_code_cache = 128
+  minimum_ram_allocation = 512
+
   context 'with a monolithic infrastructure' do
     it 'can calculate master host settings, in vmpooler' do
       resources = {
@@ -39,24 +44,24 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'puppet_enterprise::profile::database::shared_buffers'                => '2048MB',
         'puppet_enterprise::puppetdb::command_processing_threads'             => 1,
         'puppet_enterprise::master::puppetserver::jruby_max_active_instances' => 1,
-        'puppet_enterprise::profile::master::java_args'                       => { 'Xms' => '512m', 'Xmx' => '512m' },
-        'puppet_enterprise::profile::puppetdb::java_args'                     => { 'Xms' => '512m', 'Xmx' => '512m' },
-        'puppet_enterprise::profile::console::java_args'                      => { 'Xms' => '512m', 'Xmx' => '512m' },
-        'puppet_enterprise::profile::orchestrator::java_args'                 => { 'Xms' => '512m', 'Xmx' => '512m' },
-        'puppet_enterprise::profile::amq::broker::heap_mb'                    => 512,
+        'puppet_enterprise::profile::master::java_args'                       => { 'Xms' => "#{minimum_ram_allocation}m", 'Xmx' => "#{minimum_ram_allocation}m" },
+        'puppet_enterprise::profile::puppetdb::java_args'                     => { 'Xms' => "#{minimum_ram_allocation}m", 'Xmx' => "#{minimum_ram_allocation}m" },
+        'puppet_enterprise::profile::console::java_args'                      => { 'Xms' => "#{minimum_ram_allocation}m", 'Xmx' => "#{minimum_ram_allocation}m" },
+        'puppet_enterprise::profile::orchestrator::java_args'                 => { 'Xms' => "#{minimum_ram_allocation}m", 'Xmx' => "#{minimum_ram_allocation}m" },
+        'puppet_enterprise::profile::amq::broker::heap_mb'                    => minimum_ram_allocation,
       }
       totals = {
         'CPU'          => { 'total' => 2,    'used' => 2 },
         'RAM'          => { 'total' => 6144, 'used' => 4608 },
-        'MB_PER_JRUBY' => 512,
+        'MB_PER_JRUBY' => minimum_ram_allocation,
       }
       settings = { 'params' => params, 'totals' => totals }
 
       if pe_2019_or_newer
         node['type']['with_jruby9k_enabled'] = true
         node['classes'].delete('amq::broker')
-        settings['params']['puppet_enterprise::master::puppetserver::reserved_code_cache'] = '512m'
-        settings['totals']['RAM']['used'] += 512
+        settings['params']['puppet_enterprise::master::puppetserver::reserved_code_cache'] = "#{minimum_ram_allocation}m"
+        settings['totals']['RAM']['used'] += minimum_ram_allocation
         settings['totals']['RAM']['used'] -= settings['params']['puppet_enterprise::profile::amq::broker::heap_mb']
         settings['params'].delete('puppet_enterprise::profile::amq::broker::heap_mb')
       end
@@ -94,23 +99,23 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'puppet_enterprise::puppetdb::command_processing_threads'             => 1,
         'puppet_enterprise::master::puppetserver::jruby_max_active_instances' => 2,
         'puppet_enterprise::profile::master::java_args'                       => { 'Xms' => '1024m', 'Xmx' => '1024m' },
-        'puppet_enterprise::profile::puppetdb::java_args'                     => { 'Xms' => '512m',  'Xmx' => '512m' },
-        'puppet_enterprise::profile::console::java_args'                      => { 'Xms' => '512m',  'Xmx' => '512m' },
-        'puppet_enterprise::profile::orchestrator::java_args'                 => { 'Xms' => '512m',  'Xmx' => '512m' },
-        'puppet_enterprise::profile::amq::broker::heap_mb'                    => 512,
+        'puppet_enterprise::profile::puppetdb::java_args'                     => { 'Xms' => "#{minimum_ram_allocation}m", 'Xmx' => "#{minimum_ram_allocation}m" },
+        'puppet_enterprise::profile::console::java_args'                      => { 'Xms' => "#{minimum_ram_allocation}m", 'Xmx' => "#{minimum_ram_allocation}m" },
+        'puppet_enterprise::profile::orchestrator::java_args'                 => { 'Xms' => "#{minimum_ram_allocation}m", 'Xmx' => "#{minimum_ram_allocation}m" },
+        'puppet_enterprise::profile::amq::broker::heap_mb'                    => minimum_ram_allocation,
       }
       totals = {
         'CPU'          => { 'total' => 4,    'used' => 3 },
         'RAM'          => { 'total' => 8192, 'used' => 5120 },
-        'MB_PER_JRUBY' => 512,
+        'MB_PER_JRUBY' => minimum_ram_allocation,
       }
       settings = { 'params' => params, 'totals' => totals }
 
       if pe_2019_or_newer
         node['type']['with_jruby9k_enabled'] = true
         node['classes'].delete('amq::broker')
-        settings['params']['puppet_enterprise::master::puppetserver::reserved_code_cache'] = '512m'
-        settings['totals']['RAM']['used'] += 512
+        settings['params']['puppet_enterprise::master::puppetserver::reserved_code_cache'] = "#{minimum_ram_allocation}m"
+        settings['totals']['RAM']['used'] += minimum_ram_allocation
         settings['totals']['RAM']['used'] -= settings['params']['puppet_enterprise::profile::amq::broker::heap_mb']
         settings['params'].delete('puppet_enterprise::profile::amq::broker::heap_mb')
       end
@@ -163,8 +168,9 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       if pe_2019_or_newer
         node['type']['with_jruby9k_enabled'] = true
         node['classes'].delete('amq::broker')
-        settings['params']['puppet_enterprise::master::puppetserver::reserved_code_cache'] = '640m'
-        settings['totals']['RAM']['used'] += 640
+        reserved_code_cache = settings['params']['puppet_enterprise::master::puppetserver::jruby_max_active_instances'] * ram_per_jruby_code_cache
+        settings['params']['puppet_enterprise::master::puppetserver::reserved_code_cache'] = "#{reserved_code_cache}m"
+        settings['totals']['RAM']['used'] += reserved_code_cache
         settings['totals']['RAM']['used'] -= settings['params']['puppet_enterprise::profile::amq::broker::heap_mb']
         settings['params'].delete('puppet_enterprise::profile::amq::broker::heap_mb')
       end
@@ -172,7 +178,7 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       expect(calculator::calculate_master_settings(node)).to eq(settings)
     end
 
-    it 'can calculate master host settings, server size large' do
+    it 'can calculate master host settings, server size large, with and without orchestrator jruby' do
       resources = {
         'cpu' => 16,
         'ram' => 32768,
@@ -217,8 +223,18 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       if pe_2019_or_newer
         node['type']['with_jruby9k_enabled'] = true
         node['classes'].delete('amq::broker')
-        settings['params']['puppet_enterprise::master::puppetserver::reserved_code_cache'] = '1408m'
-        settings['totals']['RAM']['used'] += 1408
+        if pe_2019_2_or_newer
+          node['type']['with_orchestrator_jruby'] = true
+          settings['params']['puppet_enterprise::master::puppetserver::jruby_max_active_instances'] -= 1
+          reserved_code_cache = settings['params']['puppet_enterprise::master::puppetserver::jruby_max_active_instances'] * ram_per_jruby_code_cache
+          settings['params']['puppet_enterprise::master::puppetserver::reserved_code_cache'] = "#{reserved_code_cache}m"
+          settings['params']['puppet_enterprise::profile::master::java_args']       = { 'Xms' => '10240m', 'Xmx' => '10240m' }
+          settings['params']['puppet_enterprise::profile::orchestrator::java_args'] = { 'Xms' => '2048m',  'Xmx' => '2048m' }
+        else
+          reserved_code_cache = settings['params']['puppet_enterprise::master::puppetserver::jruby_max_active_instances'] * ram_per_jruby_code_cache
+          settings['params']['puppet_enterprise::master::puppetserver::reserved_code_cache'] = "#{reserved_code_cache}m"
+        end
+        settings['totals']['RAM']['used'] += reserved_code_cache
         settings['totals']['RAM']['used'] -= settings['params']['puppet_enterprise::profile::amq::broker::heap_mb']
         settings['params'].delete('puppet_enterprise::profile::amq::broker::heap_mb')
       end
@@ -257,22 +273,22 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'puppet_enterprise::master::puppetserver::jruby_max_active_instances' => 2,
         'puppet_enterprise::profile::master::java_args'                       => { 'Xms' => '1024m', 'Xmx' => '1024m' },
         'puppet_enterprise::profile::puppetdb::java_args'                     => { 'Xms' => '1024m', 'Xmx' => '1024m' },
-        'puppet_enterprise::profile::console::java_args'                      => { 'Xms' => '512m',  'Xmx' => '512m' },
-        'puppet_enterprise::profile::orchestrator::java_args'                 => { 'Xms' => '512m',  'Xmx' => '512m' },
+        'puppet_enterprise::profile::console::java_args'                      => { 'Xms' => "#{minimum_ram_allocation}m", 'Xmx' => "#{minimum_ram_allocation}m" },
+        'puppet_enterprise::profile::orchestrator::java_args'                 => { 'Xms' => "#{minimum_ram_allocation}m", 'Xmx' => "#{minimum_ram_allocation}m" },
         'puppet_enterprise::profile::amq::broker::heap_mb'                    => 512,
       }
       totals = {
         'CPU'          => { 'total' => 4,    'used' => 4 },
         'RAM'          => { 'total' => 8192, 'used' => 5632 },
-        'MB_PER_JRUBY' => 512,
+        'MB_PER_JRUBY' => minimum_ram_allocation,
       }
       settings = { 'params' => params, 'totals' => totals }
 
       if pe_2019_or_newer
         node['type']['with_jruby9k_enabled'] = true
         node['classes'].delete('amq::broker')
-        settings['params']['puppet_enterprise::master::puppetserver::reserved_code_cache'] = '512m'
-        settings['totals']['RAM']['used'] += 512
+        settings['params']['puppet_enterprise::master::puppetserver::reserved_code_cache'] = "#{minimum_ram_allocation}m"
+        settings['totals']['RAM']['used'] += minimum_ram_allocation
         settings['totals']['RAM']['used'] -= settings['params']['puppet_enterprise::profile::amq::broker::heap_mb']
         settings['params'].delete('puppet_enterprise::profile::amq::broker::heap_mb')
       end
@@ -310,22 +326,22 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'puppet_enterprise::master::puppetserver::jruby_max_active_instances' => 2,
         'puppet_enterprise::profile::master::java_args'                       => { 'Xms' => '1024m', 'Xmx' => '1024m' },
         'puppet_enterprise::profile::puppetdb::java_args'                     => { 'Xms' => '1433m', 'Xmx' => '1433m' },
-        'puppet_enterprise::profile::console::java_args'                      => { 'Xms' => '512m',  'Xmx' => '512m' },
-        'puppet_enterprise::profile::orchestrator::java_args'                 => { 'Xms' => '512m',  'Xmx' => '512m' },
+        'puppet_enterprise::profile::console::java_args'                      => { 'Xms' => "#{minimum_ram_allocation}m", 'Xmx' => "#{minimum_ram_allocation}m" },
+        'puppet_enterprise::profile::orchestrator::java_args'                 => { 'Xms' => "#{minimum_ram_allocation}m", 'Xmx' => "#{minimum_ram_allocation}m" },
         'puppet_enterprise::profile::amq::broker::heap_mb'                    => 512,
       }
       totals = {
         'CPU'          => { 'total' => 4,    'used' => 4 },
         'RAM'          => { 'total' => 8192, 'used' => 3993 },
-        'MB_PER_JRUBY' => 512,
+        'MB_PER_JRUBY' => minimum_ram_allocation,
       }
       settings = { 'params' => params, 'totals' => totals }
 
       if pe_2019_or_newer
         node['type']['with_jruby9k_enabled'] = true
         node['classes'].delete('amq::broker')
-        settings['params']['puppet_enterprise::master::puppetserver::reserved_code_cache'] = '512m'
-        settings['totals']['RAM']['used'] += 512
+        settings['params']['puppet_enterprise::master::puppetserver::reserved_code_cache'] = "#{minimum_ram_allocation}m"
+        settings['totals']['RAM']['used'] += minimum_ram_allocation
         settings['totals']['RAM']['used'] -= settings['params']['puppet_enterprise::profile::amq::broker::heap_mb']
         settings['params'].delete('puppet_enterprise::profile::amq::broker::heap_mb')
       end
@@ -363,12 +379,12 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       params = {
         'puppet_enterprise::master::puppetserver::jruby_max_active_instances' => 3,
         'puppet_enterprise::profile::master::java_args'                       => { 'Xms' => '1536m', 'Xmx' => '1536m' },
-        'puppet_enterprise::profile::orchestrator::java_args'                 => { 'Xms' => '512m',  'Xmx' => '512m' },
+        'puppet_enterprise::profile::orchestrator::java_args'                 => { 'Xms' => "#{minimum_ram_allocation}m", 'Xmx' => "#{minimum_ram_allocation}m" },
       }
       totals = {
         'CPU'          => { 'total' => 4,    'used' => 3 },
         'RAM'          => { 'total' => 8192, 'used' => 2048 },
-        'MB_PER_JRUBY' => 512,
+        'MB_PER_JRUBY' => minimum_ram_allocation,
       }
       settings = { 'params' => params, 'totals' => totals }
 
@@ -523,7 +539,7 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
 
       params = {
         'puppet_enterprise::puppetdb::command_processing_threads'             => 4,
-        'puppet_enterprise::profile::puppetdb::java_args'                     => { 'Xms' => '3174m', 'Xmx' => '3174m' },
+        'puppet_enterprise::profile::puppetdb::java_args'                     => { 'Xms' => '3174m',  'Xmx' => '3174m' },
         'puppet_enterprise::master::puppetserver::jruby_max_active_instances' => 11,
         'puppet_enterprise::profile::master::java_args'                       => { 'Xms' => '11264m', 'Xmx' => '11264m' },
       }
@@ -599,14 +615,14 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'puppet_enterprise::puppetdb::write_maximum_pool_size'                => 2,
         'puppet_enterprise::puppetdb::read_maximum_pool_size'                 => 4,
         'puppet_enterprise::profile::puppetdb::gc_interval'                   => 0,
-        'puppet_enterprise::profile::puppetdb::java_args'                     => { 'Xms' => '716m', 'Xmx' => '716m' },
+        'puppet_enterprise::profile::puppetdb::java_args'                     => { 'Xms' => '716m',  'Xmx' => '716m' },
         'puppet_enterprise::master::puppetserver::jruby_max_active_instances' => 2,
         'puppet_enterprise::profile::master::java_args'                       => { 'Xms' => '1024m', 'Xmx' => '1024m' },
       }
       totals = {
         'CPU'          => { 'total' => 4,     'used' => 3 },
         'RAM'          => { 'total' => 8192, 'used' => 1740 },
-        'MB_PER_JRUBY' => 512,
+        'MB_PER_JRUBY' => minimum_ram_allocation,
       }
       settings = { 'params' => params, 'totals' => totals }
 

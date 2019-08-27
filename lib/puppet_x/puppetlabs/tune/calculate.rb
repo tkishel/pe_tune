@@ -39,7 +39,7 @@ module PuppetX
           minimum_ram_code_cache      = 512
           maximum_ram_code_cache      = 2048
           ram_per_jruby_code_cache    = 128
-          ram_puppetserver_code_cache = fit_to_memory(node['resources']['ram'], minimum_ram_code_cache, 1024, maximum_ram_code_cache)  # Estimate, prior to fit_to_jrubies.
+          ram_puppetserver_code_cache = fit_to_memory(node['resources']['ram'], minimum_ram_code_cache, 1024, maximum_ram_code_cache) # Estimate, prior to calculating jruby_max_active_instances.
           percent_ram_database        = 25
           minimum_ram_database        = fit_to_memory(node['resources']['ram'], 2048, 3072, 4096)
           maximum_ram_database        = 16384
@@ -50,6 +50,8 @@ module PuppetX
           ram_orchestrator            = fit_to_memory(node['resources']['ram'], 512, 768, 1024)
           ram_activemq                = fit_to_memory(node['resources']['ram'], 512, 1024, 2048)
           minimum_ram_os              = memory_reserved_for_os
+
+          settings = initialize_settings(node)
 
           # Use the specified value, if defined; or use the currently specified value, if defined.
 
@@ -83,6 +85,16 @@ module PuppetX
           maximum_cpu_threads = [minimum_cpu_threads, (node['resources']['cpu'] * (percent_cpu_threads * 0.01)).to_i].max
           maximum_cpu_jrubies = [minimum_cpu_jrubies, (node['resources']['cpu'] * (percent_cpu_jrubies * 0.01) - 1).to_i].max
 
+          # Reallocate resources between puppetserver and orchestrator, if orchestrator uses jrubies
+          # Orchestrator in 2019.2+ requires a core for its JRubies, and requires additional memory.
+
+          if node['classes']['orchestrator'] && node['type']['with_orchestrator_jruby']
+            maximum_cpu_jrubies = [maximum_cpu_jrubies - 1, 1].max
+            ram_orchestrator += ram_per_puppetserver_jruby
+            # This is a silent allocation.
+            settings['totals']['CPU']['used'] += 1
+          end
+
           # The Vegas Renormalization: allow for testing with vmpooler (2 CPU / 6 GB RAM) VMs.
           # Setting minimum_cpu_jrubies to 1 as a default above results in an unused core when CPU equals 3 or 4.
 
@@ -95,7 +107,7 @@ module PuppetX
 
           ram_puppetserver_code_cache = 0 unless node['type']['with_jruby9k_enabled']
 
-          settings = initialize_settings(node)
+          # Allocate.
 
           if node['classes']['database']
             ram_database = calculate_ram(node['resources']['ram'], settings['totals']['RAM']['used'], percent_ram_database, minimum_ram_database, maximum_ram_database)
@@ -141,8 +153,8 @@ module PuppetX
             return {}
           end
 
-          puppetserver_ram_by_ram_per_jruby = (available_ram_for_puppetserver / ram_per_puppetserver_jruby).to_i
-          jruby_max_active_instances = value_within_min_max(puppetserver_ram_by_ram_per_jruby, minimum_cpu_jrubies, maximum_cpu_jrubies)
+          jrubies_that_fit_in_available_ram_for_puppetserver = (available_ram_for_puppetserver / ram_per_puppetserver_jruby).to_i
+          jruby_max_active_instances = value_within_min_max(jrubies_that_fit_in_available_ram_for_puppetserver, minimum_cpu_jrubies, maximum_cpu_jrubies)
           settings['params']['puppet_enterprise::master::puppetserver::jruby_max_active_instances'] = jruby_max_active_instances
           settings['totals']['CPU']['used'] += jruby_max_active_instances
 
@@ -154,8 +166,8 @@ module PuppetX
           if node['type']['with_jruby9k_enabled']
             # Recalulate ram_puppetserver_code_cache estimate.
             unless ram_puppetserver_code_cache == 256
-              code_cache_by_ram_per_jruby = jruby_max_active_instances * ram_per_jruby_code_cache
-              ram_puppetserver_code_cache = value_within_min_max(code_cache_by_ram_per_jruby, minimum_ram_code_cache, maximum_ram_code_cache)
+              code_cache_based_upon_jrubies = jruby_max_active_instances * ram_per_jruby_code_cache
+              ram_puppetserver_code_cache = value_within_min_max(code_cache_based_upon_jrubies, minimum_ram_code_cache, maximum_ram_code_cache)
             end
             settings['params']['puppet_enterprise::master::puppetserver::reserved_code_cache'] = "#{ram_puppetserver_code_cache}m"
             settings['totals']['RAM']['used'] += ram_puppetserver_code_cache
@@ -259,7 +271,7 @@ module PuppetX
           ram_maintenance_work_mem   = [maximum_ram_maintenance_work_mem, (node['resources']['ram'] / maintenance_work_mem_divisor).to_i].min
           ram_autovacuum_work_mem    = (ram_maintenance_work_mem / cpu_autovacuum_max_workers).to_i
 
-          # The following settings are not steady-state allocations so are not added to settings['totals'].
+          # The following settings are not steady-state allocations, so are not added to settings['totals'].
 
           settings['params']['puppet_enterprise::profile::database::autovacuum_max_workers'] = cpu_autovacuum_max_workers
           settings['params']['puppet_enterprise::profile::database::autovacuum_work_mem']    = "#{ram_autovacuum_work_mem}MB"

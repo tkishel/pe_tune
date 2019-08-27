@@ -306,10 +306,11 @@ module PuppetX
         }
         node['resources'] = resources
         node['type'] = {
-          'is_monolithic_master' => monolithic_master?(certname),
-          'is_replica_master'    => replica_master?(certname),
-          'is_compile_master'    => compile_master?(certname),
-          'with_jruby9k_enabled' => with_jruby9k_enabled?(certname),
+          'is_monolithic_master'    => monolithic_master?(certname),
+          'is_replica_master'       => replica_master?(certname),
+          'is_compile_master'       => compile_master?(certname),
+          'with_jruby9k_enabled'    => with_jruby9k_enabled?(certname),
+          'with_orchestrator_jruby' => pe_2019_2_or_newer?,
         }
         node
       end
@@ -781,6 +782,10 @@ module PuppetX
 
       def pe_2019_or_newer?
         Gem::Version.new(Puppet.version) >= Gem::Version.new('6.0.0')
+      end
+
+      def pe_2019_2_or_newer?
+        Gem::Version.new(Puppet.version) >= Gem::Version.new('6.8.0')
       end
 
       # Convert (for example) 16, 16g, 16384m, 16777216k, or 17179869184b to 17179869184.

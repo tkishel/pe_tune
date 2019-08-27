@@ -11,7 +11,6 @@ describe PuppetX::Puppetlabs::Tune do
   subject(:tune) { described_class.new(:local => true) }
 
   # Allows mergeups from PE 2018 LTS to STS. Revisit after PE 2018 is EOL.
-  # pe_2018_or_newer = Gem::Version.new(Puppet.version) >= Gem::Version.new('5.5.0')
   pe_2019_or_newer = Gem::Version.new(Puppet.version) >= Gem::Version.new('6.0.0')
 
   before(:each) do
