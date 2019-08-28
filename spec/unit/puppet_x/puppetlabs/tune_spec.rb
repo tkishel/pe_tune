@@ -154,9 +154,9 @@ describe PuppetX::Puppetlabs::Tune do
     it 'can detect a replica master' do
       nodes = {
         'primary_masters' => ['master'],
+        'replica_masters' => ['replica'],
         'console_hosts'   => [],
         'puppetdb_hosts'  => [],
-        'replica_masters' => ['replica'],
       }
       tune.instance_variable_set(:@nodes_with_role, nodes)
 
@@ -172,23 +172,22 @@ describe PuppetX::Puppetlabs::Tune do
       expect(tune::compile_master?('compile')).to eq(true)
     end
 
-    it 'can detect an extra large architecture' do
+    it 'can detect a compiler' do
       nodes_with_class = {
-        'database' => ['master', 'replica', 'master-database', 'replica-database'],
-        'puppetdb' => ['master', 'replica', 'compile1', 'compile2']
+        'puppetdb' => ['master', 'compile1']
       }
       nodes = {
         'primary_masters' => ['master'],
+        'replica_masters' => [],
         'console_hosts'   => [],
-        'puppetdb_hosts'  => [],
-        'replica_masters' => ['replica'],
-        'compile_masters' => ['compile1', 'compile2'],
-        'database_hosts'  => ['master-database', 'replica-database'],
+        'compile_masters' => ['compile1'],
+        'puppetdb_hosts'  => ['compile1'],
+        'database_hosts'  => [],
       }
       tune.instance_variable_set(:@nodes_with_class, nodes_with_class)
       tune.instance_variable_set(:@nodes_with_role, nodes)
 
-      expect(tune::extra_large?).to eq(true)
+      expect(tune::with_compilers?).to eq(true)
     end
 
     it 'can detect a class on a host' do

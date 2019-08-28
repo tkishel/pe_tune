@@ -122,7 +122,7 @@ module PuppetX
 
       def output_infrastructure
         output_pe_infrastructure_error_and_exit if unknown_infrastructure?
-        output_pe_infrastucture_summary(monolithic?, with_compile_masters?, with_external_database?, extra_large?)
+        output_pe_infrastucture_summary(monolithic?, with_compile_masters?, with_compilers?, with_external_database?)
       end
 
       # Output current settings for each infrastructure node.
@@ -297,12 +297,11 @@ module PuppetX
         node = {}
         resources = resources_for_node(certname)
         output_minimum_system_requirements_error_and_exit(certname) unless meets_minimum_system_requirements?(resources)
-        node['certname'] = certname,
+        node['certname'] = certname
         node['classes'] = tunable_classes_for_node(certname)
         node['infrastructure'] = {
           'is_monolithic'        => monolithic?,
           'with_compile_masters' => with_compile_masters?,
-          'with_extra_large'     => extra_large?,
         }
         node['resources'] = resources
         node['type'] = {
@@ -524,12 +523,12 @@ module PuppetX
 
       # Output infrastucture information.
 
-      def output_pe_infrastucture_summary(is_monolithic, with_compile_masters, with_external_database, with_extra_large)
+      def output_pe_infrastucture_summary(is_monolithic, with_compile_masters, with_compilers, with_external_database)
         type = is_monolithic ? 'Monolithic' : 'Split'
-        w_cm = with_compile_masters ? ' with Compile Masters' : ''
-        w_ep = with_external_database ? ' with External Database' : ''
-        w_xl = with_extra_large ? ' with XL' : ''
-        output _("Puppet Infrastructure Summary: Found a %{type} Infrastructure%{w_cm}%{w_ep}%{w_xl}") % { type: type, w_cm: w_cm, w_ep: w_ep, w_xl: w_xl }
+        w_cm = with_compile_masters   ? ' with Compile Masters' : ''
+        w_cm = with_compilers         ? ' with Compilers' : w_cm
+        w_ed = with_external_database ? ' with an External Database' : ''
+        output _("Puppet Infrastructure Summary: Found a %{type} Infrastructure%{w_cm}%{w_ed}") % { type: type, w_cm: w_cm, w_ed: w_ed }
         output_line
       end
 
@@ -645,7 +644,7 @@ module PuppetX
       end
 
       def monolithic?
-        @nodes_with_role['console_hosts'].count.zero? && @nodes_with_role['puppetdb_hosts'].count.zero?
+        @nodes_with_role['console_hosts'].count.zero?
       end
 
       def with_ha?
@@ -654,6 +653,12 @@ module PuppetX
 
       def with_compile_masters?
         @nodes_with_role['compile_masters'].count > 0
+      end
+
+      def with_compilers?
+        return false unless monolithic?
+        return false unless with_compile_masters?
+        with_puppetdb_on_all_masters?
       end
 
       def with_external_database?
@@ -682,16 +687,6 @@ module PuppetX
 
       def compile_master?(certname)
         @nodes_with_role['compile_masters'].include?(certname)
-      end
-
-      # Monolithic with or without HA
-      # With PE Database Hosts (aka PostgreSQL Hosts) for pe-puppetdb on one host and the other databases on another
-      # With Compile Masters with PuppetDB
-
-      def extra_large?
-        return false unless monolithic?
-        return false unless with_compile_masters?
-        with_local_and_external_databases? && with_puppetdb_on_all_masters?
       end
 
       # Identify class on a node.

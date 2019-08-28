@@ -23,7 +23,6 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       infrastructure = {
         'is_monolithic'        => true,
         'with_compile_masters' => false,
-        'with_extra_large'     => false,
       }
       type = {
         'is_monolithic_master' => true,
@@ -77,7 +76,6 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       infrastructure = {
         'is_monolithic'        => true,
         'with_compile_masters' => false,
-        'with_extra_large'     => false,
       }
       type = {
         'is_monolithic_master' => true,
@@ -131,7 +129,6 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       infrastructure = {
         'is_monolithic'        => true,
         'with_compile_masters' => false,
-        'with_extra_large'     => false,
       }
       type = {
         'is_monolithic_master' => true,
@@ -186,7 +183,6 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       infrastructure = {
         'is_monolithic'        => true,
         'with_compile_masters' => false,
-        'with_extra_large'     => false,
       }
       type = {
         'is_monolithic_master' => true,
@@ -250,7 +246,6 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       infrastructure = {
         'is_monolithic'        => true,
         'with_compile_masters' => true,
-        'with_extra_large'     => false,
       }
       type = {
         'is_monolithic_master' => true,
@@ -304,7 +299,6 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       infrastructure = {
         'is_monolithic'        => true,
         'with_compile_masters' => true,
-        'with_extra_large'     => false,
       }
       type = {
         'is_monolithic_master' => true,
@@ -359,7 +353,6 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       infrastructure = {
         'is_monolithic'        => false,
         'with_compile_masters' => false,
-        'with_extra_large'     => false
       }
       type = {
         'is_monolithic_master' => false,
@@ -418,7 +411,6 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       infrastructure = {
         'is_monolithic'        => false,
         'with_compile_masters' => false,
-        'with_extra_large'     => false,
       }
       classes = {
         'database' => true,
@@ -452,7 +444,6 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       infrastructure = {
         'is_monolithic'        => false,
         'with_compile_masters' => false,
-        'with_extra_large'     => false,
       }
       classes = {
         'database' => false,
@@ -482,7 +473,6 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       infrastructure = {
         'is_monolithic'        => false,
         'with_compile_masters' => true,
-        'with_extra_large'     => false,
       }
       type = {
         'is_monolithic_master' => false,
@@ -512,47 +502,6 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       expect(calculator::calculate_master_settings(node)).to eq(settings)
     end
 
-    it 'can calculate compile master host settings with puppetdb' do
-      resources = {
-        'cpu' => 16,
-        'ram' => 32768,
-      }
-      infrastructure = {
-        'is_monolithic'        => true,
-        'with_compile_masters' => true,
-        'with_extra_large'     => false,
-      }
-      type = {
-        'is_monolithic_master' => false,
-        'is_replica_master'    => false,
-        'is_compile_master'    => true,
-        'with_jruby9k_enabled' => false,
-      }
-      classes = {
-        'amq::broker'  => false,
-        'console'      => false,
-        'database'     => false,
-        'orchestrator' => false,
-        'puppetdb'     => true,
-      }
-      node = { 'resources' => resources, 'infrastructure' => infrastructure, 'type' => type, 'classes' => classes }
-
-      params = {
-        'puppet_enterprise::puppetdb::command_processing_threads'             => 4,
-        'puppet_enterprise::profile::puppetdb::java_args'                     => { 'Xms' => '3174m',  'Xmx' => '3174m' },
-        'puppet_enterprise::master::puppetserver::jruby_max_active_instances' => 11,
-        'puppet_enterprise::profile::master::java_args'                       => { 'Xms' => '11264m', 'Xmx' => '11264m' },
-      }
-      totals = {
-        'CPU'          => { 'total' => 16,    'used' => 15 },
-        'RAM'          => { 'total' => 32768, 'used' => 14438 },
-        'MB_PER_JRUBY' => 1024,
-      }
-      settings = { 'params' => params, 'totals' => totals }
-
-      expect(calculator::calculate_master_settings(node)).to eq(settings)
-    end
-
     it 'can calculate database host settings' do
       resources = {
         'cpu' => 4,
@@ -561,7 +510,6 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       infrastructure = {
         'is_monolithic'        => false,
         'with_compile_masters' => false,
-        'with_extra_large'     => false,
       }
       node = { 'resources' => resources, 'infrastructure' => infrastructure, 'type' => {}, 'classes' => {} }
 
@@ -584,8 +532,8 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
     end
   end
 
-  context 'with a monolithic infrastructure with an extra large reference architecture' do
-    it 'can calculate compile master host settings with puppetdb, server size small' do
+  context 'with a monolithic infrastructure with compilers' do
+    it 'can calculate compiler host settings, server size small' do
       resources = {
         'cpu' => 4,
         'ram' => 8192,
@@ -593,7 +541,6 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       infrastructure = {
         'is_monolithic'        => true,
         'with_compile_masters' => true,
-        'with_extra_large'     => true,
       }
       type = {
         'is_monolithic_master' => false,
@@ -629,7 +576,7 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       expect(calculator::calculate_master_settings(node)).to eq(settings)
     end
 
-    it 'can calculate compile master host settings with puppetdb, server size medium' do
+    it 'can calculate compiler host settings, server size medium' do
       resources = {
         'cpu' => 8,
         'ram' => 16384,
@@ -637,7 +584,6 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       infrastructure = {
         'is_monolithic'        => true,
         'with_compile_masters' => true,
-        'with_extra_large'     => true,
       }
       type = {
         'is_monolithic_master' => false,
@@ -673,7 +619,7 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       expect(calculator::calculate_master_settings(node)).to eq(settings)
     end
 
-    it 'can calculate compile master host settings with puppetdb, server size large' do
+    it 'can calculate compiler host settings, server size large' do
       resources = {
         'cpu' => 16,
         'ram' => 32768,
@@ -681,7 +627,6 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       infrastructure = {
         'is_monolithic'        => true,
         'with_compile_masters' => true,
-        'with_extra_large'     => true,
       }
       type = {
         'is_monolithic_master' => false,
@@ -715,36 +660,6 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       settings = { 'params' => params, 'totals' => totals }
 
       expect(calculator::calculate_master_settings(node)).to eq(settings)
-    end
-
-    it 'can calculate database host settings' do
-      resources = {
-        'cpu' => 4,
-        'ram' => 8192,
-      }
-      infrastructure = {
-        'is_monolithic'        => false,
-        'with_compile_masters' => false,
-        'with_extra_large'     => true,
-      }
-      node = { 'resources' => resources, 'infrastructure' => infrastructure, 'type' => {}, 'classes' => {} }
-
-      params = {
-        'puppet_enterprise::profile::database::shared_buffers'         => '2048MB',
-        'puppet_enterprise::profile::database::autovacuum_max_workers' => 3,
-        'puppet_enterprise::profile::database::autovacuum_work_mem'    => '341MB',
-        'puppet_enterprise::profile::database::maintenance_work_mem'   => '1024MB',
-        'puppet_enterprise::profile::database::max_connections'        => 1000,
-        'puppet_enterprise::profile::database::work_mem'               => '8MB',
-        'puppet_enterprise::profile::database::log_temp_files'         => 8192,
-      }
-      totals = {
-        'CPU' => { 'total' => 4,    'used' => 0 },
-        'RAM' => { 'total' => 8192, 'used' => 2048 },
-      }
-      settings = { 'params' => params, 'totals' => totals }
-
-      expect(calculator::calculate_database_settings(node)).to eq(settings)
     end
   end
 

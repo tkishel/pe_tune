@@ -61,7 +61,7 @@ module PuppetX
             ram_per_puppetserver_jruby = node['current_memory_per_jruby']
           end
 
-          # Reallocate resources between puppetserver and puppetdb, if this host is a monolithic master or replica master with compile masters.
+          # Reallocate resources between puppetserver and puppetdb, if this host is a monolithic master or replica master, with compile masters or compilers.
 
           if node['type']['is_monolithic_master'] || node['type']['is_replica_master']
             if node['infrastructure']['with_compile_masters']
@@ -85,8 +85,7 @@ module PuppetX
           maximum_cpu_threads = [minimum_cpu_threads, (node['resources']['cpu'] * (percent_cpu_threads * 0.01)).to_i].max
           maximum_cpu_jrubies = [minimum_cpu_jrubies, (node['resources']['cpu'] * (percent_cpu_jrubies * 0.01) - 1).to_i].max
 
-          # Reallocate resources between puppetserver and orchestrator, if orchestrator uses jrubies
-          # Orchestrator in 2019.2+ requires a core for its JRubies, and requires additional memory.
+          # Orchestrator in 2019.2+ requires a core for its jrubies, and requires additional memory.
 
           if node['classes']['orchestrator'] && node['type']['with_orchestrator_jruby']
             maximum_cpu_jrubies = [maximum_cpu_jrubies - 1, 1].max
@@ -117,13 +116,11 @@ module PuppetX
           end
 
           if node['classes']['puppetdb']
-            # Reallocate resources from puppetdb, if this host is a compile master and this is an extra large reference architecture.
-            if node['type']['is_compile_master'] && node['infrastructure']['with_extra_large']
+            # Reallocate resources between puppetserver and puppetdb, if this host is a compiler (puppetserver plus puppetdb).
+            if node['type']['is_compile_master'] || node['type']['is_compiler']
               minimum_cpu_threads = 1
               maximum_cpu_threads = 3
               percent_cpu_threads = 25
-              # Disable PuppetDB garbage collection on compile masters.
-              settings['params']['puppet_enterprise::profile::puppetdb::gc_interval'] = 0
             end
 
             command_processing_threads = calculate_cpu(node['resources']['cpu'], settings['totals']['CPU']['used'], percent_cpu_threads, minimum_cpu_threads, maximum_cpu_threads)
@@ -131,12 +128,13 @@ module PuppetX
             settings['params']['puppet_enterprise::puppetdb::command_processing_threads'] = command_processing_threads
             settings['totals']['CPU']['used'] += command_processing_threads
 
-            # Reallocate resources from puppetdb to avoid making too many connections to databases, if this host is a compile master and if this is an extra large reference architecture.
-            if node['type']['is_compile_master'] && node['infrastructure']['with_extra_large']
+            # Reallocate resources from puppetdb to avoid making too many connections to databases, if this host is a compiler (puppetserver plus puppetdb).
+            if node['type']['is_compile_master'] || node['type']['is_compiler']
               write_maximum_pool_size = (command_processing_threads * 2)
               read_maximum_pool_size  = (write_maximum_pool_size * 2)
               settings['params']['puppet_enterprise::puppetdb::write_maximum_pool_size'] = write_maximum_pool_size
               settings['params']['puppet_enterprise::puppetdb::read_maximum_pool_size']  = read_maximum_pool_size
+              settings['params']['puppet_enterprise::profile::puppetdb::gc_interval'] = 0
             end
 
             ram_puppetdb = calculate_ram(node['resources']['ram'], settings['totals']['RAM']['used'], percent_ram_puppetdb, minimum_ram_puppetdb, maximum_ram_puppetdb)
@@ -149,8 +147,9 @@ module PuppetX
 
           available_ram_for_puppetserver = node['resources']['ram'] - minimum_ram_os - settings['totals']['RAM']['used']
           if available_ram_for_puppetserver < minimum_ram_puppetserver
+            # If used, calculate_ram() would call Puppet.debug here.
             Puppet.debug("Error: available_ram_for_puppetserver: #{available_ram_for_puppetserver} < minimum_ram_puppetserver: #{minimum_ram_puppetserver}")
-            return {}
+            return
           end
 
           jrubies_that_fit_in_available_ram_for_puppetserver = (available_ram_for_puppetserver / ram_per_puppetserver_jruby).to_i
