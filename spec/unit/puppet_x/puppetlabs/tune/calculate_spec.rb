@@ -560,7 +560,7 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       params = {
         'puppet_enterprise::puppetdb::command_processing_threads'             => 1,
         'puppet_enterprise::puppetdb::write_maximum_pool_size'                => 2,
-        'puppet_enterprise::puppetdb::read_maximum_pool_size'                 => 4,
+        'puppet_enterprise::puppetdb::read_maximum_pool_size'                 => 3,
         'puppet_enterprise::profile::puppetdb::gc_interval'                   => 0,
         'puppet_enterprise::profile::puppetdb::java_args'                     => { 'Xms' => '716m',  'Xmx' => '716m' },
         'puppet_enterprise::master::puppetserver::jruby_max_active_instances' => 2,
@@ -603,7 +603,7 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       params = {
         'puppet_enterprise::puppetdb::command_processing_threads'             => 2,
         'puppet_enterprise::puppetdb::write_maximum_pool_size'                => 4,
-        'puppet_enterprise::puppetdb::read_maximum_pool_size'                 => 8,
+        'puppet_enterprise::puppetdb::read_maximum_pool_size'                 => 7,
         'puppet_enterprise::profile::puppetdb::gc_interval'                   => 0,
         'puppet_enterprise::profile::puppetdb::java_args'                     => { 'Xms' => '1536m', 'Xmx' => '1536m' },
         'puppet_enterprise::master::puppetserver::jruby_max_active_instances' => 5,
@@ -646,7 +646,7 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       params = {
         'puppet_enterprise::puppetdb::command_processing_threads'             => 3,
         'puppet_enterprise::puppetdb::write_maximum_pool_size'                => 6,
-        'puppet_enterprise::puppetdb::read_maximum_pool_size'                 => 12,
+        'puppet_enterprise::puppetdb::read_maximum_pool_size'                 => 16,
         'puppet_enterprise::profile::puppetdb::gc_interval'                   => 0,
         'puppet_enterprise::profile::puppetdb::java_args'                     => { 'Xms' => '3174m', 'Xmx' => '3174m' },
         'puppet_enterprise::master::puppetserver::jruby_max_active_instances' => 11,

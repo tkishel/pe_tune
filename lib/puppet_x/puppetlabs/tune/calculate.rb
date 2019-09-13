@@ -128,15 +128,6 @@ module PuppetX
             settings['params']['puppet_enterprise::puppetdb::command_processing_threads'] = command_processing_threads
             settings['totals']['CPU']['used'] += command_processing_threads
 
-            # Reallocate resources from puppetdb to avoid making too many connections to databases, if this host is a compiler (puppetserver plus puppetdb).
-            if node['type']['is_compile_master'] || node['type']['is_compiler']
-              write_maximum_pool_size = (command_processing_threads * 2)
-              read_maximum_pool_size  = (write_maximum_pool_size * 2)
-              settings['params']['puppet_enterprise::puppetdb::write_maximum_pool_size'] = write_maximum_pool_size
-              settings['params']['puppet_enterprise::puppetdb::read_maximum_pool_size']  = read_maximum_pool_size
-              settings['params']['puppet_enterprise::profile::puppetdb::gc_interval'] = 0
-            end
-
             ram_puppetdb = calculate_ram(node['resources']['ram'], settings['totals']['RAM']['used'], percent_ram_puppetdb, minimum_ram_puppetdb, maximum_ram_puppetdb)
             return unless ram_puppetdb
             settings['params']['puppet_enterprise::profile::puppetdb::java_args'] = { 'Xms' => "#{ram_puppetdb}m", 'Xmx' => "#{ram_puppetdb}m" }
@@ -170,6 +161,15 @@ module PuppetX
             end
             settings['params']['puppet_enterprise::master::puppetserver::reserved_code_cache'] = "#{ram_puppetserver_code_cache}m"
             settings['totals']['RAM']['used'] += ram_puppetserver_code_cache
+          end
+
+          # Reallocate resources from puppetdb to avoid making too many connections to databases, if this host is a compiler (puppetserver plus puppetdb).
+          if node['classes']['puppetdb'] && (node['type']['is_compile_master'] || node['type']['is_compiler'])
+            read_maximum_pool_size  = jruby_max_active_instances + [(jruby_max_active_instances / 2).to_i, 1].max
+            write_maximum_pool_size = (command_processing_threads * 2)
+            settings['params']['puppet_enterprise::puppetdb::read_maximum_pool_size'] = read_maximum_pool_size
+            settings['params']['puppet_enterprise::puppetdb::write_maximum_pool_size'] = write_maximum_pool_size
+            settings['params']['puppet_enterprise::profile::puppetdb::gc_interval'] = 0
           end
 
           if node['classes']['console']
