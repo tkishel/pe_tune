@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+# 2.4.2
+
+- Improve debugging output
+- Replace the concept of PE XL with PE Compilers
+- Set log_temp_files equal to work_mem to minimize PostgreSQL logging
+- Remove UseG1G.
+
 # 2.4.1
 
 - Do not output settings to stdout when outputting to files.
