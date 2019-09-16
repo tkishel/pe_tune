@@ -327,7 +327,7 @@ module PuppetX
       # Collect node for output to <certname>.yaml.
 
       def collect_optimized_node(certname, role, node)
-        output_minimum_system_requirements_error_and_exit(certname) if node['settings'].empty?
+        output_minimum_system_requirements_error_and_exit(certname) if node['settings'].nil? or node['settings'].empty?
         properties = {
           'resources' => node['resources'],
           'role'      => role,
@@ -366,13 +366,13 @@ module PuppetX
         if using_inventory?
           @inventory::read_inventory_from_local_system if @options[:local]
           @inventory::read_inventory_from_inventory_file(@options[:inventory]) if @options[:inventory]
-          output_error_and_exit _('Unable to read inventory') if @inventory::nodes.empty? || @inventory::roles.empty?
+          output_error_and_exit _('Unable to parse inventory nodes or roles') if @inventory::nodes.empty? || @inventory::roles.empty?
           @inventory::convert_inventory_roles_to_classes
-          output_error_and_exit _('Unable to read inventory') if @inventory::classes.empty? || @inventory::classes == @inventory::default_inventory_classes
+          output_error_and_exit _('Unable to parse inventory classes') if @inventory::classes.empty? || @inventory::classes == @inventory::default_inventory_classes
         else
           @query::pe_environment(Puppet['certname'])
-          output_error_and_exit _('Unable to read environment') if @query::environment.empty?
-          output_error_and_exit _('Unable to read environmentpath') if @query::environmentpath.empty?
+          output_error_and_exit _("Unable to parse 'environment'") if @query::environment.empty?
+          output_error_and_exit _("Unable to parse 'environmentpath'") if @query::environmentpath.empty?
         end
 
         tunable_class_names.each do |classname|
@@ -398,16 +398,16 @@ module PuppetX
 
       def collect_nodes_with_class(classname)
         if using_inventory?
-          Puppet.debug('Using Inventory for collect_nodes_with_class')
+          Puppet.debug('Using Inventory for collect_nodes_with_class()')
           # Key names are downcased in Inventory.
           class_name_in_inventory = classname.downcase
           @nodes_with_class[classname] = @inventory::classes[class_name_in_inventory].to_a
         else
-          Puppet.debug('Using PuppetDB for collect_nodes_with_class')
+          Puppet.debug('Using PuppetDB for collect_nodes_with_class()')
           # Key names are capitalized in PuppetDB.
           class_name_in_puppetdb = classname.split('::').map(&:capitalize).join('::')
           @nodes_with_class[classname] = @query::infra_nodes_with_class(class_name_in_puppetdb)
-          output_error_and_exit _('Unable to connect to PuppetDB to query classes') if @nodes_with_class[classname].nil?
+          output_error_and_exit _('Unable to connect to PuppetDB to query infra_nodes_with_class()') if @nodes_with_class[classname].nil?
         end
       end
 
@@ -417,29 +417,30 @@ module PuppetX
       def resources_for_node(certname)
         resources = {}
         if using_inventory?
-          Puppet.debug('Using Inventory for resources_for_node')
-          output_error_and_exit _("Cannot read node: %{certname}") % { certname: certname } unless @inventory::nodes[certname] && @inventory::nodes[certname]['resources']
+          Puppet.debug('Using Inventory for resources_for_node()')
+          output_error_and_exit _("Unable to parse inventory for node: %{certname}") % { certname: certname } unless @inventory::nodes[certname] && @inventory::nodes[certname]['resources']
           node_facts = @inventory::nodes[certname]['resources']
-          output_error_and_exit _("Cannot read resources for node: %{certname}") % { certname: certname } unless node_facts['cpu'] && node_facts['ram']
+          output_error_and_exit _("Unable to parse inventory for node: %{certname}") % { certname: certname } unless node_facts['cpu'] && node_facts['ram']
           resources['cpu'] = node_facts['cpu'].to_i
           resources['ram'] = string_to_bytes(node_facts['ram']).to_i
         else
-          Puppet.debug('Using PuppetDB for resources_for_node')
+          Puppet.debug('Using PuppetDB for resources_for_node()')
           node_facts = @query::node_facts(certname)
-          output_error_and_exit _('Unable to connect to PuppetDB to query facts') if node_facts.nil?
+          output_error_and_exit _('Unable to connect to PuppetDB to query node_facts()') if node_facts.nil?
           output_error_and_exit _("Cannot query resources for node: %{certname}") % { certname: certname } unless node_facts['processors'] && node_facts['memory']
           resources['cpu'] = node_facts['processors']['count'].to_i
           resources['ram'] = node_facts['memory']['system']['total_bytes'].to_i
         end
         resources['ram'] = (resources['ram'] / 1024 / 1024).to_i
         if ENV['TEST_CPU']
-          Puppet.debug("Using TEST_CPU=#{ENV['TEST_CPU']} for #{certname}")
+          Puppet.debug("Using ENV['TEST_CPU'] = #{ENV['TEST_CPU']} for #{certname}")
           resources['cpu'] = ENV['TEST_CPU'].to_i
         end
         if ENV['TEST_RAM']
-          Puppet.debug("Using TEST_RAM=#{ENV['TEST_RAM']} for #{certname}")
+          Puppet.debug("Using ENV['TEST_RAM' = #{ENV['TEST_RAM']} for #{certname}")
           resources['ram'] = ENV['TEST_RAM'].to_i
         end
+        Puppet.debug("Using CPU = #{resources['cpu']} and RAM = #{resources['ram']} for #{certname}")
         resources
       end
 
@@ -447,19 +448,19 @@ module PuppetX
 
       def current_settings_for_node(certname, setting_names)
         result = @query::hiera_classifier_settings(certname, setting_names)
-        output_error_and_exit _('Unable to connect to PuppetDB to query current node settings') if result.nil?
+        output_error_and_exit _('Unable to connect to PuppetDB to query current_settings_for_node()') if result.nil?
         result
       end
 
       def active_node_count
         result = @query::active_node_count
-        output_error_and_exit _('Unable to connect to PuppetDB to query active nodes') if result.nil?
+        output_error_and_exit _('Unable to connect to PuppetDB to query active_node_count()') if result.nil?
         result
       end
 
       def average_compile_time(report_limit)
         result = @query::average_compile_time(report_limit)
-        output_error_and_exit _('Unable to connect to PuppetDB to query average compile time') if result.nil?
+        output_error_and_exit _('Unable to connect to PuppetDB to query average_compile_time()') if result.nil?
         result
       end
 
@@ -477,7 +478,7 @@ module PuppetX
         Dir.mkdir(hiera_directory) unless File.directory?(hiera_directory)
         output_error_and_exit _("Unable to create output directory: %{directory}") % { directory: hiera_directory } unless File.directory?(hiera_directory)
         Dir.mkdir(hiera_subdirectory) unless File.directory?(hiera_subdirectory)
-        output_error_and_exit _("Unable to create output directory: %{directory}") % { directory: hiera_subdirectory } unless File.directory?(hiera_subdirectory)
+        output_error_and_exit _("Unable to create output subdirectory: %{directory}") % { directory: hiera_subdirectory } unless File.directory?(hiera_subdirectory)
         @collected_nodes.each do |certname, properties|
           next if properties['settings']['params'].empty?
           output_file = "#{@options[:hiera]}/nodes/#{certname}.yaml"
@@ -616,7 +617,7 @@ module PuppetX
 
       def output_error_and_exit(message)
         Puppet.err(message)
-        Puppet.err _('Rerun this command with --debug for more information')
+        Puppet.err _("Rerun this command with '--debug' for more information")
         exit 1
       end
 
@@ -629,7 +630,8 @@ module PuppetX
       end
 
       def output_minimum_system_requirements_error_and_exit(certname)
-        Puppet.err _("%{certname} does not meet the minimum system requirements to optimize its settings") % { certname: certname }
+        Puppet.err _("%{certname} does not meet the minimum system requirements to calculate its settings") % { certname: certname }
+        Puppet.err _("Rerun this command with '--debug' for more information")
         exit 1
       end
 

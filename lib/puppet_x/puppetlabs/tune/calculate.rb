@@ -18,8 +18,8 @@ module PuppetX
           @options[:memory_per_jruby]       = options[:memory_per_jruby] || 0
           @options[:memory_reserved_for_os] = options[:memory_reserved_for_os] || 0
 
-          Puppet.debug("Using optional #{@options[:memory_per_jruby]}MB RAM per JRuby") if @options[:memory_per_jruby] != 0
-          Puppet.debug("Using optional #{@options[:memory_reserved_for_os]}MB RAM reserved for the operating system") if @options[:memory_reserved_for_os] != 0
+          Puppet.debug("Using optional #{@options[:memory_per_jruby]} MB RAM per JRuby") if @options[:memory_per_jruby] != 0
+          Puppet.debug("Using optional #{@options[:memory_reserved_for_os]} MB RAM reserved for the operating system") if @options[:memory_reserved_for_os] != 0
         end
 
         #
@@ -110,7 +110,10 @@ module PuppetX
 
           if node['classes']['database']
             ram_database = calculate_ram(node['resources']['ram'], settings['totals']['RAM']['used'], percent_ram_database, minimum_ram_database, maximum_ram_database)
-            return unless ram_database
+            unless ram_database
+              Puppet.debug("Error: unable to calculate ram_database")
+              return
+            end
             settings['params']['puppet_enterprise::profile::database::shared_buffers'] = "#{ram_database}MB"
             settings['totals']['RAM']['used'] += ram_database
           end
@@ -124,12 +127,18 @@ module PuppetX
             end
 
             command_processing_threads = calculate_cpu(node['resources']['cpu'], settings['totals']['CPU']['used'], percent_cpu_threads, minimum_cpu_threads, maximum_cpu_threads)
-            return unless command_processing_threads
+            unless command_processing_threads
+              Puppet.debug("Error: unable to calculate command_processing_threads")
+              return
+            end
             settings['params']['puppet_enterprise::puppetdb::command_processing_threads'] = command_processing_threads
             settings['totals']['CPU']['used'] += command_processing_threads
 
             ram_puppetdb = calculate_ram(node['resources']['ram'], settings['totals']['RAM']['used'], percent_ram_puppetdb, minimum_ram_puppetdb, maximum_ram_puppetdb)
-            return unless ram_puppetdb
+            unless ram_puppetdb
+              Puppet.debug("Error: unable to calculate ram_puppetdb")
+              return
+            end
             settings['params']['puppet_enterprise::profile::puppetdb::java_args'] = { 'Xms' => "#{ram_puppetdb}m", 'Xmx' => "#{ram_puppetdb}m" }
             settings['totals']['RAM']['used'] += ram_puppetdb
           end
@@ -138,8 +147,7 @@ module PuppetX
 
           available_ram_for_puppetserver = node['resources']['ram'] - minimum_ram_os - settings['totals']['RAM']['used']
           if available_ram_for_puppetserver < minimum_ram_puppetserver
-            # If used, calculate_ram() would call Puppet.debug here.
-            Puppet.debug("Error: available_ram_for_puppetserver: #{available_ram_for_puppetserver} < minimum_ram_puppetserver: #{minimum_ram_puppetserver}")
+            Puppet.debug("Error: available_ram_for_puppetserver: #{available_ram_for_puppetserver} MB is less than minimum_ram_puppetserver: #{minimum_ram_puppetserver} MB")
             return
           end
 
@@ -203,7 +211,10 @@ module PuppetX
           settings = initialize_settings(node)
 
           ram_console = calculate_ram(node['resources']['ram'], settings['totals']['RAM']['used'], percent_ram_console, minimum_ram_console, maximum_ram_console)
-          return unless ram_console
+          unless ram_console
+            Puppet.debug("Error: unable to calculate ram_console")
+            return
+          end
           settings['params']['puppet_enterprise::profile::console::java_args'] = { 'Xms' => "#{ram_console}m", 'Xmx' => "#{ram_console}m" }
           settings['totals']['RAM']['used'] += ram_console
 
@@ -226,18 +237,25 @@ module PuppetX
           if node['classes']['database']
             percent_ram_puppetdb = 25
             database_settings = calculate_database_settings(node)
+            return unless database_settings
             settings['params'].merge!(database_settings['params'])
             settings['totals']['CPU']['used'] += database_settings['totals']['CPU']['used']
             settings['totals']['RAM']['used'] += database_settings['totals']['RAM']['used']
           end
 
           command_processing_threads = calculate_cpu(node['resources']['cpu'], settings['totals']['CPU']['used'], percent_cpu_threads, minimum_cpu_threads, maximum_cpu_threads)
-          return unless command_processing_threads
+          unless command_processing_threads
+            Puppet.debug("Error: unable to calculate command_processing_threads")
+            return
+          end
           settings['params']['puppet_enterprise::puppetdb::command_processing_threads'] = command_processing_threads
           settings['totals']['CPU']['used'] += command_processing_threads
 
           ram_puppetdb = calculate_ram(node['resources']['ram'], settings['totals']['RAM']['used'], percent_ram_puppetdb, minimum_ram_puppetdb, maximum_ram_puppetdb)
-          return unless ram_puppetdb
+          unless ram_puppetdb
+            Puppet.debug("Error: unable to calculate ram_puppetdb")
+            return
+          end
           settings['params']['puppet_enterprise::profile::puppetdb::java_args'] = { 'Xms' => "#{ram_puppetdb}m", 'Xmx' => "#{ram_puppetdb}m" }
           settings['totals']['RAM']['used'] += ram_puppetdb
 
@@ -262,7 +280,10 @@ module PuppetX
           settings = initialize_settings(node)
 
           ram_database = calculate_ram(node['resources']['ram'], settings['totals']['RAM']['used'], percent_ram_database, minimum_ram_database, maximum_ram_database)
-          return unless ram_database
+          unless ram_database
+            Puppet.debug("Error: unable to calculate ram_database")
+            return
+          end
           settings['params']['puppet_enterprise::profile::database::shared_buffers'] = "#{ram_database}MB"
           settings['totals']['RAM']['used'] += ram_database
 
@@ -346,7 +367,7 @@ module PuppetX
         def calculate_cpu(total, used, percent, minimum, maximum)
           available = total - used
           if available < minimum
-            Puppet.debug("Error: available processors less than minimum: #{available} < minimum: #{minimum}")
+            Puppet.debug("Error: available processors: #{available} is less than minimum processors: #{minimum}")
             return
           end
           percent_value_within_min_max(percent, available, minimum, maximum)
@@ -358,7 +379,7 @@ module PuppetX
           reserved  = memory_reserved_for_os
           available = total - reserved - used
           if available < minimum
-            Puppet.debug("Error: available memory less than minimum: #{available} < minimum: #{minimum}")
+            Puppet.debug("Error: available memory: #{available} is less than minimum memory: #{minimum}")
             return
           end
           percent_value_within_min_max(percent, available, minimum, maximum)
