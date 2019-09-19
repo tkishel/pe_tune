@@ -242,3 +242,5 @@ wget -q -O - https://api.github.com/repos/tkishel/pe_tune/releases/latest | grep
 ```shell
 /tmp/puppet_modules/pe_tune/lib/puppet_x/puppetlabs/tune.rb
 ```
+
+![AUTOTUNE](autotune.jpeg?raw=true "AUTOTUNE")
