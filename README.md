@@ -98,6 +98,10 @@ Amount of RAM to allocate for each JRuby.
 
 Amount of RAM to reserve for the OS.
 
+##### `--node CERTNAME`
+
+Limit output to a single node.
+
 ##### `--use_current_memory_per_jruby`
 
 Use currently-defined settings to determine memory_per_jruby.

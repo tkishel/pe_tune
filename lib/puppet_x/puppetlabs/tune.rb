@@ -100,6 +100,7 @@ module PuppetX
         @options[:hiera]     = options[:hiera]
         @options[:inventory] = options[:inventory]
         @options[:local]     = options[:local]
+        @options[:node]      = options[:node]
         @options[:pe_conf]   = options[:pe_conf]
 
         # Internal option. Shh!
@@ -131,6 +132,7 @@ module PuppetX
         current_available_jrubies = collect_current_settings
 
         @current_collected_nodes.each do |certname, node|
+          next if @options[:node] && certname != @options[:node]
           output_current_settings_for_node(certname, node)
         end
 
@@ -144,11 +146,12 @@ module PuppetX
 
         collect_optimized_settings_common_to_all_nodes
         @collected_nodes.each do |certname, node|
-          output_optimized_settings_for_node(certname, node) unless @options[:quiet]
+          next if @options[:node] && certname != @options[:node]
+          output_optimized_settings_for_node(certname, node)
         end
-        output_common_settings unless @options[:quiet]
+        output_common_settings
 
-        output_estimated_capacity(optimized_available_jrubies) unless @options[:quiet]
+        output_estimated_capacity(optimized_available_jrubies)
 
         output_settings_to_hiera
         output_settings_to_pe_conf
@@ -161,6 +164,7 @@ module PuppetX
         collect_optimized_settings
 
         @current_collected_nodes.each do |certname, current_node|
+          next if @options[:node] && certname != @options[:node]
           optimized_node = @collected_nodes[certname]
           if current_node['settings']['params'].empty?
             output _('No currently defined settings to compare for %{role} %{certname}') % { role: optimized_node['role'], certname: certname }
@@ -244,8 +248,16 @@ module PuppetX
         # Primary Master: Applicable to Monolithic and Split Infrastructures.
         @nodes_with_role['primary_masters'].each do |certname|
           node = configuration_for_node(certname)
+          unless meets_minimum_system_requirements?(node['resources'])
+            output_minimum_system_requirements_warning(node)
+            next
+          end
           node['current_memory_per_jruby'] = current_memory_per_jruby_for_node(certname)
           node['settings'] = @calculator::calculate_master_settings(node)
+          if node['settings'].nil? || node['settings'].empty?
+            output_calculation_warning(node)
+            next
+          end
           collect_optimized_node(certname, 'Primary Master', node)
           available_jrubies += available_jrubies_for_node(certname, node['settings']) unless with_compile_masters?
         end
@@ -253,37 +265,77 @@ module PuppetX
         # Replica Master: Applicable to Monolithic Infrastructures.
         @nodes_with_role['replica_masters'].each do |certname|
           node = configuration_for_node(certname)
+          unless meets_minimum_system_requirements?(node['resources'])
+            output_minimum_system_requirements_warning(node)
+            next
+          end
           node['current_memory_per_jruby'] = current_memory_per_jruby_for_node(certname)
           node['settings'] = @calculator::calculate_master_settings(node)
+          if node['settings'].nil? || node['settings'].empty?
+            output_calculation_warning(node)
+            next
+          end
           collect_optimized_node(certname, 'Replica Master', node)
         end
 
         # Console Host: Specific to Split Infrastructures. By default, a list of one.
         @nodes_with_role['console_hosts'].each do |certname|
           node = configuration_for_node(certname)
+          unless meets_minimum_system_requirements?(node['resources'])
+            output_minimum_system_requirements_warning(node)
+            next
+          end
           node['settings'] = @calculator::calculate_console_settings(node)
+          if node['settings'].nil? || node['settings'].empty?
+            output_calculation_warning(node)
+            next
+          end
           collect_optimized_node(certname, 'Console Host', node)
         end
 
         # PuppetDB Host: Specific to Split Infrastructures. By default, a list of one.
         @nodes_with_role['puppetdb_hosts'].each do |certname|
           node = configuration_for_node(certname)
+          unless meets_minimum_system_requirements?(node['resources'])
+            output_minimum_system_requirements_warning(node)
+            next
+          end
           node['settings'] = @calculator::calculate_puppetdb_settings(node)
+          if node['settings'].nil? || node['settings'].empty?
+            output_calculation_warning(node)
+            next
+          end
           collect_optimized_node(certname, 'PuppetDB Host', node)
         end
 
         # External Database Host: Applicable to Monolithic and Split Infrastructures.
         @nodes_with_role['database_hosts'].each do |certname|
           node = configuration_for_node(certname)
+          unless meets_minimum_system_requirements?(node['resources'])
+            output_minimum_system_requirements_warning(node)
+            next
+          end
           node['settings'] = @calculator::calculate_database_settings(node)
+          if node['settings'].nil? || node['settings'].empty?
+            output_calculation_warning(node)
+            next
+          end
           collect_optimized_node(certname, 'External Database Host', node)
         end
 
         # Compile Masters: Applicable to Monolithic and Split Infrastructures.
         @nodes_with_role['compile_masters'].each do |certname|
           node = configuration_for_node(certname)
+          unless meets_minimum_system_requirements?(node['resources'])
+            output_minimum_system_requirements_warning(node)
+            next
+          end
           node['current_memory_per_jruby'] = current_memory_per_jruby_for_node(certname)
           node['settings'] = @calculator::calculate_master_settings(node)
+          if node['settings'].nil? || node['settings'].empty?
+            output_calculation_warning(node)
+            next
+          end
           collect_optimized_node(certname, 'Compile Master', node)
           available_jrubies += available_jrubies_for_node(certname, node['settings'])
         end
@@ -296,7 +348,6 @@ module PuppetX
       def configuration_for_node(certname)
         node = {}
         resources = resources_for_node(certname)
-        output_minimum_system_requirements_error_and_exit(certname) unless meets_minimum_system_requirements?(resources)
         node['certname'] = certname
         node['classes'] = tunable_classes_for_node(certname)
         node['infrastructure'] = {
@@ -327,7 +378,6 @@ module PuppetX
       # Collect node for output to <certname>.yaml.
 
       def collect_optimized_node(certname, role, node)
-        output_minimum_system_requirements_error_and_exit(certname) if node['settings'].nil? or node['settings'].empty?
         properties = {
           'resources' => node['resources'],
           'role'      => role,
@@ -342,6 +392,7 @@ module PuppetX
         return unless @options[:common]
         nodes_with_param = {}
         @collected_nodes.each do |certname, properties|
+          next if @options[:node] && certname != @options[:node]
           properties['settings']['params'].each do |param_name, param_value|
             nodes_with_param[param_name] = {} unless nodes_with_param.key?(param_name)
             nodes_with_param[param_name][certname] = param_value
@@ -351,6 +402,7 @@ module PuppetX
           next unless nodes.values.uniq.length == 1
           @collected_settings_common[param_name] = nodes.values[0]
           nodes.each do |certname, _value|
+            next if @options[:node] && certname != @options[:node]
             @collected_nodes[certname]['settings']['params'].delete(param_name)
           end
         end
@@ -474,12 +526,12 @@ module PuppetX
         return unless @options[:hiera]
         hiera_directory = @options[:hiera]
         hiera_subdirectory = "#{hiera_directory}/nodes"
-        return if File.directory?(hiera_directory) && File.directory?(hiera_subdirectory)
         Dir.mkdir(hiera_directory) unless File.directory?(hiera_directory)
         output_error_and_exit _("Unable to create output directory: %{directory}") % { directory: hiera_directory } unless File.directory?(hiera_directory)
         Dir.mkdir(hiera_subdirectory) unless File.directory?(hiera_subdirectory)
         output_error_and_exit _("Unable to create output subdirectory: %{directory}") % { directory: hiera_subdirectory } unless File.directory?(hiera_subdirectory)
         @collected_nodes.each do |certname, properties|
+          next if @options[:node] && certname != @options[:node]
           next if properties['settings']['params'].empty?
           output_file = "#{@options[:hiera]}/nodes/#{certname}.yaml"
           File.write(output_file, properties['settings']['params'].to_yaml)
@@ -496,6 +548,7 @@ module PuppetX
       def output_settings_to_pe_conf
         return unless @options[:pe_conf]
         @collected_nodes.each do |_certname, properties|
+          next if @options[:node] && certname != @options[:node]
           next if properties['settings']['params'].empty?
           if @pe_conf::write(properties['settings']['params'])
             output _("Merged optimized settings to: %{output_file}") % { output_file: @pe_conf::file }
@@ -516,15 +569,20 @@ module PuppetX
         puts "\n"
       end
 
-      # Output highlighted output.
+      # Output highlighted output. From 'puppet/util/colors'
 
       def output_data(info)
         puts "\e[0;32m#{info}\e[0m"
       end
 
+      def output_warning(info)
+        puts "\e[0;33m#{info}\e[0m"
+      end
+
       # Output infrastucture information.
 
       def output_pe_infrastucture_summary(is_monolithic, with_compile_masters, with_compilers, with_external_database)
+        return if @options[:quiet]
         type = is_monolithic ? 'Monolithic' : 'Split'
         w_cm = with_compile_masters   ? ' with Compile Masters' : ''
         w_cm = with_compilers         ? ' with Compilers' : w_cm
@@ -536,6 +594,7 @@ module PuppetX
       # Output current information for a node.
 
       def output_current_settings_for_node(certname, node)
+        return if @options[:quiet]
         if node['settings']['params'].empty?
           output _("Found default settings for %{role} %{certname}") % { role: node['role'], certname: certname }
         else
@@ -558,6 +617,7 @@ module PuppetX
       # Output optimized information for a node.
 
       def output_optimized_settings_for_node(certname, node)
+        return if @options[:quiet]
         output _("Found %{cpu} CPU(s) / %{ram} MB RAM for %{role} %{certname}") % { cpu: node['resources']['cpu'], ram: node['resources']['ram'], role: node['role'], certname: certname }
         unless node['settings']['params'].empty?
           output _("Specify the following optimized settings in Hiera in nodes/%{certname}.yaml") % { certname: certname }
@@ -587,6 +647,7 @@ module PuppetX
       end
 
       def output_common_settings
+        return if @options[:quiet]
         return unless @options[:common]
         return if @collected_settings_common.empty?
         output _('Specify the following optimized settings in Hiera in common.yaml')
@@ -596,6 +657,7 @@ module PuppetX
       end
 
       def output_estimated_capacity(available_jrubies)
+        return if @options[:quiet]
         return unless @options[:estimate]
         run_interval = Puppet[:runinterval]
         active_nodes = active_node_count
@@ -630,9 +692,24 @@ module PuppetX
       end
 
       def output_minimum_system_requirements_error_and_exit(certname)
-        Puppet.err _("%{certname} does not meet the minimum system requirements to calculate its settings") % { certname: certname }
+        return if @options[:node] && node['certname'] != @options[:node]
+        Puppet.err _("%{certname} does not meet the minimum system requirements") % { certname: certname }
         Puppet.err _("Rerun this command with '--debug' for more information")
         exit 1
+      end
+
+      def output_minimum_system_requirements_warning(node)
+        return if @options[:node] && node['certname'] != @options[:node]
+        output_warning _("# Found %{cpu} CPU(s) / %{ram} MB RAM for %{certname}") % { cpu: node['resources']['cpu'], ram: node['resources']['ram'], certname: node['certname'] }
+        output_warning _("# This does not meet the minimum system requirements to calculate its settings without '--force'")
+        output_line
+      end
+
+      def output_calculation_warning(node)
+        return if @options[:node] && node['certname'] != @options[:node]
+        output_warning _("# Found %{cpu} CPU(s) / %{ram} MB RAM for %{certname}") % { cpu: node['resources']['cpu'], ram: node['resources']['ram'], certname: node['certname'] }
+        output_warning _("# Unable to calculate its settings")
+        output_line
       end
 
       #

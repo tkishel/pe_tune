@@ -74,6 +74,9 @@ parser = OptionParser.new do |opts|
   opts.on('--memory_reserved_for_os MB', 'Amount of RAM to reserve for the OS') do |mo|
     options[:memory_reserved_for_os] = mo
   end
+  opts.on('--node CERTNAME', 'The node to tune') do |no|
+    options[:node] = no
+  end
   options[:pe_conf] = false
   opts.on('--pe_conf', 'Output HOCON to pe.conf') do
     options[:pe_conf] = true
