@@ -477,7 +477,7 @@ module PuppetX
           resources['ram'] = string_to_bytes(node_facts['ram']).to_i
         else
           Puppet.debug('Using PuppetDB for resources_for_node()')
-          node_facts = @query::node_facts(certname)
+          #node_facts = @query::node_facts(certname)
           # if node_facts.nil?
           #   Puppet.debug('Unable to query node_facts()')
           #   Puppet.debug('Using puppetserver/yaml/facts for resources_for_node()')
@@ -505,7 +505,7 @@ module PuppetX
       def node_facts_from_yaml_facts(certname)
         yaml_file = "/opt/puppetlabs/server/data/puppetserver/yaml/facts/#{certname}.yaml"
         return unless File.file?(yaml_file)
-        yaml_facts = YAML.load(File.read(yaml_file))
+        yaml_facts = YAML.load_file(yaml_file)
         yaml_facts.values
       end
 
