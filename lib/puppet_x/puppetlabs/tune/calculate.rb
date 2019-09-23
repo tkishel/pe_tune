@@ -143,9 +143,24 @@ module PuppetX
             settings['totals']['RAM']['used'] += ram_puppetdb
           end
 
-          # Consider subtracting ram_puppetserver_code_cache estimate from available_ram_for_puppetserver.
+          if node['classes']['console']
+            settings['params']['puppet_enterprise::profile::console::java_args'] = { 'Xms' => "#{ram_console}m", 'Xmx' => "#{ram_console}m" }
+            settings['totals']['RAM']['used'] += ram_console
+          end
 
-          available_ram_for_puppetserver = node['resources']['ram'] - minimum_ram_os - settings['totals']['RAM']['used']
+          if node['classes']['orchestrator']
+            settings['params']['puppet_enterprise::profile::orchestrator::java_args'] = { 'Xms' => "#{ram_orchestrator}m", 'Xmx' => "#{ram_orchestrator}m" }
+            settings['totals']['RAM']['used'] += ram_orchestrator
+          end
+
+          if node['classes']['amq::broker']
+            settings['params']['puppet_enterprise::profile::amq::broker::heap_mb'] = ram_activemq
+            settings['totals']['RAM']['used'] += ram_activemq
+          end
+
+          # Subtracting an estimated ram_puppetserver_code_cache, as it is based upon jruby_max_active_instances which is based upon available_ram_for_puppetserver.
+
+          available_ram_for_puppetserver = node['resources']['ram'] - minimum_ram_os - settings['totals']['RAM']['used'] - ram_puppetserver_code_cache
           if available_ram_for_puppetserver < minimum_ram_puppetserver
             Puppet.debug("Error: available_ram_for_puppetserver: #{available_ram_for_puppetserver} MB is less than minimum_ram_puppetserver: #{minimum_ram_puppetserver} MB")
             return
@@ -171,6 +186,8 @@ module PuppetX
             settings['totals']['RAM']['used'] += ram_puppetserver_code_cache
           end
 
+          settings['totals']['MB_PER_JRUBY'] = ram_per_puppetserver_jruby
+
           # Reallocate resources from puppetdb to avoid making too many connections to databases, if this host is a compiler (puppetserver plus puppetdb).
           if node['classes']['puppetdb'] && (node['type']['is_compile_master'] || node['type']['is_compiler'])
             read_maximum_pool_size  = jruby_max_active_instances + [(jruby_max_active_instances / 2).to_i, 1].max
@@ -179,23 +196,6 @@ module PuppetX
             settings['params']['puppet_enterprise::puppetdb::write_maximum_pool_size'] = write_maximum_pool_size
             settings['params']['puppet_enterprise::profile::puppetdb::gc_interval'] = 0
           end
-
-          if node['classes']['console']
-            settings['params']['puppet_enterprise::profile::console::java_args'] = { 'Xms' => "#{ram_console}m", 'Xmx' => "#{ram_console}m" }
-            settings['totals']['RAM']['used'] += ram_console
-          end
-
-          if node['classes']['orchestrator']
-            settings['params']['puppet_enterprise::profile::orchestrator::java_args'] = { 'Xms' => "#{ram_orchestrator}m", 'Xmx' => "#{ram_orchestrator}m" }
-            settings['totals']['RAM']['used'] += ram_orchestrator
-          end
-
-          if node['classes']['amq::broker']
-            settings['params']['puppet_enterprise::profile::amq::broker::heap_mb'] = ram_activemq
-            settings['totals']['RAM']['used'] += ram_activemq
-          end
-
-          settings['totals']['MB_PER_JRUBY'] = ram_per_puppetserver_jruby
 
           settings
         end

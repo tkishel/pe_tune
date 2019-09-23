@@ -478,6 +478,12 @@ module PuppetX
         else
           Puppet.debug('Using PuppetDB for resources_for_node()')
           node_facts = @query::node_facts(certname)
+          # if node_facts.nil?
+          #   Puppet.debug('Unable to query node_facts()')
+          #   Puppet.debug('Using puppetserver/yaml/facts for resources_for_node()')
+          #   node_facts = node_facts_from_yaml_facts(certname)
+          #   Puppet.debug('Unable to read node_facts_from_yaml_facts()') if node_facts.nil?
+          # end
           output_error_and_exit _('Unable to connect to PuppetDB to query node_facts()') if node_facts.nil?
           output_error_and_exit _("Cannot query resources for node: %{certname}") % { certname: certname } unless node_facts['processors'] && node_facts['memory']
           resources['cpu'] = node_facts['processors']['count'].to_i
@@ -494,6 +500,13 @@ module PuppetX
         end
         Puppet.debug("Using CPU = #{resources['cpu']} and RAM = #{resources['ram']} for #{certname}")
         resources
+      end
+
+      def node_facts_from_yaml_facts(certname)
+        yaml_file = "/opt/puppetlabs/server/data/puppetserver/yaml/facts/#{certname}.yaml"
+        return unless File.file?(yaml_file)
+        yaml_facts = YAML.load(File.read(yaml_file))
+        yaml_facts.values
       end
 
       # Interface to ::Query class.
