@@ -6,7 +6,7 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
   options = {}
   subject(:calculator) { described_class.new(options) }
 
-  # Allows mergeups from PE 2018 LTS to STS. Revisit after PE 2018 is EOL.
+  # Allows mergeups in the PE implementation of this class.
   pe_2019_or_newer = Gem::Version.new(Puppet.version) >= Gem::Version.new('6.0.0')
 
   pe_2019_2_or_newer = Gem::Version.new(Puppet.version) >= Gem::Version.new('6.8.0')
@@ -59,8 +59,9 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       if pe_2019_or_newer
         node['type']['with_jruby9k_enabled'] = true
         node['classes'].delete('amq::broker')
-        settings['params']['puppet_enterprise::master::puppetserver::reserved_code_cache'] = "#{minimum_ram_allocation}m"
-        settings['totals']['RAM']['used'] += minimum_ram_allocation
+        reserved_code_cache = settings['params']['puppet_enterprise::master::puppetserver::jruby_max_active_instances'] * ram_per_jruby_code_cache
+        settings['params']['puppet_enterprise::master::puppetserver::reserved_code_cache'] = "#{reserved_code_cache}m"
+        settings['totals']['RAM']['used'] += reserved_code_cache
         settings['totals']['RAM']['used'] -= settings['params']['puppet_enterprise::profile::amq::broker::heap_mb']
         settings['params'].delete('puppet_enterprise::profile::amq::broker::heap_mb')
       end
@@ -112,8 +113,9 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       if pe_2019_or_newer
         node['type']['with_jruby9k_enabled'] = true
         node['classes'].delete('amq::broker')
-        settings['params']['puppet_enterprise::master::puppetserver::reserved_code_cache'] = "#{minimum_ram_allocation}m"
-        settings['totals']['RAM']['used'] += minimum_ram_allocation
+        reserved_code_cache = settings['params']['puppet_enterprise::master::puppetserver::jruby_max_active_instances'] * ram_per_jruby_code_cache
+        settings['params']['puppet_enterprise::master::puppetserver::reserved_code_cache'] = "#{reserved_code_cache}m"
+        settings['totals']['RAM']['used'] += reserved_code_cache
         settings['totals']['RAM']['used'] -= settings['params']['puppet_enterprise::profile::amq::broker::heap_mb']
         settings['params'].delete('puppet_enterprise::profile::amq::broker::heap_mb')
       end
@@ -222,6 +224,7 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         if pe_2019_2_or_newer
           node['type']['with_orchestrator_jruby'] = true
           settings['params']['puppet_enterprise::master::puppetserver::jruby_max_active_instances'] -= 1
+          settings['totals']['CPU']['used'] -= 1
           reserved_code_cache = settings['params']['puppet_enterprise::master::puppetserver::jruby_max_active_instances'] * ram_per_jruby_code_cache
           settings['params']['puppet_enterprise::master::puppetserver::reserved_code_cache'] = "#{reserved_code_cache}m"
           settings['params']['puppet_enterprise::profile::master::java_args']       = { 'Xms' => '10240m', 'Xmx' => '10240m' }
@@ -282,8 +285,9 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       if pe_2019_or_newer
         node['type']['with_jruby9k_enabled'] = true
         node['classes'].delete('amq::broker')
-        settings['params']['puppet_enterprise::master::puppetserver::reserved_code_cache'] = "#{minimum_ram_allocation}m"
-        settings['totals']['RAM']['used'] += minimum_ram_allocation
+        reserved_code_cache = settings['params']['puppet_enterprise::master::puppetserver::jruby_max_active_instances'] * ram_per_jruby_code_cache
+        settings['params']['puppet_enterprise::master::puppetserver::reserved_code_cache'] = "#{reserved_code_cache}m"
+        settings['totals']['RAM']['used'] += reserved_code_cache
         settings['totals']['RAM']['used'] -= settings['params']['puppet_enterprise::profile::amq::broker::heap_mb']
         settings['params'].delete('puppet_enterprise::profile::amq::broker::heap_mb')
       end
@@ -334,8 +338,9 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       if pe_2019_or_newer
         node['type']['with_jruby9k_enabled'] = true
         node['classes'].delete('amq::broker')
-        settings['params']['puppet_enterprise::master::puppetserver::reserved_code_cache'] = "#{minimum_ram_allocation}m"
-        settings['totals']['RAM']['used'] += minimum_ram_allocation
+        reserved_code_cache = settings['params']['puppet_enterprise::master::puppetserver::jruby_max_active_instances'] * ram_per_jruby_code_cache
+        settings['params']['puppet_enterprise::master::puppetserver::reserved_code_cache'] = "#{reserved_code_cache}m"
+        settings['totals']['RAM']['used'] += reserved_code_cache
         settings['totals']['RAM']['used'] -= settings['params']['puppet_enterprise::profile::amq::broker::heap_mb']
         settings['params'].delete('puppet_enterprise::profile::amq::broker::heap_mb')
       end
