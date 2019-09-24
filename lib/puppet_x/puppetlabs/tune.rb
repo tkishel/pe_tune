@@ -477,12 +477,12 @@ module PuppetX
           resources['ram'] = string_to_bytes(node_facts['ram']).to_i
         else
           Puppet.debug('Using PuppetDB for resources_for_node()')
-          #node_facts = @query::node_facts(certname)
+          node_facts = @query::node_facts(certname)
           # if node_facts.nil?
-          #   Puppet.debug('Unable to query node_facts()')
+          #   Puppet.debug('Unable to use PuppetDB')
           #   Puppet.debug('Using puppetserver/yaml/facts for resources_for_node()')
           #   node_facts = node_facts_from_yaml_facts(certname)
-          #   Puppet.debug('Unable to read node_facts_from_yaml_facts()') if node_facts.nil?
+          #   Puppet.debug('Unable to use puppetserver/yaml/facts') if node_facts.nil?
           # end
           output_error_and_exit _('Unable to connect to PuppetDB to query node_facts()') if node_facts.nil?
           output_error_and_exit _("Cannot query resources for node: %{certname}") % { certname: certname } unless node_facts['processors'] && node_facts['memory']
