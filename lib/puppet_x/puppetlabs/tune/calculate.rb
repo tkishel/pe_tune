@@ -177,12 +177,12 @@ module PuppetX
               # minimum_cpu_orchestrator = 1
               # maximum_cpu_orchestrator = 1
               # jrubies_by_ram_orchestrator = (ram_orchestrator / (ram_per_jruby + ram_per_jruby_code_cache)).to_i
-              # orchestrator_jruby_max_active_instances = value_within_min_max(jrubies_by_ram_orchestrator, minimum_cpu_orchestrator, maximum_cpu_orchestrator)
+              # orchestrator_jruby_max_active_instances = jrubies_by_ram_orchestrator.clamp(minimum_cpu_orchestrator, maximum_cpu_orchestrator)
               # settings['params']['puppet_enterprise::master::orchestrator::jruby_max_active_instances'] = orchestrator_jruby_max_active_instances
               # settings['totals']['CPU']['used'] += orchestrator_jruby_max_active_instances
               #
               # orchestrator_code_cache_based_upon_jrubies = orchestrator_jruby_max_active_instances * ram_per_jruby_code_cache
-              # ram_orchestrator_code_cache = value_within_min_max(orchestrator_code_cache_based_upon_jrubies, minimum_ram_code_cache, maximum_ram_code_cache)
+              # ram_orchestrator_code_cache = orchestrator_code_cache_based_upon_jrubies.clamp(minimum_ram_code_cache, maximum_ram_code_cache)
               # settings['params']['puppet_enterprise::master::orchestrator::reserved_code_cache'] = "#{ram_orchestrator_code_cache}m"
               # settings['totals']['RAM']['used'] += ram_orchestrator_code_cache
             end
@@ -200,7 +200,7 @@ module PuppetX
           end
 
           jrubies_by_ram_puppetserver = (ram_puppetserver / (ram_per_jruby + ram_per_jruby_code_cache)).to_i
-          puppetserver_jruby_max_active_instances = value_within_min_max(jrubies_by_ram_puppetserver, minimum_cpu_puppetserver, maximum_cpu_puppetserver)
+          puppetserver_jruby_max_active_instances = jrubies_by_ram_puppetserver.clamp(minimum_cpu_puppetserver, maximum_cpu_puppetserver)
           settings['params']['puppet_enterprise::master::puppetserver::jruby_max_active_instances'] = puppetserver_jruby_max_active_instances
           settings['totals']['CPU']['used'] += puppetserver_jruby_max_active_instances
 
@@ -210,7 +210,7 @@ module PuppetX
 
           if node['type']['with_jruby9k_enabled']
             code_cache_based_upon_jrubies = puppetserver_jruby_max_active_instances * ram_per_jruby_code_cache
-            ram_puppetserver_code_cache = value_within_min_max(code_cache_based_upon_jrubies, minimum_ram_code_cache, maximum_ram_code_cache)
+            ram_puppetserver_code_cache = code_cache_based_upon_jrubies.clamp(minimum_ram_code_cache, maximum_ram_code_cache)
             settings['params']['puppet_enterprise::master::puppetserver::reserved_code_cache'] = "#{ram_puppetserver_code_cache}m"
             settings['totals']['RAM']['used'] += ram_puppetserver_code_cache
           end
@@ -326,7 +326,7 @@ module PuppetX
           settings['params']['puppet_enterprise::profile::database::shared_buffers'] = "#{ram_database}MB"
           settings['totals']['RAM']['used'] += ram_database
 
-          cpu_autovacuum_max_workers = percent_value_within_min_max(percent_cpu_autovacuum_max_workers, maximum_cpu_autovacuum_max_workers, minimum_cpu_autovacuum_max_workers, maximum_cpu_autovacuum_max_workers)
+          cpu_autovacuum_max_workers = percent_clamp(percent_cpu_autovacuum_max_workers, maximum_cpu_autovacuum_max_workers, minimum_cpu_autovacuum_max_workers, maximum_cpu_autovacuum_max_workers)
           ram_maintenance_work_mem   = [maximum_ram_maintenance_work_mem, (node['resources']['ram'] / maintenance_work_mem_divisor).to_i].min
           ram_autovacuum_work_mem    = (ram_maintenance_work_mem / cpu_autovacuum_max_workers).to_i
 
@@ -409,7 +409,7 @@ module PuppetX
             Puppet.debug("Error: available processors: #{available} is less than minimum processors: #{minimum}")
             return
           end
-          percent_value_within_min_max(percent, available, minimum, maximum)
+          percent_clamp(percent, available, minimum, maximum)
         end
 
         # Return a value within a minimum and maximum amount of available (minus memory_reserved_for_os) memory.
@@ -421,7 +421,7 @@ module PuppetX
             Puppet.debug("Error: available memory: #{available} is less than minimum memory: #{minimum}")
             return
           end
-          percent_value_within_min_max(percent, available, minimum, maximum)
+          percent_clamp(percent, available, minimum, maximum)
         end
 
         # Model https://puppet.com/docs/pe/latest/configuring/tuning_monolithic.html
@@ -450,21 +450,11 @@ module PuppetX
           return large  if memory >= 32768
         end
 
-        # Return a value or the minimum or maximum, with minimum having a higher precedence than maximum.
-        # Different than clamp: [minimum, val, maximum].sort[1]
-
-        def value_within_min_max(val, minimum, maximum)
-          value_or_maximum = [val, maximum].min
-          [value_or_maximum, minimum].max
-        end
-
         # Return a percentage of a value or the minimum or maximum, with minimum having a higher precedence than maximum.
 
-        def percent_value_within_min_max(percent, val, minimum, maximum)
-          percent *= 0.01
-          val_percent = (val * percent).to_i
-          value_or_maximum = [val_percent, maximum].min
-          [value_or_maximum, minimum].max
+        def percent_clamp(percent, value, minimum, maximum)
+          value = (value * percent * 0.01).to_i
+          value.clamp(minimum, maximum)
         end
 
         # Test if a number is within a percentage of another number.
