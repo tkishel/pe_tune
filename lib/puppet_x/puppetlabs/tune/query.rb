@@ -3,7 +3,7 @@ require 'puppet/util/pe_conf/recover'
 
 module PuppetX
   module Puppetlabs
-    # Tune optimized settings.
+    # Query infrastructure and show current, or calculate optimized settings.
     class Tune
       # Interface to Puppet::Util::Puppetdb, Puppet::Util::Pe_conf, and Puppet::Util::Pe_conf::Recover
       class Query
@@ -30,7 +30,7 @@ module PuppetX
           @environmentpath = Puppet::Util::Execution.execute('/opt/puppetlabs/puppet/bin/puppet config print environmentpath --section master', 'combine' => false).chomp
         end
 
-        # Query PuppetDB for the environment of a node.
+        # Query PuppetDB for the environment of a PE Infrastructure node.
 
         def catalog_environment(certname)
           Puppet.debug("Querying PuppetDB for Environment using: #{certname}")
@@ -101,7 +101,7 @@ module PuppetX
           avg_config_retrieval_time.ceil
         end
 
-        # Query PuppetDB for nodes with a class.
+        # Query PuppetDB for nodes with a PE Infrastructure class.
 
         def infra_nodes_with_class(classname)
           Puppet.debug("Querying PuppetDB for Class: Puppet_enterprise::Profile::#{classname}")
@@ -169,9 +169,9 @@ module PuppetX
 
         private
 
-        # If puppetdb would be required at the top of the file,
+        # If 'puppet/util/puppetdb' would be required at the top of the file,
         # then it would be autoloaded/required as part of the install process,
-        # before the puppetdb package was installed, producing an error.
+        # resulting in an error.
 
         def query_puppetdb(pql)
           require 'puppet/util/puppetdb'

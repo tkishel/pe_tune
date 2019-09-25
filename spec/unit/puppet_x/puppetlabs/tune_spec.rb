@@ -10,7 +10,7 @@ describe PuppetX::Puppetlabs::Tune do
   # Do not query PuppetDB when unit testing this class.
   subject(:tune) { described_class.new(:local => true) }
 
-  # Allows mergeups from PE 2018 LTS to STS. Revisit after PE 2018 is EOL.
+  # Allows mergeups in the PE implementation of this class.
   pe_2019_or_newer = Gem::Version.new(Puppet.version) >= Gem::Version.new('6.0.0')
 
   before(:each) do

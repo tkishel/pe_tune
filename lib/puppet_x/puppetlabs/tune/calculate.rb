@@ -2,7 +2,7 @@
 
 module PuppetX
   module Puppetlabs
-    # Tune optimized settings.
+    # Query infrastructure and show current, or calculate optimized settings.
     class Tune
       # Calculate optimized settings.
       class Calculate
@@ -10,11 +10,19 @@ module PuppetX
 
         def initialize(options)
           @defaults = {}
+
+          # For use when estimating capacity.
           @defaults[:compile_time_factor]      = 2
+
+          # Round up when memory is close to the next level of our leveled settings. See fit_to_memory().
           @defaults[:fit_to_memory_percentage] = 5
+
+          # Leave this much memory unallocated for the operating system, and other applications.
           @defaults[:memory_reserved_for_os]   = 1024
 
           @options = {}
+
+          # Users may override these defaults via command line options.
           @options[:memory_per_jruby]       = options[:memory_per_jruby] || 0
           @options[:memory_reserved_for_os] = options[:memory_reserved_for_os] || 0
 
@@ -23,36 +31,48 @@ module PuppetX
         end
 
         #
-        # Roles
+        # PE Infrastructure Roles
         #
 
-        # Masters and Compile Masters in Monolithic or Split Infrastructures
-        # Services: pe-puppetserver and (optionally) all other services
+        # Masters, Replicas, and Compilers, in Monolithic or Split Infrastructures
+        # Services: pe-puppetserver and (optionally) all other services.
+        # Levels and ratios model https://puppet.com/docs/pe/latest/configuring/tuning_monolithic.html
 
         def calculate_master_settings(node)
-          percent_cpu_threads         = 25
-          minimum_cpu_threads         = fit_to_processors(node['resources']['cpu'], 1, 2, 4)
-          percent_cpu_jrubies         = 75
-          minimum_cpu_jrubies         = 2
-          minimum_ram_puppetserver    = 512
+          percent_ram_database        = 25
+          percent_ram_puppetdb        = 10
+
+          percent_cpu_puppetdb        = 25
+          percent_cpu_puppetserver    = 75
+
+          minimum_cpu_puppetdb        = fit_to_processors(node['resources']['cpu'], 1, 2, 4)
+          minimum_cpu_puppetserver    = 2
+
           minimum_ram_code_cache      = 128
           maximum_ram_code_cache      = 2048
+
           ram_per_jruby               = fit_to_memory(node['resources']['ram'], 512, 768, 1024)
           ram_per_jruby_code_cache    = 128
-          percent_ram_database        = 25
+
           minimum_ram_database        = fit_to_memory(node['resources']['ram'], 2048, 3072, 4096)
           maximum_ram_database        = 16384
-          percent_ram_puppetdb        = 10
+
           minimum_ram_puppetdb        = fit_to_memory(node['resources']['ram'], 512, 1024, 2048)
           maximum_ram_puppetdb        = 8192
+
           ram_console                 = fit_to_memory(node['resources']['ram'], 512, 768, 1024)
+
           ram_orchestrator            = fit_to_memory(node['resources']['ram'], 512, 768, 1024)
+
           ram_activemq                = fit_to_memory(node['resources']['ram'], 512, 1024, 2048)
-          minimum_ram_os              = memory_reserved_for_os
+
+          minimum_ram_puppetserver    = 512
+
+          ram_reserved_os             = select_memory_reserved_for_os
 
           settings = initialize_settings(node)
 
-          # Use the specified value, if defined; or use the currently specified value, if defined.
+          # Use the optional value, if defined; or optionally use the currently specified amount of memory_per_jruby.
 
           if @options[:memory_per_jruby] != 0
             ram_per_jruby = @options[:memory_per_jruby]
@@ -64,48 +84,47 @@ module PuppetX
 
           if node['type']['is_monolithic_master'] || node['type']['is_replica_master']
             if node['infrastructure']['with_compile_masters']
-              percent_cpu_threads      = 50
-              percent_cpu_jrubies      = 33
               percent_ram_puppetdb     = 20
+              percent_cpu_puppetdb     = 50
+              percent_cpu_puppetserver = 33
             end
           end
 
-          # Reallocate resources depending upon services active on this host.
+          # Reallocate resources depending upon PE Infrastructure services on this host.
 
-          percent_cpu_jrubies         = 100 unless node['classes']['puppetdb']
-          percent_cpu_threads         = 0   unless node['classes']['puppetdb']
-          minimum_ram_database        = 0   unless node['classes']['database']
-          ram_console                 = 0   unless node['classes']['console']
-          ram_orchestrator            = 0   unless node['classes']['orchestrator']
-          ram_activemq                = 0   unless node['classes']['amq::broker']
+          percent_cpu_puppetserver = 100 unless node['classes']['puppetdb']
+          percent_cpu_puppetdb     = 0   unless node['classes']['puppetdb']
+          minimum_ram_database     = 0   unless node['classes']['database']
+          ram_console              = 0   unless node['classes']['console']
+          ram_orchestrator         = 0   unless node['classes']['orchestrator']
+          ram_activemq             = 0   unless node['classes']['amq::broker']
 
           # Calculate the following maximums after the above reallocations.
 
-          maximum_cpu_threads = [minimum_cpu_threads, (node['resources']['cpu'] * (percent_cpu_threads * 0.01)).to_i].max
-          maximum_cpu_jrubies = [minimum_cpu_jrubies, (node['resources']['cpu'] * (percent_cpu_jrubies * 0.01) - 1).to_i].max
+          maximum_cpu_puppetdb = [minimum_cpu_puppetdb, (node['resources']['cpu'] * (percent_cpu_puppetdb * 0.01)).to_i].max
+          maximum_cpu_puppetserver = [minimum_cpu_puppetserver, (node['resources']['cpu'] * (percent_cpu_puppetserver * 0.01) - 1).to_i].max
 
-          # Orchestrator in 2019.2+ requires a core for its jrubies, and requires additional memory.
+          # Reallocate resources between puppetserver and orchestrator, if this host is running PE 2019.2 or newer.
+          # ORCH-2384: Orchestrator in PE 2019.2 has jrubies, and requires (estimated) a processor and additional memory.
 
           if node['classes']['orchestrator'] && node['type']['with_orchestrator_jruby']
-            maximum_cpu_jrubies = [maximum_cpu_jrubies - 1, 1].max
+            maximum_cpu_puppetserver = [maximum_cpu_puppetserver - 1, 1].max
             ram_orchestrator += ram_per_jruby
-            # This is a silent allocation.
-            settings['totals']['CPU']['used'] += 1
           end
 
           # The Vegas Renormalization: allow for testing with vmpooler (2 CPU / 6 GB RAM) VMs.
-          # Setting minimum_cpu_jrubies to 1 as a default above results in an unused core when CPU equals 3 or 4.
+          # Setting minimum_cpu_puppetserver to 1 as a default above results in an unused core when CPU equals 3 or 4.
 
           if node['resources']['cpu'] < 3
-            minimum_cpu_jrubies = 1
-            maximum_cpu_jrubies = 1
+            minimum_cpu_puppetserver = 1
+            maximum_cpu_puppetserver = 1
           end
 
-          # Reallocate resources from puppetserver depending upon JRuby version.
+          # Do not allocate memory for reserved_code_cache for depending upon JRuby version.
 
           ram_per_jruby_code_cache = 0 unless node['type']['with_jruby9k_enabled']
 
-          # Allocate.
+          # Allocate processors and memory for PE Infrastructure services ...
 
           if node['classes']['database']
             ram_database = calculate_ram(node['resources']['ram'], settings['totals']['RAM']['used'], percent_ram_database, minimum_ram_database, maximum_ram_database)
@@ -118,14 +137,16 @@ module PuppetX
           end
 
           if node['classes']['puppetdb']
+
             # Reallocate resources between puppetserver and puppetdb, if this host is a compiler (puppetserver plus puppetdb).
+
             if node['type']['is_compile_master'] || node['type']['is_compiler']
-              minimum_cpu_threads = 1
-              maximum_cpu_threads = 3
-              percent_cpu_threads = 25
+              percent_cpu_puppetdb = 25
+              minimum_cpu_puppetdb = 1
+              maximum_cpu_puppetdb = 3
             end
 
-            command_processing_threads = calculate_cpu(node['resources']['cpu'], settings['totals']['CPU']['used'], percent_cpu_threads, minimum_cpu_threads, maximum_cpu_threads)
+            command_processing_threads = calculate_cpu(node['resources']['cpu'], settings['totals']['CPU']['used'], percent_cpu_puppetdb, minimum_cpu_puppetdb, maximum_cpu_puppetdb)
             unless command_processing_threads
               Puppet.debug("Error: unable to calculate command_processing_threads")
               return
@@ -151,11 +172,14 @@ module PuppetX
             settings['params']['puppet_enterprise::profile::orchestrator::java_args'] = { 'Xms' => "#{ram_orchestrator}m", 'Xmx' => "#{ram_orchestrator}m" }
             settings['totals']['RAM']['used'] += ram_orchestrator
             if node['type']['with_orchestrator_jruby']
-              # ORCH-2384
+              # ORCH-2384:
               #
-              # jrubies_that_fit_in_available_ram_for_orchestrator = (ram_orchestrator / (ram_per_jruby + ram_per_jruby_code_cache)).to_i
-              # orchestrator_jruby_max_active_instances = value_within_min_max(jrubies_that_fit_in_available_ram_for_orchestrator, 1, 4)
+              # minimum_cpu_orchestrator = 1
+              # maximum_cpu_orchestrator = 1
+              # jrubies_by_ram_orchestrator = (ram_orchestrator / (ram_per_jruby + ram_per_jruby_code_cache)).to_i
+              # orchestrator_jruby_max_active_instances = value_within_min_max(jrubies_by_ram_orchestrator, minimum_cpu_orchestrator, maximum_cpu_orchestrator)
               # settings['params']['puppet_enterprise::master::orchestrator::jruby_max_active_instances'] = orchestrator_jruby_max_active_instances
+              # settings['totals']['CPU']['used'] += orchestrator_jruby_max_active_instances
               #
               # orchestrator_code_cache_based_upon_jrubies = orchestrator_jruby_max_active_instances * ram_per_jruby_code_cache
               # ram_orchestrator_code_cache = value_within_min_max(orchestrator_code_cache_based_upon_jrubies, minimum_ram_code_cache, maximum_ram_code_cache)
@@ -169,24 +193,23 @@ module PuppetX
             settings['totals']['RAM']['used'] += ram_activemq
           end
 
-          available_ram_for_puppetserver = node['resources']['ram'] - minimum_ram_os - settings['totals']['RAM']['used']
-          if available_ram_for_puppetserver < minimum_ram_puppetserver
-            Puppet.debug("Error: available_ram_for_puppetserver: #{available_ram_for_puppetserver} MB is less than minimum_ram_puppetserver: #{minimum_ram_puppetserver} MB")
+          ram_puppetserver = node['resources']['ram'] - ram_reserved_os - settings['totals']['RAM']['used']
+          if ram_puppetserver < minimum_ram_puppetserver
+            Puppet.debug("Error: ram_puppetserver: #{ram_puppetserver} MB is less than minimum_ram_puppetserver: #{minimum_ram_puppetserver} MB")
             return
           end
 
-          jrubies_that_fit_in_available_ram_for_puppetserver = (available_ram_for_puppetserver / (ram_per_jruby + ram_per_jruby_code_cache)).to_i
-          jruby_max_active_instances = value_within_min_max(jrubies_that_fit_in_available_ram_for_puppetserver, minimum_cpu_jrubies, maximum_cpu_jrubies)
-          settings['params']['puppet_enterprise::master::puppetserver::jruby_max_active_instances'] = jruby_max_active_instances
-          settings['totals']['CPU']['used'] += jruby_max_active_instances
+          jrubies_by_ram_puppetserver = (ram_puppetserver / (ram_per_jruby + ram_per_jruby_code_cache)).to_i
+          puppetserver_jruby_max_active_instances = value_within_min_max(jrubies_by_ram_puppetserver, minimum_cpu_puppetserver, maximum_cpu_puppetserver)
+          settings['params']['puppet_enterprise::master::puppetserver::jruby_max_active_instances'] = puppetserver_jruby_max_active_instances
+          settings['totals']['CPU']['used'] += puppetserver_jruby_max_active_instances
 
-          ram_jrubies = (jruby_max_active_instances * ram_per_jruby)
-          ram_puppetserver = [ram_jrubies, minimum_ram_puppetserver].max
+          ram_puppetserver = [(puppetserver_jruby_max_active_instances * ram_per_jruby), minimum_ram_puppetserver].max
           settings['params']['puppet_enterprise::profile::master::java_args'] = { 'Xms' => "#{ram_puppetserver}m", 'Xmx' => "#{ram_puppetserver}m" }
           settings['totals']['RAM']['used'] += ram_puppetserver
 
           if node['type']['with_jruby9k_enabled']
-            code_cache_based_upon_jrubies = jruby_max_active_instances * ram_per_jruby_code_cache
+            code_cache_based_upon_jrubies = puppetserver_jruby_max_active_instances * ram_per_jruby_code_cache
             ram_puppetserver_code_cache = value_within_min_max(code_cache_based_upon_jrubies, minimum_ram_code_cache, maximum_ram_code_cache)
             settings['params']['puppet_enterprise::master::puppetserver::reserved_code_cache'] = "#{ram_puppetserver_code_cache}m"
             settings['totals']['RAM']['used'] += ram_puppetserver_code_cache
@@ -195,8 +218,9 @@ module PuppetX
           settings['totals']['MB_PER_JRUBY'] = ram_per_jruby
 
           # Reallocate resources from puppetdb to avoid making too many connections to databases, if this host is a compiler (puppetserver plus puppetdb).
+
           if node['classes']['puppetdb'] && (node['type']['is_compile_master'] || node['type']['is_compiler'])
-            read_maximum_pool_size  = jruby_max_active_instances + [(jruby_max_active_instances / 2).to_i, 1].max
+            read_maximum_pool_size  = puppetserver_jruby_max_active_instances + [(puppetserver_jruby_max_active_instances / 2).to_i, 1].max
             write_maximum_pool_size = (command_processing_threads * 2)
             settings['params']['puppet_enterprise::puppetdb::read_maximum_pool_size'] = read_maximum_pool_size
             settings['params']['puppet_enterprise::puppetdb::write_maximum_pool_size'] = write_maximum_pool_size
@@ -211,6 +235,7 @@ module PuppetX
 
         def calculate_console_settings(node)
           percent_ram_console = 75
+
           minimum_ram_console = fit_to_memory(node['resources']['ram'], 512, 768, 1024)
           maximum_ram_console = 4096
 
@@ -231,10 +256,13 @@ module PuppetX
         # Services: pe-puppetdb and (by default, but optionally) pe-postgresql
 
         def calculate_puppetdb_settings(node)
-          percent_cpu_threads  = 50
-          minimum_cpu_threads  = 1
-          maximum_cpu_threads  = [minimum_cpu_threads, (node['resources']['cpu'] * (percent_cpu_threads * 0.01)).to_i].max
+          percent_cpu_puppetdb = 50
+
+          minimum_cpu_puppetdb = 1
+          maximum_cpu_puppetdb = [minimum_cpu_puppetdb, (node['resources']['cpu'] * (percent_cpu_puppetdb * 0.01)).to_i].max
+
           percent_ram_puppetdb = 50
+
           minimum_ram_puppetdb = fit_to_memory(node['resources']['ram'], 512, 1024, 2048)
           maximum_ram_puppetdb = 8192
 
@@ -249,7 +277,7 @@ module PuppetX
             settings['totals']['RAM']['used'] += database_settings['totals']['RAM']['used']
           end
 
-          command_processing_threads = calculate_cpu(node['resources']['cpu'], settings['totals']['CPU']['used'], percent_cpu_threads, minimum_cpu_threads, maximum_cpu_threads)
+          command_processing_threads = calculate_cpu(node['resources']['cpu'], settings['totals']['CPU']['used'], percent_cpu_puppetdb, minimum_cpu_puppetdb, maximum_cpu_puppetdb)
           unless command_processing_threads
             Puppet.debug("Error: unable to calculate command_processing_threads")
             return
@@ -273,13 +301,18 @@ module PuppetX
 
         def calculate_database_settings(node)
           percent_ram_database               = 25
+
           minimum_ram_database               = fit_to_memory(node['resources']['ram'], 2048, 3072, 4096)
           maximum_ram_database               = 16384
+
           percent_cpu_autovacuum_max_workers = 33.3
           minimum_cpu_autovacuum_max_workers = 3
           maximum_cpu_autovacuum_max_workers = 8
+
           maintenance_work_mem_divisor       = 3.0 # Divide by 3 if External or Split, as opposed to 8 if Monolithic.
+
           maximum_ram_maintenance_work_mem   = 1024
+
           double_default_max_connections     = 1000
           double_default_work_mem            = 8
 
@@ -309,7 +342,7 @@ module PuppetX
           settings
         end
 
-        # Return settings.
+        # Return a new settings structure.
 
         def initialize_settings(node)
           {
@@ -364,7 +397,7 @@ module PuppetX
 
         # Return the option or the default.
 
-        def memory_reserved_for_os
+        def select_memory_reserved_for_os
           (@options[:memory_reserved_for_os] != 0) ? @options[:memory_reserved_for_os] : @defaults[:memory_reserved_for_os]
         end
 
@@ -382,7 +415,7 @@ module PuppetX
         # Return a value within a minimum and maximum amount of available (minus memory_reserved_for_os) memory.
 
         def calculate_ram(total, used, percent, minimum, maximum)
-          reserved  = memory_reserved_for_os
+          reserved  = select_memory_reserved_for_os
           available = total - reserved - used
           if available < minimum
             Puppet.debug("Error: available memory: #{available} is less than minimum memory: #{minimum}")

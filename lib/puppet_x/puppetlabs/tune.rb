@@ -14,9 +14,9 @@
 
 module PuppetX
   module Puppetlabs
-    # Query infrastructure and show current or calculate optimized settings.
+    # Query infrastructure and show current, or calculate optimized settings.
     class Tune
-      # List of settings used by this module.
+      # List of class parameters (settings) managed by this command.
       def tunable_param_names
         param_names = [
           'puppet_enterprise::master::puppetserver::jruby_max_active_instances',
@@ -38,7 +38,7 @@ module PuppetX
         param_names
       end
 
-      # List of classes used by this module.
+      # List of classes queried by this command.
 
       def tunable_class_names
         class_names = [
@@ -58,7 +58,7 @@ module PuppetX
         class_names
       end
 
-      # Initialize this module class.
+      # Initialize tuning: command options, class variables, and objects.
 
       def initialize(options)
         if options[:current] && (options[:inventory] || options[:local])
@@ -77,19 +77,19 @@ module PuppetX
           output_error_and_exit _("The '--pe_conf' option requires the '--local' option")
         end
 
-        # Properties for each node.
+        # Optimized properties for each PE Infrastructure node found in Inventory or PuppetDB.
         @collected_nodes = {}
 
-        # Settings common to all nodes.
-        @collected_settings_common = {}
-
-        # Properties for each node.
+        # Current properties for each PE Infrastructure node found in Inventory or PuppetDB.
         @current_collected_nodes = {}
 
-        # Nodes with classes from Inventory or PuppetDB.
+        # Settings common to all PE Infrastructure nodes, for use in common.yaml.
+        @collected_settings_common = {}
+
+        # Nodes with each tunable PE Infrastructure class.
         @nodes_with_class = {}
 
-        # Nodes with role.
+        # Nodes with each PE Infrastructure role (Master, Compiler, etc.).
         @nodes_with_role = {}
 
         # Options specific to this Tune class.
@@ -119,14 +119,14 @@ module PuppetX
         @query = PuppetX::Puppetlabs::Tune::Query.new unless using_inventory?
       end
 
-      # Output current infrastructure.
+      # Output the current infrastructure summary.
 
       def output_infrastructure
         output_pe_infrastructure_error_and_exit if unknown_infrastructure?
         output_pe_infrastucture_summary(monolithic?, with_compile_masters?, with_compilers?, with_external_database?)
       end
 
-      # Output current settings for each infrastructure node.
+      # Output the current settings for each PE Infrastructure node.
 
       def output_current_settings
         current_available_jrubies = collect_current_settings
@@ -139,7 +139,7 @@ module PuppetX
         output_estimated_capacity(current_available_jrubies)
       end
 
-      # Output optimized settings for each infrastructure node.
+      # Output optimized settings for each PE Infrastructure node.
 
       def output_optimized_settings
         optimized_available_jrubies = collect_optimized_settings
@@ -157,7 +157,7 @@ module PuppetX
         output_settings_to_pe_conf
       end
 
-      # Output comparison of currently defined and optimized settings for each infrastructure node.
+      # Output a comparison of current and optimized settings for each PE Infrastructure node.
 
       def output_compare_current_and_optimized_settings
         collect_current_settings
@@ -194,7 +194,8 @@ module PuppetX
         end
       end
 
-      # Collect current settings for each infrastructure node based upon Classifier and Hiera data.
+      # Collect current settings for each PE Infrastructure node from Classifier and Hiera data.
+      # Based upon each node's set of services (aka PE Infrastructure role).
 
       def collect_current_settings
         available_jrubies = 0
@@ -237,10 +238,12 @@ module PuppetX
           available_jrubies += available_jrubies_for_node(certname, settings)
         end
 
+        # Return the total of all jrubies, for use when estimating capacity.
         available_jrubies
       end
 
-      # Collect optimized settings for each infrastructure node based upon each node's set of services.
+      # Collect optimized settings for each PE Infrastructure node.
+      # Based upon each node's set of services (aka PE Infrastructure role).
 
       def collect_optimized_settings
         available_jrubies = 0
@@ -340,10 +343,11 @@ module PuppetX
           available_jrubies += available_jrubies_for_node(certname, node['settings'])
         end
 
+        # Return the total of all jrubies, for use when estimating capacity.
         available_jrubies
       end
 
-      # Return configuration for a node.
+      # Configuration for a PE Infrastructure node, used to calculate its settings.
 
       def configuration_for_node(certname)
         node = {}
@@ -365,7 +369,7 @@ module PuppetX
         node
       end
 
-      # Collect node for output.
+      # Collect the current settings for a PE Infrastructure node into a structure for output.
 
       def collect_current_node(certname, role, settings)
         properties = {
@@ -375,7 +379,7 @@ module PuppetX
         @current_collected_nodes[certname] = properties
       end
 
-      # Collect node for output to <certname>.yaml.
+      # Collect the optimized settings for a PE Infrastructure node into a structure for output.
 
       def collect_optimized_node(certname, role, node)
         properties = {
@@ -386,7 +390,7 @@ module PuppetX
         @collected_nodes[certname] = properties
       end
 
-      # Extract common settings for common.yaml from <certname>.yaml.
+      # Extract optimized settings common to all PE Infrastructure nodes.
 
       def collect_optimized_settings_common_to_all_nodes
         return unless @options[:common]
@@ -413,25 +417,27 @@ module PuppetX
       #
 
       # Interface to ::Inventory and ::Query classes.
+      # Identify PE Infrastructure nodes by role, based upon the classes of the node.
 
       def collect_infrastructure_nodes
         if using_inventory?
+          # The 'local' option is limited to use with a Monolithic Master during a clean install when there is no PuppetDB to query.
           @inventory::read_inventory_from_local_system if @options[:local]
           @inventory::read_inventory_from_inventory_file(@options[:inventory]) if @options[:inventory]
-          output_error_and_exit _('Unable to parse inventory nodes or roles') if @inventory::nodes.empty? || @inventory::roles.empty?
+          output_error_and_exit _("Unable to parse 'nodes' or 'roles' from inventory") if @inventory::nodes.empty? || @inventory::roles.empty?
           @inventory::convert_inventory_roles_to_classes
-          output_error_and_exit _('Unable to parse inventory classes') if @inventory::classes.empty? || @inventory::classes == @inventory::default_inventory_classes
+          output_error_and_exit _("Unable to parse 'classes' from inventory") if @inventory::classes.empty? || @inventory::classes == @inventory::default_inventory_classes
         else
           @query::pe_environment(Puppet['certname'])
-          output_error_and_exit _("Unable to parse 'environment'") if @query::environment.empty?
-          output_error_and_exit _("Unable to parse 'environmentpath'") if @query::environmentpath.empty?
+          output_error_and_exit _("Unable to parse the 'environment' of this PE Infrastructure") if @query::environment.empty?
+          output_error_and_exit _("Unable to parse the 'environmentpath' of this PE Infrastructure") if @query::environmentpath.empty?
         end
 
         tunable_class_names.each do |classname|
           collect_nodes_with_class(classname)
         end
 
-        # Mappings vary between roles, profiles, and classes.
+        # Mappings vary between PE Infrastructure roles, profiles, and classes.
         # See: https://github.com/puppetlabs/puppetlabs-pe_infrastructure/blob/irving/lib/puppet_x/puppetlabs/meep/defaults.rb
 
         replica_masters = (@nodes_with_class['primary_master_replica'] + @nodes_with_class['enabled_primary_master_replica']).uniq
@@ -448,6 +454,8 @@ module PuppetX
 
       # Interface to ::Inventory and ::Query classes.
 
+      # Identify the nodes with a specific PE Infrastructure class.
+
       def collect_nodes_with_class(classname)
         if using_inventory?
           Puppet.debug('Using Inventory for collect_nodes_with_class()')
@@ -463,7 +471,7 @@ module PuppetX
         end
       end
 
-      # Interface to ::Inventory and ::Query classes.
+      # Identify the system resources for a specific PE Infrastructure node.
       # Override when testing with environment variables.
 
       def resources_for_node(certname)
@@ -502,6 +510,8 @@ module PuppetX
         resources
       end
 
+      # Fall back to reading facts on disk.
+
       def node_facts_from_yaml_facts(certname)
         yaml_file = "/opt/puppetlabs/server/data/puppetserver/yaml/facts/#{certname}.yaml"
         return unless File.file?(yaml_file)
@@ -511,17 +521,23 @@ module PuppetX
 
       # Interface to ::Query class.
 
+      # Identify the current settings for a specific PE Infrastructure node.
+
       def current_settings_for_node(certname, setting_names)
         result = @query::hiera_classifier_settings(certname, setting_names)
         output_error_and_exit _('Unable to connect to PuppetDB to query current_settings_for_node()') if result.nil?
         result
       end
 
+      # Query PuppetDB.
+
       def active_node_count
         result = @query::active_node_count
         output_error_and_exit _('Unable to connect to PuppetDB to query active_node_count()') if result.nil?
         result
       end
+
+      # Query PuppetDB.
 
       def average_compile_time(report_limit)
         result = @query::average_compile_time(report_limit)
@@ -533,7 +549,7 @@ module PuppetX
       # Output
       #
 
-      # Output Hiera YAML files.
+      # Output optimized settings to a directory of Hiera YAML files.
 
       def output_settings_to_hiera
         return unless @options[:hiera]
@@ -556,7 +572,7 @@ module PuppetX
         File.write(output_file, @collected_settings_common.to_yaml)
       end
 
-      # Output HOCON to pe.conf.
+      # Output optimized settings to pe.conf.
 
       def output_settings_to_pe_conf
         return unless @options[:pe_conf]
@@ -582,7 +598,7 @@ module PuppetX
         puts "\n"
       end
 
-      # Output highlighted output. From 'puppet/util/colors'
+      # Output highlighted output, from 'puppet/util/colors'.
 
       def output_data(info)
         puts "\e[0;32m#{info}\e[0m"
@@ -592,7 +608,7 @@ module PuppetX
         puts "\e[0;33m#{info}\e[0m"
       end
 
-      # Output infrastucture information.
+      # Output a summary of PE Infrastucture information.
 
       def output_pe_infrastucture_summary(is_monolithic, with_compile_masters, with_compilers, with_external_database)
         return if @options[:quiet]
@@ -604,7 +620,7 @@ module PuppetX
         output_line
       end
 
-      # Output current information for a node.
+      # Output currently defined settings for a PE Infrastucture node.
 
       def output_current_settings_for_node(certname, node)
         return if @options[:quiet]
@@ -627,7 +643,7 @@ module PuppetX
         end
       end
 
-      # Output optimized information for a node.
+      # Output system resources and optimized settings for a PE Infrastucture node.
 
       def output_optimized_settings_for_node(certname, node)
         return if @options[:quiet]
@@ -659,6 +675,8 @@ module PuppetX
         output_line
       end
 
+      # Output optimized settings common to all PE Infrastucture nodes.
+
       def output_common_settings
         return if @options[:quiet]
         return unless @options[:common]
@@ -668,6 +686,8 @@ module PuppetX
         output(@collected_settings_common.to_yaml)
         output_line
       end
+
+      # Output an estimated capacity summary for this PE Infrastucture.
 
       def output_estimated_capacity(available_jrubies)
         return if @options[:quiet]
@@ -688,7 +708,7 @@ module PuppetX
         output_line
       end
 
-      # Output error and exit.
+      # Output an error and exit.
 
       def output_error_and_exit(message)
         Puppet.err(message)
@@ -711,6 +731,8 @@ module PuppetX
         exit 1
       end
 
+      # Output a warning.
+
       def output_minimum_system_requirements_warning(node)
         return if @options[:node] && node['certname'] != @options[:node]
         output_warning _("# Found %{cpu} CPU(s) / %{ram} MB RAM for %{certname}") % { cpu: node['resources']['cpu'], ram: node['resources']['ram'], certname: node['certname'] }
@@ -729,7 +751,7 @@ module PuppetX
       # Identify
       #
 
-      # Identify infrastructure.
+      # Identify PE Infrastructure.
 
       def unknown_infrastructure?
         @nodes_with_role['primary_masters'].count.zero?
@@ -767,7 +789,7 @@ module PuppetX
         @nodes_with_class['puppetdb'].count == (primary_and_replica_masters_count + @nodes_with_role['compile_masters'].count)
       end
 
-      # Identify infrastructure node.
+      # Identify a PE Infrastructure node.
 
       def monolithic_master?(certname)
         monolithic? && @nodes_with_role['primary_masters'].include?(certname)
@@ -781,14 +803,14 @@ module PuppetX
         @nodes_with_role['compile_masters'].include?(certname)
       end
 
-      # Identify class on a node.
+      # Identify a class applied to a PE Infrastructure node.
 
       def node_with_class?(certname, classname)
         return false unless certname && classname
         @nodes_with_class[classname].count > 0 && @nodes_with_class[classname].include?(certname)
       end
 
-      # Identify tunable classes on a node.
+      # Identify tunable classes applied to a PE Infrastructure node.
 
       def tunable_classes_for_node(certname)
         classes = {}
@@ -798,7 +820,7 @@ module PuppetX
         classes
       end
 
-      # Identify JRuby version on a node.
+      # Identify the JRuby version on a PE Infrastructure node.
       # puppetserver::jruby_9k_enabled is a setting added to PE 2018.
       # puppetserver::jruby_jar is a setting added to PE 2017 and is outside the scope of this code.
 
@@ -819,14 +841,16 @@ module PuppetX
         settings['params'][jruby_9k_enabled] == 'true'
       end
 
-      # Identify available JRubies on a node.
+      # Identify available jrubies on a PE Infrastructure node.
+      # Used when estimating PE Infrastructure capacity.
 
       def available_jrubies_for_node(certname, settings)
         default_jrubies = [resources_for_node(certname)['cpu'] - 1, 4].min
         settings['params']['puppet_enterprise::master::puppetserver::jruby_max_active_instances'] || default_jrubies
       end
 
-      # Identify current memory_per_jruby on a node.
+      # Identify the current memory_per_jruby ratio on a PE Infrastructure node.
+      # Used by the 'use_current_memory_per_jruby' option.
 
       def current_memory_per_jruby_for_node(certname)
         return 0 if @options[:local]
@@ -846,13 +870,8 @@ module PuppetX
       # Utilities
       #
 
-      # Do not query PuppetDB when using Inventory.
-
-      def using_inventory?
-        @options[:local] || @options[:inventory]
-      end
-
       # Verify minimum system requirements.
+      # Can be overrided by the 'force' option.
 
       def meets_minimum_system_requirements?(resources)
         return true if @options[:force]
@@ -861,7 +880,7 @@ module PuppetX
       end
 
       # Versions
-      # Allows mergeups from PE 2018 LTS to STS. Revisit after PE 2018 is EOL.
+      # Allows mergeups in the PE implementation of this class.
 
       def pe_2018_or_newer?
         Gem::Version.new(Puppet.version) >= Gem::Version.new('5.5.0')
@@ -873,6 +892,12 @@ module PuppetX
 
       def pe_2019_2_or_newer?
         Gem::Version.new(Puppet.version) >= Gem::Version.new('6.8.0')
+      end
+
+      # Use to avoid querying PuppetDB.
+
+      def using_inventory?
+        @options[:local] || @options[:inventory]
       end
 
       # Convert (for example) 16, 16g, 16384m, 16777216k, or 17179869184b to 17179869184.

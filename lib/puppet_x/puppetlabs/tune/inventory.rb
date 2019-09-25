@@ -2,14 +2,14 @@ require 'yaml'
 
 # Notes:
 #
-# Mappings vary between roles, profiles, and classes.
+# Mappings vary between PE Infrastructure roles, profiles, and classes.
 # See: https://github.com/puppetlabs/puppetlabs-pe_infrastructure/blob/irving/lib/puppet_x/puppetlabs/meep/defaults.rb
 
 module PuppetX
   module Puppetlabs
-    # Tune optimized settings.
+    # Query infrastructure and show current, or calculate optimized settings.
     class Tune
-      # Use the local system or a file as inventory.
+      # Use the local system or a file as inventory, instead of querying PuppeDB.
       class Inventory
         attr_reader :nodes
         attr_reader :roles
@@ -21,7 +21,7 @@ module PuppetX
           @classes = {}
         end
 
-        # Inventory infrastructure roles.
+        # Inventory PE Infrastructure roles.
 
         def default_inventory_roles
           {
@@ -34,7 +34,7 @@ module PuppetX
           }
         end
 
-        # Inventory infrastructure classes.
+        # Inventory PE Infrastructure classes.
 
         def default_inventory_classes
           {
@@ -50,8 +50,8 @@ module PuppetX
           }
         end
 
-        # Use the local system to define a monolithic infrastructure master node.
-        # This eliminates the dependency upon PuppetDB to query node resources and classes.
+        # Use the local system to define a Monolithic PE Infrastructure node.
+        # This eliminates the dependency upon PuppetDB during a clean install when there is no PuppetDB to query.
 
         def read_inventory_from_local_system
           Puppet.debug('Querying the local system to define a monolithic infrastructure master node')
@@ -77,7 +77,7 @@ module PuppetX
           @classes = default_inventory_classes
         end
 
-        # Use an inventory file to define infrastructure nodes.
+        # Use an inventory file to define PE Infrastructure nodes.
         # This eliminates the dependency upon PuppetDB to query node resources and classes.
         # The compile_master, database_host, and puppetdb_host roles can be an Array or a String.
 
@@ -107,7 +107,7 @@ module PuppetX
           @classes = default_inventory_classes
         end
 
-        # Convert inventory roles to classes, using Set instead of Array to prevent duplicates.
+        # Convert inventory roles to PE Infrastructure classes, using Set instead of Array to prevent duplicates.
 
         def convert_inventory_roles_to_classes
           if @roles['database_host']

@@ -1,6 +1,6 @@
 module PuppetX
   module Puppetlabs
-    # Tune optimized settings.
+    # Query infrastructure and show current, or calculate optimized settings.
     class Tune
       # Interface to PuppetX::Puppetlabs::Meep
       class PEConf

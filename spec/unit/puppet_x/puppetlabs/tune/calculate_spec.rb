@@ -684,12 +684,12 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
     end
 
     it 'can calculate the default memory reserved for the operating system' do
-      expect((calculator.send :memory_reserved_for_os)).to eq(1024)
+      expect((calculator.send :select_memory_reserved_for_os)).to eq(1024)
     end
 
     it 'can calculate the optional memory reserved for the operating system' do
       calculator.instance_variable_set(:@options, :memory_reserved_for_os => 2048)
-      expect((calculator.send :memory_reserved_for_os)).to eq(2048)
+      expect((calculator.send :select_memory_reserved_for_os)).to eq(2048)
     end
 
     it 'can calculate processor based values' do
