@@ -31,10 +31,18 @@ module PuppetX
           'puppet_enterprise::profile::database::work_mem',
           'puppet_enterprise::profile::master::java_args',
           'puppet_enterprise::profile::orchestrator::java_args',
+          # 'puppet_enterprise::profile::orchestrator::jruby_max_requests_per_instance',
+          # 'puppet_enterprise::profile::orchestrator::reserved_code_cache',
           'puppet_enterprise::profile::puppetdb::java_args',
           'puppet_enterprise::puppetdb::command_processing_threads',
         ]
         param_names.delete('puppet_enterprise::profile::amq::broker::heap_mb') if pe_2019_or_newer?
+        # ORCH-2384:
+        #
+        # unless pe_2019_2_or_newer?
+        #   param_names.delete('puppet_enterprise::profile::orchestrator::jruby_max_requests_per_instance')
+        #   param_names.delete('puppet_enterprise::profile::orchestrator::reserved_code_cache')
+        # end
         param_names
       end
 

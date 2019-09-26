@@ -176,8 +176,8 @@ module PuppetX
               #
               # minimum_cpu_orchestrator = 1
               # maximum_cpu_orchestrator = 1
-              # jrubies_by_ram_orchestrator = (ram_orchestrator / (ram_per_jruby + ram_per_jruby_code_cache)).to_i
-              # orchestrator_jruby_max_active_instances = jrubies_by_ram_orchestrator.clamp(minimum_cpu_orchestrator, maximum_cpu_orchestrator)
+              # max_jrubies_in_ram_orchestrator = (ram_orchestrator / (ram_per_jruby + ram_per_jruby_code_cache)).to_i
+              # orchestrator_jruby_max_active_instances = max_jrubies_in_ram_orchestrator.clamp(minimum_cpu_orchestrator, maximum_cpu_orchestrator)
               # settings['params']['puppet_enterprise::master::orchestrator::jruby_max_active_instances'] = orchestrator_jruby_max_active_instances
               # settings['totals']['CPU']['used'] += orchestrator_jruby_max_active_instances
               #
