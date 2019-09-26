@@ -199,8 +199,8 @@ module PuppetX
             return
           end
 
-          jrubies_by_ram_puppetserver = (ram_puppetserver / (ram_per_jruby + ram_per_jruby_code_cache)).to_i
-          puppetserver_jruby_max_active_instances = jrubies_by_ram_puppetserver.clamp(minimum_cpu_puppetserver, maximum_cpu_puppetserver)
+          max_jrubies_in_ram_puppetserver = (ram_puppetserver / (ram_per_jruby + ram_per_jruby_code_cache)).to_i
+          puppetserver_jruby_max_active_instances = max_jrubies_in_ram_puppetserver.clamp(minimum_cpu_puppetserver, maximum_cpu_puppetserver)
           settings['params']['puppet_enterprise::master::puppetserver::jruby_max_active_instances'] = puppetserver_jruby_max_active_instances
           settings['totals']['CPU']['used'] += puppetserver_jruby_max_active_instances
 
