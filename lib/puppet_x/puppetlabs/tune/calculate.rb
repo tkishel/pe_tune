@@ -45,8 +45,10 @@ module PuppetX
           percent_cpu_puppetdb        = 25
           percent_cpu_puppetserver    = 75
 
-          minimum_cpu_puppetdb        = fit_to_processors(node['resources']['cpu'], 1, 2, 4)
+          minimum_cpu_puppetdb        = 1
           minimum_cpu_puppetserver    = 2
+
+          minimum_ram_puppetserver    = 512
 
           minimum_ram_code_cache      = 128
           maximum_ram_code_cache      = 2048
@@ -65,8 +67,6 @@ module PuppetX
           ram_orchestrator            = fit_to_memory(node['resources']['ram'], 512, 768, 1024)
 
           ram_activemq                = fit_to_memory(node['resources']['ram'], 512, 1024, 2048)
-
-          minimum_ram_puppetserver    = 512
 
           ram_reserved_os             = select_memory_reserved_for_os
 
@@ -93,16 +93,11 @@ module PuppetX
           # Reallocate resources depending upon PE Infrastructure services on this host.
 
           percent_cpu_puppetserver = 100 unless node['classes']['puppetdb']
-          percent_cpu_puppetdb     = 0   unless node['classes']['puppetdb']
-          minimum_ram_database     = 0   unless node['classes']['database']
-          ram_console              = 0   unless node['classes']['console']
-          ram_orchestrator         = 0   unless node['classes']['orchestrator']
-          ram_activemq             = 0   unless node['classes']['amq::broker']
 
           # Calculate the following maximums after the above reallocations.
 
-          maximum_cpu_puppetdb = [minimum_cpu_puppetdb, (node['resources']['cpu'] * (percent_cpu_puppetdb * 0.01)).to_i].max
           maximum_cpu_puppetserver = [minimum_cpu_puppetserver, (node['resources']['cpu'] * (percent_cpu_puppetserver * 0.01) - 1).to_i].max
+          maximum_cpu_puppetdb     = [minimum_cpu_puppetdb, (node['resources']['cpu'] * 0.50).to_i].max
 
           # Reallocate resources between puppetserver and orchestrator, if this host is running PE 2019.2 or newer.
           # ORCH-2384: Orchestrator in PE 2019.2 has jrubies, and requires (estimated) a processor and additional memory.
