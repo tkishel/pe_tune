@@ -85,8 +85,8 @@ module PuppetX
           output_error_and_exit _("The '--pe_conf' option requires the '--local' option")
         end
 
-        if options[:current_memory_per_jruby] && options[:memory_per_jruby]
-          output_error_and_exit _("The '--current_memory_per_jruby' and '--memory_per_jruby' options are mutually exclusive")
+        if options[:use_current_memory_per_jruby] && options[:memory_per_jruby]
+          output_error_and_exit _("The '--use_current_memory_per_jruby' and '--memory_per_jruby' options are mutually exclusive")
         end
 
         # Optimized properties for each PE Infrastructure node found in Inventory or PuppetDB.
@@ -177,11 +177,12 @@ module PuppetX
 
         @current_collected_nodes.each do |certname, current_node|
           next if @options[:node] && certname != @options[:node]
-          optimized_node = @collected_nodes[certname]
           if current_node['settings']['params'].empty?
             output _('No currently defined settings to compare for %{role} %{certname}') % { role: optimized_node['role'], certname: certname }
             next
           end
+          optimized_node = @collected_nodes[certname]
+          next unless optimized_node
           differences = ''
           optimized_node['settings']['params'].each do |param, _value|
             if param.end_with?('::java_args')
@@ -724,7 +725,7 @@ module PuppetX
 
       def output_error_and_exit(message)
         Puppet.err(message)
-        Puppet.err _("Rerun this command with '--debug' for more information")
+        Puppet.err _("Rerun this command with '--debug' or '--help' for more information")
         exit 1
       end
 
@@ -732,14 +733,14 @@ module PuppetX
         Puppet.err _('Puppet Infrastructure Summary: Unknown Infrastructure')
         Puppet.err _('Unable to find a Primary Master via a PuppetDB query')
         Puppet.err _('Verify PE Infrastructure node groups in the Console')
-        Puppet.err _('Rerun this command with --debug for more information')
+        Puppet.err _("Rerun this command with '--debug' or '--help' for more information")
         exit 1
       end
 
       def output_minimum_system_requirements_error_and_exit(certname)
         return if @options[:node] && node['certname'] != @options[:node]
         Puppet.err _("%{certname} does not meet the minimum system requirements") % { certname: certname }
-        Puppet.err _("Rerun this command with '--debug' for more information")
+        Puppet.err _("Rerun this command with '--debug' or '--help' for more information")
         exit 1
       end
 
