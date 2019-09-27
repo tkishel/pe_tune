@@ -904,7 +904,7 @@ module PuppetX
       end
 
       def pe_2019_2_or_newer?
-        Gem::Version.new(Puppet.version) >= Gem::Version.new('6.8.0')
+        Gem::Version.new(Puppet.version) >= Gem::Version.new('6.9.0')
       end
 
       # Use to avoid querying PuppetDB.

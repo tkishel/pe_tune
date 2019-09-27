@@ -9,7 +9,7 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
   # Allows mergeups in the PE implementation of this class.
   pe_2019_or_newer = Gem::Version.new(Puppet.version) >= Gem::Version.new('6.0.0')
 
-  pe_2019_2_or_newer = Gem::Version.new(Puppet.version) >= Gem::Version.new('6.8.0')
+  pe_2019_2_or_newer = Gem::Version.new(Puppet.version) >= Gem::Version.new('6.9.0')
 
   ram_per_jruby_code_cache = 128
 
