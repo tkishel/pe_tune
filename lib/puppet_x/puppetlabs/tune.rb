@@ -85,6 +85,10 @@ module PuppetX
           output_error_and_exit _("The '--pe_conf' option requires the '--local' option")
         end
 
+        if options[:current_memory_per_jruby] && options[:memory_per_jruby]
+          output_error_and_exit _("The '--current_memory_per_jruby' and '--memory_per_jruby' options are mutually exclusive")
+        end
+
         # Optimized properties for each PE Infrastructure node found in Inventory or PuppetDB.
         @collected_nodes = {}
 
