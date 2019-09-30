@@ -27,7 +27,7 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
   # maximum_ram_database   = 16384
 
   # minimum_ram_puppetdb   = 512
-  # maximum_ram_puppetdb     = 8192
+  # maximum_ram_puppetdb   = 8192
 
   minimum_ram_puppetserver = 512
 
@@ -70,6 +70,8 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       ram_puppetserver = minimum_ram_puppetserver
       ram_orchestrator = minimum_ram_orchestrator
       ram_console      = minimum_ram_console
+      ram_activemq     = minimum_ram_activemq
+      mb_per_jruby     = 512
 
       params = {
         'puppet_enterprise::profile::database::shared_buffers'                => "#{ram_database}MB",
@@ -79,13 +81,18 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'puppet_enterprise::profile::master::java_args'                       => { 'Xms' => "#{ram_puppetserver}m", 'Xmx' => "#{ram_puppetserver}m" },
         'puppet_enterprise::profile::orchestrator::java_args'                 => { 'Xms' => "#{ram_orchestrator}m", 'Xmx' => "#{ram_orchestrator}m" },
         'puppet_enterprise::profile::console::java_args'                      => { 'Xms' => "#{ram_console}m",      'Xmx' => "#{ram_console}m" },
-        'puppet_enterprise::profile::amq::broker::heap_mb'                    => minimum_ram_activemq,
+        'puppet_enterprise::profile::amq::broker::heap_mb'                    => ram_activemq,
       }
+
+      total_cpu = params['puppet_enterprise::puppetdb::command_processing_threads'] +
+                  params['puppet_enterprise::master::puppetserver::jruby_max_active_instances']
+      total_ram = ram_database + ram_puppetdb + ram_puppetserver + ram_orchestrator + ram_console + ram_activemq
       totals = {
-        'CPU'          => { 'total' => 2,    'used' => 2 },
-        'RAM'          => { 'total' => 6144, 'used' => 4710 },
-        'MB_PER_JRUBY' => 512,
+        'CPU'          => { 'total' => resources['cpu'], 'used' => total_cpu },
+        'RAM'          => { 'total' => resources['ram'], 'used' => total_ram },
+        'MB_PER_JRUBY' => mb_per_jruby,
       }
+
       settings = { 'params' => params, 'totals' => totals }
 
       if pe_2019_or_newer
@@ -130,7 +137,8 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       ram_puppetserver = 1024
       ram_orchestrator = (resources['ram'] * percent_ram_orchestrator).to_i
       ram_console      = (resources['ram'] * percent_ram_console).to_i
-      ram_active_mq    = (resources['ram'] * percent_ram_activemq).to_i
+      ram_activemq     = (resources['ram'] * percent_ram_activemq).to_i
+      mb_per_jruby     = 512
 
       params = {
         'puppet_enterprise::profile::database::shared_buffers'                => "#{ram_database}MB",
@@ -140,13 +148,18 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'puppet_enterprise::profile::master::java_args'                       => { 'Xms' => "#{ram_puppetserver}m", 'Xmx' => "#{ram_puppetserver}m" },
         'puppet_enterprise::profile::orchestrator::java_args'                 => { 'Xms' => "#{ram_orchestrator}m", 'Xmx' => "#{ram_orchestrator}m" },
         'puppet_enterprise::profile::console::java_args'                      => { 'Xms' => "#{ram_console}m",      'Xmx' => "#{ram_console}m" },
-        'puppet_enterprise::profile::amq::broker::heap_mb'                    => ram_active_mq,
+        'puppet_enterprise::profile::amq::broker::heap_mb'                    => ram_activemq,
       }
+
+      total_cpu = params['puppet_enterprise::puppetdb::command_processing_threads'] +
+                  params['puppet_enterprise::master::puppetserver::jruby_max_active_instances']
+      total_ram = ram_database + ram_puppetdb + ram_puppetserver + ram_orchestrator + ram_console + ram_activemq
       totals = {
-        'CPU'          => { 'total' => 4,    'used' => 3 },
-        'RAM'          => { 'total' => 8192, 'used' => 5856 },
-        'MB_PER_JRUBY' => 512,
+        'CPU'          => { 'total' => resources['cpu'], 'used' => total_cpu },
+        'RAM'          => { 'total' => resources['ram'], 'used' => total_ram },
+        'MB_PER_JRUBY' => mb_per_jruby,
       }
+
       settings = { 'params' => params, 'totals' => totals }
 
       if pe_2019_or_newer
@@ -191,7 +204,8 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       ram_puppetserver = 3840
       ram_orchestrator = maximum_ram_orchestrator
       ram_console      = maximum_ram_console
-      ram_active_mq    = maximum_ram_activemq
+      ram_activemq     = maximum_ram_activemq
+      mb_per_jruby     = 768
 
       params = {
         'puppet_enterprise::profile::database::shared_buffers'                => "#{ram_database}MB",
@@ -201,13 +215,18 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'puppet_enterprise::profile::master::java_args'                       => { 'Xms' => "#{ram_puppetserver}m", 'Xmx' => "#{ram_puppetserver}m" },
         'puppet_enterprise::profile::orchestrator::java_args'                 => { 'Xms' => "#{ram_orchestrator}m", 'Xmx' => "#{ram_orchestrator}m" },
         'puppet_enterprise::profile::console::java_args'                      => { 'Xms' => "#{ram_console}m",      'Xmx' => "#{ram_console}m" },
-        'puppet_enterprise::profile::amq::broker::heap_mb'                    => ram_active_mq,
+        'puppet_enterprise::profile::amq::broker::heap_mb'                    => ram_activemq,
       }
+
+      total_cpu = params['puppet_enterprise::puppetdb::command_processing_threads'] +
+                  params['puppet_enterprise::master::puppetserver::jruby_max_active_instances']
+      total_ram = ram_database + ram_puppetdb + ram_puppetserver + ram_orchestrator + ram_console + ram_activemq
       totals = {
-        'CPU'          => { 'total' => 8,     'used' => 7 },
-        'RAM'          => { 'total' => 16384, 'used' => 12646 },
-        'MB_PER_JRUBY' => 768,
+        'CPU'          => { 'total' => resources['cpu'], 'used' => total_cpu },
+        'RAM'          => { 'total' => resources['ram'], 'used' => total_ram },
+        'MB_PER_JRUBY' => mb_per_jruby,
       }
+
       settings = { 'params' => params, 'totals' => totals }
 
       if pe_2019_or_newer
@@ -252,7 +271,8 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       ram_puppetserver = 11264
       ram_orchestrator = maximum_ram_orchestrator
       ram_console      = maximum_ram_console
-      ram_active_mq    = maximum_ram_activemq
+      ram_activemq     = maximum_ram_activemq
+      mb_per_jruby     = 1024
 
       params = {
         'puppet_enterprise::profile::database::shared_buffers'                => "#{ram_database}MB",
@@ -262,13 +282,18 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'puppet_enterprise::profile::master::java_args'                       => { 'Xms' => "#{ram_puppetserver}m", 'Xmx' => "#{ram_puppetserver}m" },
         'puppet_enterprise::profile::orchestrator::java_args'                 => { 'Xms' => "#{ram_orchestrator}m", 'Xmx' => "#{ram_orchestrator}m" },
         'puppet_enterprise::profile::console::java_args'                      => { 'Xms' => "#{ram_console}m",      'Xmx' => "#{ram_console}m" },
-        'puppet_enterprise::profile::amq::broker::heap_mb'                    => ram_active_mq,
+        'puppet_enterprise::profile::amq::broker::heap_mb'                    => ram_activemq,
       }
+
+      total_cpu = params['puppet_enterprise::puppetdb::command_processing_threads'] +
+                  params['puppet_enterprise::master::puppetserver::jruby_max_active_instances']
+      total_ram = ram_database + ram_puppetdb + ram_puppetserver + ram_orchestrator + ram_console + ram_activemq
       totals = {
-        'CPU'          => { 'total' => 16,    'used' => 15 },
-        'RAM'          => { 'total' => 32768, 'used' => 25804 },
-        'MB_PER_JRUBY' => 1024,
+        'CPU'          => { 'total' => resources['cpu'], 'used' => total_cpu },
+        'RAM'          => { 'total' => resources['ram'], 'used' => total_ram },
+        'MB_PER_JRUBY' => mb_per_jruby,
       }
+
       settings = { 'params' => params, 'totals' => totals }
 
       if pe_2019_or_newer
@@ -323,7 +348,8 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       ram_puppetserver = 1024
       ram_orchestrator = (resources['ram'] * percent_ram_orchestrator).to_i
       ram_console      = (resources['ram'] * percent_ram_console).to_i
-      ram_active_mq    = (resources['ram'] * percent_ram_activemq).to_i
+      ram_activemq     = (resources['ram'] * percent_ram_activemq).to_i
+      mb_per_jruby     = 512
 
       params = {
         'puppet_enterprise::profile::database::shared_buffers'                => "#{ram_database}MB",
@@ -333,13 +359,18 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'puppet_enterprise::profile::master::java_args'                       => { 'Xms' => "#{ram_puppetserver}m", 'Xmx' => "#{ram_puppetserver}m" },
         'puppet_enterprise::profile::orchestrator::java_args'                 => { 'Xms' => "#{ram_orchestrator}m", 'Xmx' => "#{ram_orchestrator}m" },
         'puppet_enterprise::profile::console::java_args'                      => { 'Xms' => "#{ram_console}m",      'Xmx' => "#{ram_console}m" },
-        'puppet_enterprise::profile::amq::broker::heap_mb'                    => ram_active_mq,
+        'puppet_enterprise::profile::amq::broker::heap_mb'                    => ram_activemq,
       }
+
+      total_cpu = params['puppet_enterprise::puppetdb::command_processing_threads'] +
+                  params['puppet_enterprise::master::puppetserver::jruby_max_active_instances']
+      total_ram = ram_database + ram_puppetdb + ram_puppetserver + ram_orchestrator + ram_console + ram_activemq
       totals = {
-        'CPU'          => { 'total' => 4,    'used' => 4 },
-        'RAM'          => { 'total' => 8192, 'used' => 6675 },
-        'MB_PER_JRUBY' => 512,
+        'CPU'          => { 'total' => resources['cpu'], 'used' => total_cpu },
+        'RAM'          => { 'total' => resources['ram'], 'used' => total_ram },
+        'MB_PER_JRUBY' => mb_per_jruby,
       }
+
       settings = { 'params' => params, 'totals' => totals }
 
       if pe_2019_or_newer
@@ -379,11 +410,13 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       }
       node = { 'resources' => resources, 'infrastructure' => infrastructure, 'type' => type, 'classes' => classes }
 
+      ram_database     = 0
       ram_puppetdb     = (resources['ram'] * percent_ram_puppetdb_with_compilers).to_i
       ram_puppetserver = 1024
       ram_orchestrator = (resources['ram'] * percent_ram_orchestrator).to_i
       ram_console      = (resources['ram'] * percent_ram_console).to_i
-      ram_active_mq    = (resources['ram'] * percent_ram_activemq).to_i
+      ram_activemq     = (resources['ram'] * percent_ram_activemq).to_i
+      mb_per_jruby     = 512
 
       params = {
         'puppet_enterprise::puppetdb::command_processing_threads'             => 2,
@@ -392,13 +425,18 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'puppet_enterprise::profile::master::java_args'                       => { 'Xms' => "#{ram_puppetserver}m", 'Xmx' => "#{ram_puppetserver}m" },
         'puppet_enterprise::profile::orchestrator::java_args'                 => { 'Xms' => "#{ram_orchestrator}m", 'Xmx' => "#{ram_orchestrator}m" },
         'puppet_enterprise::profile::console::java_args'                      => { 'Xms' => "#{ram_console}m",      'Xmx' => "#{ram_console}m" },
-        'puppet_enterprise::profile::amq::broker::heap_mb'                    => ram_active_mq,
+        'puppet_enterprise::profile::amq::broker::heap_mb'                    => ram_activemq,
       }
+
+      total_cpu = params['puppet_enterprise::puppetdb::command_processing_threads'] +
+                  params['puppet_enterprise::master::puppetserver::jruby_max_active_instances']
+      total_ram = ram_database + ram_puppetdb + ram_puppetserver + ram_orchestrator + ram_console + ram_activemq
       totals = {
-        'CPU'          => { 'total' => 4,    'used' => 4 },
-        'RAM'          => { 'total' => 8192, 'used' => 4627 },
-        'MB_PER_JRUBY' => 512,
+        'CPU'          => { 'total' => resources['cpu'], 'used' => total_cpu },
+        'RAM'          => { 'total' => resources['ram'], 'used' => total_ram },
+        'MB_PER_JRUBY' => mb_per_jruby,
       }
+
       settings = { 'params' => params, 'totals' => totals }
 
       if pe_2019_or_newer
@@ -442,17 +480,22 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
 
       ram_puppetserver = 1536
       ram_orchestrator = (resources['ram'] * percent_ram_orchestrator).to_i
+      mb_per_jruby     = 512
 
       params = {
         'puppet_enterprise::master::puppetserver::jruby_max_active_instances' => 3,
         'puppet_enterprise::profile::master::java_args'                       => { 'Xms' => "#{ram_puppetserver}m", 'Xmx' => "#{ram_puppetserver}m" },
         'puppet_enterprise::profile::orchestrator::java_args'                 => { 'Xms' => "#{ram_orchestrator}m", 'Xmx' => "#{ram_orchestrator}m" },
       }
+
+      total_cpu = params['puppet_enterprise::master::puppetserver::jruby_max_active_instances']
+      total_ram = ram_puppetserver + ram_orchestrator
       totals = {
-        'CPU'          => { 'total' => 4,    'used' => 3 },
-        'RAM'          => { 'total' => 8192, 'used' => 2191 },
-        'MB_PER_JRUBY' => 512,
+        'CPU'          => { 'total' => resources['cpu'], 'used' => total_cpu },
+        'RAM'          => { 'total' => resources['ram'], 'used' => total_ram },
+        'MB_PER_JRUBY' => mb_per_jruby,
       }
+
       settings = { 'params' => params, 'totals' => totals }
 
       expect(calculator::calculate_master_settings(node)).to eq(settings)
@@ -468,10 +511,12 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       params = {
         'puppet_enterprise::profile::console::java_args' => { 'Xms' => '4096m', 'Xmx' => '4096m' },
       }
+
       totals = {
         'CPU' => { 'total' => 4,    'used' => 0 },
         'RAM' => { 'total' => 8192, 'used' => 4096 }
       }
+
       settings = { 'params' => params, 'totals' => totals }
 
       expect(calculator::calculate_console_settings(node)).to eq(settings)
@@ -505,11 +550,16 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'puppet_enterprise::profile::database::work_mem'               => '8MB',
         'puppet_enterprise::profile::database::log_temp_files'         => 8192,
       }
+
+      total_cpu = params['puppet_enterprise::puppetdb::command_processing_threads']
+      total_ram = ram_database + ram_puppetdb
       totals = {
-        'CPU' => { 'total' => 4,    'used' => 2 },
-        'RAM' => { 'total' => 8192, 'used' => 4096 },
+        'CPU'          => { 'total' => resources['cpu'], 'used' => total_cpu },
+        'RAM'          => { 'total' => resources['ram'], 'used' => total_ram },
       }
+
       settings = { 'params' => params, 'totals' => totals }
+
       expect(calculator::calculate_puppetdb_settings(node)).to eq(settings)
     end
 
@@ -533,10 +583,14 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'puppet_enterprise::puppetdb::command_processing_threads' => 2,
         'puppet_enterprise::profile::puppetdb::java_args'         => { 'Xms' => "#{ram_puppetdb}m", 'Xmx' => "#{ram_puppetdb}m" },
       }
+
+      total_cpu = params['puppet_enterprise::puppetdb::command_processing_threads']
+      total_ram = ram_puppetdb
       totals = {
-        'CPU' => { 'total' => 4, 'used' => 2 },
-        'RAM' => { 'total' => 8192, 'used' => 4096 },
+        'CPU'          => { 'total' => resources['cpu'], 'used' => total_cpu },
+        'RAM'          => { 'total' => resources['ram'], 'used' => total_ram },
       }
+
       settings = { 'params' => params, 'totals' => totals }
 
       expect(calculator::calculate_puppetdb_settings(node)).to eq(settings)
@@ -569,17 +623,23 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       node = { 'resources' => resources, 'infrastructure' => infrastructure, 'type' => type, 'classes' => classes }
 
       ram_puppetserver = 5376
+      mb_per_jruby     = 768
 
       params = {
         'puppet_enterprise::master::puppetserver::jruby_max_active_instances' => 7,
         'puppet_enterprise::profile::master::java_args'                       => { 'Xms' => "#{ram_puppetserver}m", 'Xmx' => "#{ram_puppetserver}m" },
       }
+
+      total_cpu = params['puppet_enterprise::master::puppetserver::jruby_max_active_instances']
+      total_ram = ram_puppetserver
       totals = {
-        'CPU'          => { 'total' => 8,    'used' => 7 },
-        'RAM'          => { 'total' => 16384, 'used' => 5376 },
-        'MB_PER_JRUBY' => 768,
+        'CPU'          => { 'total' => resources['cpu'], 'used' => total_cpu },
+        'RAM'          => { 'total' => resources['ram'], 'used' => total_ram },
+        'MB_PER_JRUBY' => mb_per_jruby,
       }
+
       settings = { 'params' => params, 'totals' => totals }
+
       expect(calculator::calculate_master_settings(node)).to eq(settings)
     end
 
@@ -594,8 +654,10 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       }
       node = { 'resources' => resources, 'infrastructure' => infrastructure, 'type' => {}, 'classes' => {} }
 
+      ram_database = 2048
+
       params = {
-        'puppet_enterprise::profile::database::shared_buffers'         => '2048MB',
+        'puppet_enterprise::profile::database::shared_buffers'         => "#{ram_database}MB",
         'puppet_enterprise::profile::database::autovacuum_max_workers' => 3,
         'puppet_enterprise::profile::database::autovacuum_work_mem'    => '341MB',
         'puppet_enterprise::profile::database::maintenance_work_mem'   => '1024MB',
@@ -603,10 +665,14 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'puppet_enterprise::profile::database::work_mem'               => '8MB',
         'puppet_enterprise::profile::database::log_temp_files'         => 8192,
       }
+
+      total_cpu = 0
+      total_ram = ram_database
       totals = {
-        'CPU' => { 'total' => 4,    'used' => 0 },
-        'RAM' => { 'total' => 8192, 'used' => 2048 },
+        'CPU'          => { 'total' => resources['cpu'], 'used' => total_cpu },
+        'RAM'          => { 'total' => resources['ram'], 'used' => total_ram },
       }
+
       settings = { 'params' => params, 'totals' => totals }
 
       expect(calculator::calculate_database_settings(node)).to eq(settings)
@@ -640,6 +706,7 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
 
       ram_puppetdb     = (resources['ram'] * percent_ram_puppetdb).to_i
       ram_puppetserver = 1024
+      mb_per_jruby     = 512
 
       params = {
         'puppet_enterprise::puppetdb::command_processing_threads'             => 1,
@@ -650,11 +717,16 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'puppet_enterprise::puppetdb::read_maximum_pool_size'                 => 3,
         'puppet_enterprise::profile::puppetdb::gc_interval'                   => 0,
       }
+
+      total_cpu = params['puppet_enterprise::puppetdb::command_processing_threads'] +
+                  params['puppet_enterprise::master::puppetserver::jruby_max_active_instances']
+      total_ram = ram_puppetdb + ram_puppetserver
       totals = {
-        'CPU'          => { 'total' => 4,     'used' => 3 },
-        'RAM'          => { 'total' => 8192, 'used' => 1843 },
-        'MB_PER_JRUBY' => 512,
+        'CPU'          => { 'total' => resources['cpu'], 'used' => total_cpu },
+        'RAM'          => { 'total' => resources['ram'], 'used' => total_ram },
+        'MB_PER_JRUBY' => mb_per_jruby,
       }
+
       settings = { 'params' => params, 'totals' => totals }
 
       expect(calculator::calculate_master_settings(node)).to eq(settings)
@@ -686,6 +758,7 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
 
       ram_puppetdb     = (resources['ram'] * percent_ram_puppetdb).to_i
       ram_puppetserver = 3840
+      mb_per_jruby     = 768
 
       params = {
         'puppet_enterprise::puppetdb::command_processing_threads'             => 2,
@@ -696,11 +769,16 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'puppet_enterprise::puppetdb::read_maximum_pool_size'                 => 7,
         'puppet_enterprise::profile::puppetdb::gc_interval'                   => 0,
       }
+
+      total_cpu = params['puppet_enterprise::puppetdb::command_processing_threads'] +
+                  params['puppet_enterprise::master::puppetserver::jruby_max_active_instances']
+      total_ram = ram_puppetdb + ram_puppetserver
       totals = {
-        'CPU'          => { 'total' => 8,     'used' => 7 },
-        'RAM'          => { 'total' => 16384, 'used' => 5478 },
-        'MB_PER_JRUBY' => 768,
+        'CPU'          => { 'total' => resources['cpu'], 'used' => total_cpu },
+        'RAM'          => { 'total' => resources['ram'], 'used' => total_ram },
+        'MB_PER_JRUBY' => mb_per_jruby,
       }
+
       settings = { 'params' => params, 'totals' => totals }
 
       expect(calculator::calculate_master_settings(node)).to eq(settings)
@@ -732,6 +810,7 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
 
       ram_puppetdb     = (resources['ram'] * percent_ram_puppetdb).to_i
       ram_puppetserver = 11264
+      mb_per_jruby     = 1024
 
       params = {
         'puppet_enterprise::puppetdb::command_processing_threads'             => 3,
@@ -742,11 +821,16 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'puppet_enterprise::puppetdb::read_maximum_pool_size'                 => 16,
         'puppet_enterprise::profile::puppetdb::gc_interval'                   => 0,
       }
+
+      total_cpu = params['puppet_enterprise::puppetdb::command_processing_threads'] +
+                  params['puppet_enterprise::master::puppetserver::jruby_max_active_instances']
+      total_ram = ram_puppetdb + ram_puppetserver
       totals = {
-        'CPU'          => { 'total' => 16,    'used' => 14 },
-        'RAM'          => { 'total' => 32768, 'used' => 14540 },
-        'MB_PER_JRUBY' => 1024,
+        'CPU'          => { 'total' => resources['cpu'], 'used' => total_cpu },
+        'RAM'          => { 'total' => resources['ram'], 'used' => total_ram },
+        'MB_PER_JRUBY' => mb_per_jruby,
       }
+
       settings = { 'params' => params, 'totals' => totals }
 
       expect(calculator::calculate_master_settings(node)).to eq(settings)
