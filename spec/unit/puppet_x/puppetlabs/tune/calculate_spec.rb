@@ -869,14 +869,6 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       expect((calculator.send :fit_to_memory, 32769, 'S', 'M', 'L')).to eq('L')
     end
 
-    it 'can calculate the percentage of a resource limited to a minimum and maximum' do
-      expect((calculator.send :percent_clamp, 25, 4, 1, 2)).to eq(1)
-      expect((calculator.send :percent_clamp, 25, 4, 2, 2)).to eq(2)
-      expect((calculator.send :percent_clamp, 4096, 50, 1024, 3072)).to eq(2048)
-      expect((calculator.send :percent_clamp, 4096, 10, 1024, 3072)).to eq(1024)
-      expect((calculator.send :percent_clamp, 4096, 90, 1024, 3072)).to eq(3072)
-    end
-
     it 'can test if a number is within a percentage of another number' do
       expect((calculator.send :within_percent?, 80,  100, 5)).to eq(false)
       expect((calculator.send :within_percent?, 95,  100, 5)).to eq(true)

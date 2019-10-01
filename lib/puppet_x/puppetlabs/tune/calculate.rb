@@ -298,7 +298,7 @@ module PuppetX
           minimum_ram_database               = 2048
           maximum_ram_database               = 16384
 
-          percent_cpu_autovacuum_max_workers = 33.3
+          percent_cpu_autovacuum_max_workers = 0.33
           minimum_cpu_autovacuum_max_workers = 3
           maximum_cpu_autovacuum_max_workers = 8
 
@@ -315,7 +315,7 @@ module PuppetX
           settings['params']['puppet_enterprise::profile::database::shared_buffers'] = "#{ram_database}MB"
           settings['totals']['RAM']['used'] += ram_database
 
-          cpu_autovacuum_max_workers = percent_clamp(percent_cpu_autovacuum_max_workers, maximum_cpu_autovacuum_max_workers, minimum_cpu_autovacuum_max_workers, maximum_cpu_autovacuum_max_workers)
+          cpu_autovacuum_max_workers = (node['resources']['cpu'] * percent_cpu_autovacuum_max_workers).to_i.clamp(minimum_cpu_autovacuum_max_workers, maximum_cpu_autovacuum_max_workers)
           ram_maintenance_work_mem   = [maximum_ram_maintenance_work_mem, (node['resources']['ram'] / maintenance_work_mem_divisor).to_i].min
           ram_autovacuum_work_mem    = (ram_maintenance_work_mem / cpu_autovacuum_max_workers).to_i
 
@@ -404,13 +404,6 @@ module PuppetX
           return medium if memory <  32768
           Puppet.debug('Using a maximum value for fit_to_memory')
           return large  if memory >= 32768
-        end
-
-        # Return a percentage of a value or the minimum or maximum, with minimum having a higher precedence than maximum.
-
-        def percent_clamp(percent, value, minimum, maximum)
-          value = (value * percent * 0.01).to_i
-          value.clamp(minimum, maximum)
         end
 
         # Test if a number is within a percentage of another number.
