@@ -809,16 +809,16 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       node = { 'resources' => resources, 'infrastructure' => infrastructure, 'type' => type, 'classes' => classes }
 
       ram_puppetdb     = (resources['ram'] * percent_ram_puppetdb).to_i
-      ram_puppetserver = 11264
+      ram_puppetserver = 12288
       mb_per_jruby     = 1024
 
       params = {
         'puppet_enterprise::puppetdb::command_processing_threads'             => 3,
-        'puppet_enterprise::master::puppetserver::jruby_max_active_instances' => 11,
+        'puppet_enterprise::master::puppetserver::jruby_max_active_instances' => 12,
         'puppet_enterprise::profile::puppetdb::java_args'                     => { 'Xms' => "#{ram_puppetdb}m",     'Xmx' => "#{ram_puppetdb}m" },
         'puppet_enterprise::profile::master::java_args'                       => { 'Xms' => "#{ram_puppetserver}m", 'Xmx' => "#{ram_puppetserver}m" },
         'puppet_enterprise::puppetdb::write_maximum_pool_size'                => 6,
-        'puppet_enterprise::puppetdb::read_maximum_pool_size'                 => 16,
+        'puppet_enterprise::puppetdb::read_maximum_pool_size'                 => 18,
         'puppet_enterprise::profile::puppetdb::gc_interval'                   => 0,
       }
 
@@ -853,12 +853,14 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
     end
 
     it 'can calculate the default memory reserved for the operating system' do
-      expect((calculator.send :select_memory_reserved_for_os)).to eq(1024)
+      expect((calculator.send :select_reserved_memory, 4096)).to eq(256)
+      expect((calculator.send :select_reserved_memory, 8192)).to eq(512)
+      expect((calculator.send :select_reserved_memory, 16384)).to eq(1024)
     end
 
     it 'can calculate the optional memory reserved for the operating system' do
       calculator.instance_variable_set(:@options, :memory_reserved_for_os => 2048)
-      expect((calculator.send :select_memory_reserved_for_os)).to eq(2048)
+      expect((calculator.send :select_reserved_memory, 32768)).to eq(2048)
     end
 
     it 'can calculate a setting based upon amount of memory' do
