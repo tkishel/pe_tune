@@ -178,7 +178,7 @@ module PuppetX
         @current_collected_nodes.each do |certname, current_node|
           next if @options[:node] && certname != @options[:node]
           if current_node['settings']['params'].empty?
-            output _('No currently defined settings to compare for %{role} %{certname}') % { role: optimized_node['role'], certname: certname }
+            output _('No currently defined settings to compare for %{role} %{certname}') % { role: current_node['role'], certname: certname }
             next
           end
           optimized_node = @collected_nodes[certname]
@@ -186,10 +186,18 @@ module PuppetX
           differences = ''
           optimized_node['settings']['params'].each do |param, _value|
             if param.end_with?('::java_args')
-              cur = "Xmx: #{current_node['settings']['params'][param]['Xmx']}\tXms: #{current_node['settings']['params'][param]['Xms']}"
+              if current_node['settings']['params'].has_key?(param)
+                cur = "Xmx: #{current_node['settings']['params'][param]['Xmx']}\tXms: #{current_node['settings']['params'][param]['Xms']}"
+              else
+                cur = "Xmx: \t\tXms: "
+              end
               opt = "Xmx: #{optimized_node['settings']['params'][param]['Xmx']}\tXms: #{optimized_node['settings']['params'][param]['Xms']}"
             else
-              cur = current_node['settings']['params'][param]
+              if current_node['settings']['params'].has_key?(param)
+                cur = current_node['settings']['params'][param]
+              else
+                cur = ''
+              end
               opt = optimized_node['settings']['params'][param]
             end
             unless cur == opt
