@@ -651,7 +651,7 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       ram_database = 2048
 
       params = {
-        'puppet_enterprise::profile::database::shared_buffers'         => "#{ram_database}MB",
+        'puppet_enterprise::profile::database::shared_buffers' => "#{ram_database}MB",
       }
 
       total_cpu = 0

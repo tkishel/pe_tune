@@ -181,18 +181,10 @@ module PuppetX
           differences = ''
           optimized_node['settings']['params'].each do |param, _value|
             if param.end_with?('::java_args')
-              if current_node['settings']['params'].key?(param)
-                cur = "Xmx: #{current_node['settings']['params'][param]['Xmx']}\tXms: #{current_node['settings']['params'][param]['Xms']}"
-              else
-                cur = "Xmx: \t\tXms: "
-              end
+              cur = current_node['settings']['params'].key?(param) ? "Xmx: #{current_node['settings']['params'][param]['Xmx']}\tXms: #{current_node['settings']['params'][param]['Xms']}" : "Xmx: \t\tXms: "
               opt = "Xmx: #{optimized_node['settings']['params'][param]['Xmx']}\tXms: #{optimized_node['settings']['params'][param]['Xms']}"
             else
-              if current_node['settings']['params'].key?(param)
-                cur = current_node['settings']['params'][param]
-              else
-                cur = ''
-              end
+              cur = current_node['settings']['params'].key?(param) ? current_node['settings']['params'][param] : ''
               opt = optimized_node['settings']['params'][param]
             end
             unless cur == opt

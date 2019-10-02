@@ -344,7 +344,7 @@ module PuppetX
         def select_reserved_memory(memory)
           return @options[:memory_reserved_for_os] if @options[:memory_reserved_for_os] != 0
           # The fitting is at half-scale, so double the memory.
-          return fit_to_memory(memory * 2, 256, 512, 1024)
+          fit_to_memory(memory * 2, 256, 512, 1024)
         end
 
         # Model https://puppet.com/docs/pe/latest/configuring/tuning_monolithic.html
