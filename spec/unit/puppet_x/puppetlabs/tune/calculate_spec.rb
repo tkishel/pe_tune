@@ -543,12 +543,6 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'puppet_enterprise::profile::database::shared_buffers'         => "#{ram_database}MB",
         'puppet_enterprise::puppetdb::command_processing_threads'      => 2,
         'puppet_enterprise::profile::puppetdb::java_args'              => { 'Xms' => "#{ram_puppetdb}m", 'Xmx' => "#{ram_puppetdb}m" },
-        'puppet_enterprise::profile::database::autovacuum_max_workers' => 3,
-        'puppet_enterprise::profile::database::autovacuum_work_mem'    => '341MB',
-        'puppet_enterprise::profile::database::maintenance_work_mem'   => '1024MB',
-        'puppet_enterprise::profile::database::max_connections'        => 1000,
-        'puppet_enterprise::profile::database::work_mem'               => '8MB',
-        'puppet_enterprise::profile::database::log_temp_files'         => 8192,
       }
 
       total_cpu = params['puppet_enterprise::puppetdb::command_processing_threads']
@@ -658,12 +652,6 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
 
       params = {
         'puppet_enterprise::profile::database::shared_buffers'         => "#{ram_database}MB",
-        'puppet_enterprise::profile::database::autovacuum_max_workers' => 3,
-        'puppet_enterprise::profile::database::autovacuum_work_mem'    => '341MB',
-        'puppet_enterprise::profile::database::maintenance_work_mem'   => '1024MB',
-        'puppet_enterprise::profile::database::max_connections'        => 1000,
-        'puppet_enterprise::profile::database::work_mem'               => '8MB',
-        'puppet_enterprise::profile::database::log_temp_files'         => 8192,
       }
 
       total_cpu = 0

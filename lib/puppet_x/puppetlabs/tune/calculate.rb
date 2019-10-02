@@ -277,35 +277,11 @@ module PuppetX
           minimum_ram_database               = 2048
           maximum_ram_database               = 16384
 
-          percent_cpu_autovacuum_max_workers = 0.33
-          minimum_cpu_autovacuum_max_workers = 3
-          maximum_cpu_autovacuum_max_workers = 8
-
-          maintenance_work_mem_divisor       = 3.0 # Divide by 3 if External or Split, as opposed to 8 if Monolithic.
-
-          maximum_ram_maintenance_work_mem   = 1024
-
-          double_default_max_connections     = 1000
-          double_default_work_mem            = 8
-
           settings = initialize_settings(node)
 
           ram_database = (node['resources']['ram'] * percent_ram_database).to_i.clamp(minimum_ram_database, maximum_ram_database)
           settings['params']['puppet_enterprise::profile::database::shared_buffers'] = "#{ram_database}MB"
           settings['totals']['RAM']['used'] += ram_database
-
-          cpu_autovacuum_max_workers = (node['resources']['cpu'] * percent_cpu_autovacuum_max_workers).to_i.clamp(minimum_cpu_autovacuum_max_workers, maximum_cpu_autovacuum_max_workers)
-          ram_maintenance_work_mem   = [maximum_ram_maintenance_work_mem, (node['resources']['ram'] / maintenance_work_mem_divisor).to_i].min
-          ram_autovacuum_work_mem    = (ram_maintenance_work_mem / cpu_autovacuum_max_workers).to_i
-
-          # The following settings are not steady-state allocations, so are not added to settings['totals'].
-
-          settings['params']['puppet_enterprise::profile::database::autovacuum_max_workers'] = cpu_autovacuum_max_workers
-          settings['params']['puppet_enterprise::profile::database::autovacuum_work_mem']    = "#{ram_autovacuum_work_mem}MB"
-          settings['params']['puppet_enterprise::profile::database::maintenance_work_mem']   = "#{ram_maintenance_work_mem}MB"
-          settings['params']['puppet_enterprise::profile::database::max_connections']        = double_default_max_connections
-          settings['params']['puppet_enterprise::profile::database::work_mem']               = "#{double_default_work_mem}MB"
-          settings['params']['puppet_enterprise::profile::database::log_temp_files']         = double_default_work_mem * 1024
 
           settings
         end
