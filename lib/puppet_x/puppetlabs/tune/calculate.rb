@@ -118,6 +118,7 @@ module PuppetX
           if node['resources']['cpu'] < 3
             minimum_cpu_puppetserver = 1
             maximum_cpu_puppetserver = 1
+            ram_reserved_os          = 256
           end
 
           # Do not allocate memory for reserved_code_cache, depending upon jruby version.
@@ -192,7 +193,7 @@ module PuppetX
 
           ram_puppetserver = (node['resources']['ram'] - ram_reserved_os - settings['totals']['RAM']['used'])
           if ram_puppetserver < (minimum_ram_puppetserver + minimum_ram_code_cache)
-            Puppet.debug("Error: available memory for puppetserver: #{ram_puppetserver} MB is less than minimum for puppetserver: #{minimum_ram_puppetserver} MB")
+            Puppet.debug("Error: available memory for puppetserver: #{ram_puppetserver} MB is less than minimum required: #{minimum_ram_puppetserver} + #{minimum_ram_code_cache} MB")
             return
           end
 
@@ -229,11 +230,11 @@ module PuppetX
           # Do not return any settings when overallocating.
 
           if settings['totals']['CPU']['used'] > settings['totals']['CPU']['total']
-            Puppet.debug("Error: calculations overallocated CPU: #{settings['totals']['CPU']['used']}")
+            Puppet.debug("Error: calculations overallocated processors: #{settings['totals']['CPU']['used']}")
             return
           end
           if (settings['totals']['RAM']['used'] + ram_reserved_os) > settings['totals']['RAM']['total']
-            Puppet.debug("Error: calculations overallocated RAM: #{settings['totals']['RAM']['used']}")
+            Puppet.debug("Error: calculations overallocated memory: #{settings['totals']['RAM']['used']}")
             return
           end
 
