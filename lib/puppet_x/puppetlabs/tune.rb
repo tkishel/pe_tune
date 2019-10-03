@@ -691,7 +691,7 @@ module PuppetX
         return if @collected_settings_common.empty?
         output _('Specify the following optimized settings in Hiera in common.yaml')
         output_line
-        output(@collected_settings_common.to_yaml)
+        output_data(@collected_settings_common.to_yaml)
         output_line
       end
 
