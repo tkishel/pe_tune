@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+# 3.0.1
+
+- Convert puppetserver from percent to remainder of unallocated processors
+- Remove database settings not based upon resources
+- Document formulas used
+- Output common data as data
+- Simplify spec test math
+- Drop percent_clamp
+
 # 3.0.0
 
 - Convert calculations to percentages
