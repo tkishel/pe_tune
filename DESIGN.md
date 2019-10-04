@@ -4,7 +4,7 @@
 
 The default settings for Puppet Enterprise services are tuned, but not necessarily optimized for PE Infrastructure type and the combination of services competing for resources on each PE Infrastructure node.
 
-## Allocates Resource Allocation
+## Resource Allocation
 
 ### Ratios, Minimums, and Maximums
 
@@ -12,13 +12,19 @@ With some exceptions, the `tune` command calculates settings for each service ba
 
 The ratio, minimum, and maximum vary based upon the PE Infrastructure type and the PE services sharing resources on each PE Infrastructure host.
 
-The supported minimum system resources for the `tune` command are 4 CPU / 8 GB RAM.
+The minimum system resources for the `tune` command are 4 CPU / 8 GB RAM.
+
+Notes:
+
+> The following CPU values are percentages, and RAM values are megabytes.
+
+> Any Replica should/would/will receive the same settings as the Primary Master, as a Replica is required to have the same system resources as the Primary Master.
 
 #### Standard Reference Architecture
-Master only install
+
+A Standard Reference Architecture is a Master-only install.
 
 ##### <a name="Standard-Master">Master</a>
-> CPU values are percentages and RAM values are megabytes.
 
 ###### <a name="Standard-Database">Database Service (pe-postgresql)</a>
 
@@ -58,7 +64,7 @@ minimum_ram_orchestrator = 512
 maximum_ram_orchestrator = 1024
 ```
 
-With PE 2019.2.x, the processor and memory associated with one jruby is reallocated from PuppetServer to Orchestrator, as it has jrubies and requires (estimated) one processor and additional memory.
+With PE 2019.2.x, the processor and memory associated with one jruby is reallocated from PuppetServer to Orchestrator, as Orchestrator has jrubies and requires (estimated) one processor and additional memory.
 
 ###### ActiveMQ Service (pe-activemq)
 
@@ -95,14 +101,16 @@ ram_per_jruby = (512, 768, 1024) if total memory (4-7 GB, 8-16 GB, 16 GB+)
 ram_per_jruby_code_cache = 128
 ```
 
-PuppetServer jrubies are constrained based on both how many jrubies fit into unallocated memory and unallocated processors (one jruby per processor). PuppetServer memory is then set to the amount of memory required for the total calculated number of jrubies.
+PuppetServer jrubies are constrained based on both how many jrubies fit into unallocated memory and unallocated processors (one jruby per processor).
+PuppetServer memory is then set to the amount of memory required for the total calculated number of jrubies.
 
 ```
-possible_jrubies_by_ram = (unreserved Ram) / (ram_per_jruby + ram_per_jruby_code_cache)
-#rjubies capped by (unreserved cpus) or maximum_cpu_puppetserver, whichever is less.
+possible_jrubies_by_ram = (unreserved ram) / (ram_per_jruby + ram_per_jruby_code_cache)
+# rjubies capped by (unreserved cpu) or maximum_cpu_puppetserver, whichever is less.
 puppetserver_ram = jrubies * ram_per_jruby
 code_cache_ram = jrubies * ram_per_jruby_code_cache
 ```
+
 ###### Operating System and Other Services
 
 ```
@@ -113,55 +121,55 @@ cpu_reserved = 1
 ram_reserved = (256, 512, 1024) if total memory (4-7 GB, 8-16 GB, 16 GB+)
 ```
 
-> Any Replica should/would/will receive the same settings as the Primary Master, as a Replica is required to have the same system resources as the Primary Master.
-
 #### Large Reference Architecture
-Master plus compilers Install
+
+A Large Reference Architecture is a Master plus compilers install.
 
 ##### <a name="Large-Master">Master</a>
 
-Calculations for the Master in a Large Ref Arch use the same algorithm as for the [Standard Reference Architecture Master](#Standard-Master) with the
-following exceptions:
+Calculations for the Master in a Large Reference Architecture use the same algorithm as for the [Standard Reference Architecture Master](#Standard-Master) with the following exceptions:
 
 PuppetServer on the Master will process catalog requests only for other PE Infrastructure hosts.
-While PuppetDB on the Master will be expected to handle requests from PuppetServer services on 
-multiple Compilers that together are servicing more agents then the Standard Ref Arch.  So resources
-on the master are transferred from Puppetserver to PuppetDB as follows:
+While PuppetDB on the Master will be expected to handle requests from PuppetServer services on multiple Compilers that together are servicing more agents then the Standard Reference Architecture.
+Therefore, system resources on the master are transferred from PuppetServer to PuppetDB as follows:
 
 ```
-percent_cpu_puppetdb = 0.50    #up from 0.25
+percent_cpu_puppetdb = 0.50 # up from 0.25
 
-percent_ram_puppetdb = 0.20    #up from .10
+percent_ram_puppetdb = 0.20 # up from 0.10
 ```
+
 ##### <a name="Large-Compilers">Compilers</a>
 
-Compilers are configured by the same algorithm used for the [Standard Reference Architecture Master](#Standard-Master). If
-PuppetDB is on the compilers, then that PuppetDB connects to the same PostgresSQL as the
-PuppetDB on the Master.  We restrict PuppetDB's max CPU on the compilers so that PuppetDB on 
-Compilers is limited to a small number of connections which prevents overallocation of 
-connections to PostgresSQL.
-> In addition, garbage collection is disabled, as it should only be performed by PuppetDB on the Master.
+Compilers are configured by the same algorithm used for the [Standard Reference Architecture Master](#Standard-Master).
+
+With PuppetDB on Compilers, each PuppetDB connects to the same PostgresSQL service as the PuppetDB on the Master does.
+
+We lower each PuppetDB's allocation of CPU to create a limited number of connections to PostgresSQL, preventing an overallocation of connections to PostgresSQL.
+
+In addition, PuppetDB garbage collection is disabled on Compilers, as garbage collection is/should only be performed by one PuppetDB (on the Master).
 
 ```
-maximum_cpu_puppetdb = 3    # was (CPU * 0.50)
+maximum_cpu_puppetdb = 3 # was (CPU * 0.50)
 ```
 
 #### Extra Large Reference Architecture
-Master plus compilers with a Standalone PuppetDB
-> PostgresSql on the PuppetDB host
+
+An Extra Large Reference Architecture is a Master plus compilers with a standalone PuppetDB and PostgresSQL service on the PuppetDB host.
 
 ##### Master
-Calculations for the Master in an Extra Large Ref Arch use the same algorithm used for the 
-[Large Reference Architecture Master](#Large-Master)
+
+Calculations for the Master in an Extra Large Reference Architecture use the same algorithm used for the [Large Reference Architecture Master](#Large-Master)
 
 ##### Compilers
-Calculations for the Compilers in an Extra Large Ref Arch use the same algorithm used for the 
-[Large Reference Architecture Compilers](#Large-Compilers)
 
-##### PuppetDB host
+Calculations for the Compilers in an Extra Large Reference Architecture use the same algorithm used for the [Large Reference Architecture Compilers](#Large-Compilers)
 
-Uses the same algorithm Standard-Database
-The below are the same settings for these two services as would be seen on a Standard Ref Arch Master
+##### PuppetDB Host
+
+Calculations for the PuppetDB Host use the same algorithm as for the Standard Reference Architecture.
+
+The below are the same settings for these two services as would be seen on a Standard Reference Architecture Master.
 
 ###### Database Service (pe-postgresql)
 
@@ -171,12 +179,13 @@ Same as [Standard Reference Architecture Database Service (pe-postgresql)](#Stan
 
 Same as [Standard Reference Architecture PuppetDB Service (pe-puppetdb)](#Standard-PuppetDB)
 
-#### Legacy Split Architecture 
+#### Legacy Split Architecture
+
 ##### Master
 
 Same as [Standard Reference Architecture Master](#Standard-Master) minus allocations for the services not present.
 
-##### Console
+##### Console Host
 
 ###### Console Service (pe-console-services)
 
@@ -186,7 +195,7 @@ minimum_ram_console = 512
 maximum_ram_console = 4096
 ```
 
-##### Database
+##### Database Host
 
 ###### Database Service (pe-postgresql)
 
@@ -216,7 +225,7 @@ If PostgreSQL is not present (External PostgreSQL) the following change:
 percent_ram_puppetdb = 0.50
 ```
 
-##### External PostgreSQL
+##### External PostgreSQL Host
 
 ###### Database Service (pe-postgresql)
 
