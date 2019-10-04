@@ -75,6 +75,11 @@ module PuppetX
           cpu_reserved             = 1
           ram_reserved             = select_reserved_memory(node['resources']['ram'])
 
+          # https://github.com/puppetlabs/puppet-enterprise-modules/blob/irving/modules/puppet_enterprise/manifests/profile/database.pp
+          default_database_max_connections = 400
+
+          percent_databse_connections = 1.10
+
           settings = initialize_settings(node)
 
           # Optionally use memory_per_jruby, if defined.
@@ -207,6 +212,14 @@ module PuppetX
             settings['params']['puppet_enterprise::profile::puppetdb::gc_interval'] = 0
           end
 
+          # Increase max_connections when a large number of connections from compilers exceeds the default.
+
+          if node['classes']['database'] && node['infrastructure']['compiler_connections']
+            if node['infrastructure']['compiler_connections'] > default_database_max_connections
+              settings['params']['puppet_enterprise::profile::database::max_connections'] = (node['infrastructure']['compiler_connections'] * percent_databse_connections).to_i
+            end
+          end
+
           # Do not return any settings when overallocating.
 
           if settings['totals']['CPU']['used'] > settings['totals']['CPU']['total']
@@ -279,11 +292,24 @@ module PuppetX
           minimum_ram_database               = 2048
           maximum_ram_database               = 16384
 
+          # https://github.com/puppetlabs/puppet-enterprise-modules/blob/irving/modules/puppet_enterprise/manifests/profile/database.pp
+          default_database_max_connections = 400
+
+          percent_databse_connections = 1.10
+
           settings = initialize_settings(node)
 
           ram_database = (node['resources']['ram'] * percent_ram_database).to_i.clamp(minimum_ram_database, maximum_ram_database)
           settings['params']['puppet_enterprise::profile::database::shared_buffers'] = "#{ram_database}MB"
           settings['totals']['RAM']['used'] += ram_database
+
+          # Increase max_connections when a large number of connections from compilers exceeds the default.
+
+          if node['infrastructure']['compiler_connections']
+            if node['infrastructure']['compiler_connections'] > default_database_max_connections
+              settings['params']['puppet_enterprise::profile::database::max_connections'] = (node['infrastructure']['compiler_connections'] * percent_databse_connections).to_i
+            end
+          end
 
           settings
         end

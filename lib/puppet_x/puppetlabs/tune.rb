@@ -136,20 +136,20 @@ module PuppetX
       # Output the current settings for each PE Infrastructure node.
 
       def output_current_settings
-        current_available_jrubies = collect_current_settings
+        current_total_puppetserver_jrubies = collect_current_settings
 
         @current_collected_nodes.each do |certname, node|
           next if @options[:node] && certname != @options[:node]
           output_current_settings_for_node(certname, node)
         end
 
-        output_estimated_capacity(current_available_jrubies)
+        output_estimated_capacity(current_total_puppetserver_jrubies)
       end
 
       # Output optimized settings for each PE Infrastructure node.
 
       def output_optimized_settings
-        optimized_available_jrubies = collect_optimized_settings
+        optimized_total_puppetserver_jrubies = collect_optimized_settings
 
         collect_optimized_settings_common_to_all_nodes
         @collected_nodes.each do |certname, node|
@@ -158,7 +158,7 @@ module PuppetX
         end
         output_common_settings
 
-        output_estimated_capacity(optimized_available_jrubies)
+        output_estimated_capacity(optimized_total_puppetserver_jrubies)
 
         output_settings_to_hiera
         output_settings_to_pe_conf
@@ -206,13 +206,13 @@ module PuppetX
       # Based upon each node's set of services (aka PE Infrastructure role).
 
       def collect_current_settings
-        available_jrubies = 0
+        total_puppetserver_jrubies = 0
 
         # Primary Master: Applicable to Monolithic and Split Infrastructures.
         @nodes_with_role['primary_masters'].each do |certname|
           settings = current_settings_for_node(certname, tunable_param_names)
           collect_current_node(certname, 'Primary Master', settings)
-          available_jrubies += available_jrubies_for_node(certname, settings) unless with_compile_masters?
+          total_puppetserver_jrubies += total_puppetserver_jrubies_for_node(certname, settings) unless with_compile_masters?
         end
 
         # Replica Master: Applicable to Monolithic Infrastructures.
@@ -243,21 +243,22 @@ module PuppetX
         @nodes_with_role['compile_masters'].each do |certname|
           settings = current_settings_for_node(certname, tunable_param_names)
           collect_current_node(certname, 'Compile Master', settings)
-          available_jrubies += available_jrubies_for_node(certname, settings)
+          total_puppetserver_jrubies += total_puppetserver_jrubies_for_node(certname, settings)
         end
 
         # Return the total of all jrubies, for use when estimating capacity.
-        available_jrubies
+        total_puppetserver_jrubies
       end
 
       # Collect optimized settings for each PE Infrastructure node.
       # Based upon each node's set of services (aka PE Infrastructure role).
 
       def collect_optimized_settings
-        available_jrubies = 0
+        total_puppetserver_jrubies = 0
+        total_puppetdb_connections = 0
 
-        # Primary Master: Applicable to Monolithic and Split Infrastructures.
-        @nodes_with_role['primary_masters'].each do |certname|
+        # Compile Masters: Applicable to Monolithic and Split Infrastructures.
+        @nodes_with_role['compile_masters'].each do |certname|
           node = configuration_for_node(certname)
           unless meets_minimum_system_requirements?(node['resources'])
             output_minimum_system_requirements_warning(node)
@@ -269,13 +270,33 @@ module PuppetX
             output_calculation_warning(node)
             next
           end
+          collect_optimized_node(certname, 'Compile Master', node)
+          total_puppetserver_jrubies += total_puppetserver_jrubies_for_node(certname, node['settings'])
+          total_puppetdb_connections += total_puppetdb_connections_for_node(certname, node['settings'])
+        end
+
+        # Primary Master: Applicable to Monolithic and Split Infrastructures.
+        @nodes_with_role['primary_masters'].each do |certname|
+          node = configuration_for_node(certname)
+          node['infrastructure']['compiler_connections'] = total_puppetdb_connections
+          unless meets_minimum_system_requirements?(node['resources'])
+            output_minimum_system_requirements_warning(node)
+            next
+          end
+          node['current_memory_per_jruby'] = current_memory_per_jruby_for_node(certname)
+          node['settings'] = @calculator::calculate_master_settings(node)
+          if node['settings'].nil? || node['settings'].empty?
+            output_calculation_warning(node)
+            next
+          end
           collect_optimized_node(certname, 'Primary Master', node)
-          available_jrubies += available_jrubies_for_node(certname, node['settings']) unless with_compile_masters?
+          total_puppetserver_jrubies += total_puppetserver_jrubies_for_node(certname, node['settings']) unless with_compile_masters?
         end
 
         # Replica Master: Applicable to Monolithic Infrastructures.
         @nodes_with_role['replica_masters'].each do |certname|
           node = configuration_for_node(certname)
+          node['infrastructure']['compiler_connections'] = total_puppetdb_connections
           unless meets_minimum_system_requirements?(node['resources'])
             output_minimum_system_requirements_warning(node)
             next
@@ -307,6 +328,7 @@ module PuppetX
         # PuppetDB Host: Specific to Split Infrastructures. By default, a list of one.
         @nodes_with_role['puppetdb_hosts'].each do |certname|
           node = configuration_for_node(certname)
+          node['infrastructure']['compiler_connections'] = total_puppetdb_connections
           unless meets_minimum_system_requirements?(node['resources'])
             output_minimum_system_requirements_warning(node)
             next
@@ -322,6 +344,7 @@ module PuppetX
         # External Database Host: Applicable to Monolithic and Split Infrastructures.
         @nodes_with_role['database_hosts'].each do |certname|
           node = configuration_for_node(certname)
+          node['infrastructure']['compiler_connections'] = total_puppetdb_connections
           unless meets_minimum_system_requirements?(node['resources'])
             output_minimum_system_requirements_warning(node)
             next
@@ -334,25 +357,8 @@ module PuppetX
           collect_optimized_node(certname, 'External Database Host', node)
         end
 
-        # Compile Masters: Applicable to Monolithic and Split Infrastructures.
-        @nodes_with_role['compile_masters'].each do |certname|
-          node = configuration_for_node(certname)
-          unless meets_minimum_system_requirements?(node['resources'])
-            output_minimum_system_requirements_warning(node)
-            next
-          end
-          node['current_memory_per_jruby'] = current_memory_per_jruby_for_node(certname)
-          node['settings'] = @calculator::calculate_master_settings(node)
-          if node['settings'].nil? || node['settings'].empty?
-            output_calculation_warning(node)
-            next
-          end
-          collect_optimized_node(certname, 'Compile Master', node)
-          available_jrubies += available_jrubies_for_node(certname, node['settings'])
-        end
-
         # Return the total of all jrubies, for use when estimating capacity.
-        available_jrubies
+        total_puppetserver_jrubies
       end
 
       # Configuration for a PE Infrastructure node, used to calculate its settings.
@@ -697,20 +703,20 @@ module PuppetX
 
       # Output an estimated capacity summary for this PE Infrastucture.
 
-      def output_estimated_capacity(available_jrubies)
+      def output_estimated_capacity(total_puppetserver_jrubies)
         return if @options[:quiet]
         return unless @options[:estimate]
         run_interval = Puppet[:runinterval]
         active_nodes = active_node_count
         report_limit = @calculator::calculate_run_sample(active_nodes, run_interval)
         average_compile_time = average_compile_time(report_limit)
-        maximum_nodes = @calculator::calculate_maximum_nodes(average_compile_time, available_jrubies, run_interval)
+        maximum_nodes = @calculator::calculate_maximum_nodes(average_compile_time, total_puppetserver_jrubies, run_interval)
         minimum_jrubies = @calculator::calculate_minimum_jrubies(active_nodes, average_compile_time, run_interval)
         output _('Puppet Infrastructure Estimated Capacity')
         output_line
-        output _("Found %{available_jrubies} available JRubies and %{active_nodes} active nodes.") % { available_jrubies: available_jrubies, active_nodes: active_nodes }
+        output _("Found %{total_puppetserver_jrubies} available JRubies and %{active_nodes} active nodes.") % { total_puppetserver_jrubies: total_puppetserver_jrubies, active_nodes: active_nodes }
         output _("Found a run interval of %{run_interval} seconds and an average compile time of %{average_compile_time} seconds.") % { run_interval: run_interval, average_compile_time: average_compile_time }
-        output _("A maximum of %{maximum_nodes} nodes can be served by %{available_jrubies} JRubies.") % { maximum_nodes: maximum_nodes, available_jrubies: available_jrubies }
+        output _("A maximum of %{maximum_nodes} nodes can be served by %{total_puppetserver_jrubies} JRubies.") % { maximum_nodes: maximum_nodes, total_puppetserver_jrubies: total_puppetserver_jrubies }
         output _("A minimum of %{minimum_jrubies} JRubies are required to serve %{active_nodes} nodes.") % { minimum_jrubies: minimum_jrubies, active_nodes: active_nodes }
         output _('Note that available JRubies does not include the Primary Master when using Compile Masters.') if with_compile_masters?
         output_line
@@ -852,9 +858,20 @@ module PuppetX
       # Identify available jrubies on a PE Infrastructure node.
       # Used when estimating PE Infrastructure capacity.
 
-      def available_jrubies_for_node(certname, settings)
+      def total_puppetserver_jrubies_for_node(certname, settings)
+        return 0 unless settings['params']['puppet_enterprise::master::puppetserver::jruby_max_active_instances']
         default_jrubies = [resources_for_node(certname)['cpu'] - 1, 4].min
         settings['params']['puppet_enterprise::master::puppetserver::jruby_max_active_instances'] || default_jrubies
+      end
+
+      def total_puppetdb_connections_for_node(_certname, settings)
+        return 0 unless settings['params']['puppet_enterprise::puppetdb::command_processing_threads']
+        # https://github.com/puppetlabs/puppet-enterprise-modules/blob/irving/modules/puppet_enterprise/manifests/puppetdb.pp
+        default_puppetdb_connections = 25 + [25, (settings['params']['puppet_enterprise::puppetdb::command_processing_threads'] * 2)].max
+        unless settings['params']['puppet_enterprise::puppetdb::read_maximum_pool_size'] && settings['params']['puppet_enterprise::puppetdb::write_maximum_pool_size']
+          return default_puppetdb_connections
+        end
+        settings['params']['puppet_enterprise::puppetdb::read_maximum_pool_size'] + settings['params']['puppet_enterprise::puppetdb::write_maximum_pool_size']
       end
 
       # Identify the current memory_per_jruby ratio on a PE Infrastructure node.

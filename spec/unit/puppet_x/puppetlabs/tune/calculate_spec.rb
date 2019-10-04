@@ -498,6 +498,77 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
 
       expect(calculator::calculate_master_settings(node)).to eq(settings)
     end
+
+    it 'can calculate master host settings with a large number of compiler connections' do
+      resources = {
+        'cpu' => 4,
+        'ram' => 8192,
+      }
+      infrastructure = {
+        'is_monolithic'        => true,
+        'with_compile_masters' => false,
+        'compiler_connections' => 500,
+      }
+      type = {
+        'is_monolithic_master' => true,
+        'is_replica_master'    => false,
+        'is_compile_master'    => false,
+        'with_jruby9k_enabled' => false,
+      }
+      classes = {
+        'amq::broker'  => true,
+        'console'      => true,
+        'database'     => true,
+        'orchestrator' => true,
+        'puppetdb'     => true,
+      }
+      node = { 'resources' => resources, 'infrastructure' => infrastructure, 'type' => type, 'classes' => classes }
+
+      ram_database     = minimum_ram_database
+      ram_puppetdb     = (resources['ram'] * percent_ram_puppetdb).to_i
+      ram_puppetserver = 1024
+      ram_orchestrator = (resources['ram'] * percent_ram_orchestrator).to_i
+      ram_console      = (resources['ram'] * percent_ram_console).to_i
+      ram_activemq     = (resources['ram'] * percent_ram_activemq).to_i
+      ram_per_jruby    = 512
+
+      max_connections = (infrastructure['compiler_connections'] * 1.10).to_i
+
+      params = {
+        'puppet_enterprise::profile::database::shared_buffers'                => "#{ram_database}MB",
+        'puppet_enterprise::puppetdb::command_processing_threads'             => 1,
+        'puppet_enterprise::master::puppetserver::jruby_max_active_instances' => 2,
+        'puppet_enterprise::profile::puppetdb::java_args'                     => { 'Xms' => "#{ram_puppetdb}m",     'Xmx' => "#{ram_puppetdb}m" },
+        'puppet_enterprise::profile::master::java_args'                       => { 'Xms' => "#{ram_puppetserver}m", 'Xmx' => "#{ram_puppetserver}m" },
+        'puppet_enterprise::profile::orchestrator::java_args'                 => { 'Xms' => "#{ram_orchestrator}m", 'Xmx' => "#{ram_orchestrator}m" },
+        'puppet_enterprise::profile::console::java_args'                      => { 'Xms' => "#{ram_console}m",      'Xmx' => "#{ram_console}m" },
+        'puppet_enterprise::profile::amq::broker::heap_mb'                    => ram_activemq,
+        'puppet_enterprise::profile::database::max_connections'               => max_connections,
+      }
+
+      total_cpu = params['puppet_enterprise::puppetdb::command_processing_threads'] +
+                  params['puppet_enterprise::master::puppetserver::jruby_max_active_instances']
+      total_ram = ram_database + ram_puppetdb + ram_puppetserver + ram_orchestrator + ram_console + ram_activemq
+      totals = {
+        'CPU'          => { 'total' => resources['cpu'], 'used' => total_cpu },
+        'RAM'          => { 'total' => resources['ram'], 'used' => total_ram },
+        'MB_PER_JRUBY' => ram_per_jruby,
+      }
+
+      settings = { 'params' => params, 'totals' => totals }
+
+      if pe_2019_or_newer
+        node['type']['with_jruby9k_enabled'] = true
+        node['classes'].delete('amq::broker')
+        reserved_code_cache = settings['params']['puppet_enterprise::master::puppetserver::jruby_max_active_instances'] * ram_per_jruby_code_cache
+        settings['params']['puppet_enterprise::master::puppetserver::reserved_code_cache'] = "#{reserved_code_cache}m"
+        settings['totals']['RAM']['used'] += reserved_code_cache
+        settings['totals']['RAM']['used'] -= settings['params']['puppet_enterprise::profile::amq::broker::heap_mb']
+        settings['params'].delete('puppet_enterprise::profile::amq::broker::heap_mb')
+      end
+
+      expect(calculator::calculate_master_settings(node)).to eq(settings)
+    end
   end
 
   context 'with a split infrastructure' do
