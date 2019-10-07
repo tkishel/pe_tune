@@ -2,15 +2,22 @@
 
 ## Background
 
-The default settings for Puppet Enterprise services are tuned, but not necessarily optimized for PE Infrastructure type and the combination of services competing for resources on each PE Infrastructure node.
+The default settings for Puppet Enterprise services are tuned, but not necessarily optimized for PE Infrastructure type and the combination of PE services competing for system resources on each PE Infrastructure host.
+
+## Methodology
+
+1. Query PuppetDB for PE Infrastructure Hosts (query for declared PE classes)
+1. Query PuppetDB for CPU and RAM facts for PE Infrastructure Hosts (query for processors, memory)
+1. Identify PE Infrastructure type: Standard, Large, Extra Large (legacy: Split)
+1. For each PE Infrastructure Host, output settings for PE services (as parameters for the declared PE classes)
 
 ## Resource Allocation
 
-### Ratios, Minimums, and Maximums
+### Ratios, Minimums, and Maximumsw
 
 With some exceptions, the `tune` command calculates settings for each service based upon a ratio of system resources (processors and/or memory) limited by a minimum and maximum.
 
-The ratio, minimum, and maximum vary based upon the PE Infrastructure type and the PE services sharing resources on each PE Infrastructure host.
+The ratio, minimum, and maximum vary based upon the PE Infrastructure type and the PE services competing for system resources on each PE Infrastructure host.
 
 The minimum system resources for the `tune` command are 4 CPU / 8 GB RAM.
 
@@ -130,9 +137,8 @@ A Large Reference Architecture is a Master plus compilers install.
 Calculations for the Master in a Large Reference Architecture use the same algorithm as for the [Standard Reference Architecture Master](#Standard-Master) with the following exceptions:
 
 PuppetServer on the Master will process catalog requests only for other PE Infrastructure hosts.
-While PuppetDB on the Master will be expected to handle requests from PuppetServer services on multiple Compilers that together are servicing more agents then the Standard Reference Architecture.
-Therefore, system resources on the master are transferred from PuppetServer to PuppetDB as follows:
-
+PuppetDB on the Master will be expected to handle requests from PuppetServer services on multiple Compilers that together are servicing more agents than the Standard Reference Architecture.
+So resources on the master are transferred from PuppetServer to PuppetDB as follows.
 ```
 percent_cpu_puppetdb = 0.50 # up from 0.25
 
