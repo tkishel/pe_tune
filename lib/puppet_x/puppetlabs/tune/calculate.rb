@@ -17,6 +17,9 @@ module PuppetX
           # Round up when memory is close to the next level of our leveled settings. See fit_to_memory().
           @defaults[:fit_to_memory_percentage] = 5
 
+          # Memory reserved for the operating system (and other applications).
+          @defaults[:memory_reserved_for_os_percentage] = 0.20
+
           @options = {}
 
           # Users may override these defaults via command line options.
@@ -51,11 +54,11 @@ module PuppetX
 
           minimum_ram_puppetserver = 512
 
-          minimum_ram_code_cache   = 128
+          minimum_ram_code_cache   = 96
           maximum_ram_code_cache   = 2048
 
           ram_per_jruby            = fit_to_memory(node['resources']['ram'], 512, 768, 1024)
-          ram_per_jruby_code_cache = 128
+          ram_per_jruby_code_cache = 96
 
           minimum_ram_database     = 2048
           maximum_ram_database     = 16384
@@ -69,8 +72,8 @@ module PuppetX
           minimum_ram_console      = 512
           maximum_ram_console      = 1024
 
-          minimum_ram_activemq     = 512
-          maximum_ram_activemq     = 1024
+          minimum_ram_activemq     = 256
+          maximum_ram_activemq     = 512
 
           cpu_reserved             = 1
           ram_reserved             = select_reserved_memory(node['resources']['ram'])
@@ -95,7 +98,7 @@ module PuppetX
           if node['type']['is_monolithic_master'] || node['type']['is_replica_master']
             if node['infrastructure']['with_compile_masters']
               percent_cpu_puppetdb     = 0.50
-              percent_ram_puppetdb     = 0.20
+              percent_ram_puppetdb     = 0.15
             end
           end
 
@@ -223,11 +226,11 @@ module PuppetX
           # Do not return any settings when overallocating.
 
           if settings['totals']['CPU']['used'] > settings['totals']['CPU']['total']
-            Puppet.debug("Error: calculations overallocated processors: #{settings['totals']['CPU']['used']}")
+            Puppet.debug("Error: calculations overallocated processors: #{settings}")
             return
           end
           if (settings['totals']['RAM']['used'] + ram_reserved) > settings['totals']['RAM']['total']
-            Puppet.debug("Error: calculations overallocated memory: #{settings['totals']['RAM']['used']}")
+            Puppet.debug("Error: calculations overallocated memory: #{settings}")
             return
           end
 
@@ -367,12 +370,11 @@ module PuppetX
           ((active_nodes.to_f * jruby_lock_time.to_f) / run_interval.to_f).ceil
         end
 
-        # Return the option or the defaults.
+        # Return the option or the default.
 
         def select_reserved_memory(memory)
           return @options[:memory_reserved_for_os] if @options[:memory_reserved_for_os] != 0
-          # The fitting is at half-scale, so double the memory.
-          fit_to_memory(memory * 2, 256, 512, 1024)
+          (memory * @defaults[:memory_reserved_for_os_percentage]).to_i
         end
 
         # Model https://puppet.com/docs/pe/latest/configuring/tuning_monolithic.html
