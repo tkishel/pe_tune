@@ -26,7 +26,7 @@ module PuppetX
           'puppet_enterprise::profile::database::shared_buffers',
           'puppet_enterprise::profile::master::java_args',
           'puppet_enterprise::profile::orchestrator::java_args',
-          # 'puppet_enterprise::profile::orchestrator::jruby_max_requests_per_instance',
+          # 'puppet_enterprise::profile::orchestrator::jruby_max_active_instances',
           # 'puppet_enterprise::profile::orchestrator::reserved_code_cache',
           'puppet_enterprise::profile::puppetdb::java_args',
           'puppet_enterprise::puppetdb::command_processing_threads',
@@ -35,7 +35,7 @@ module PuppetX
         # ORCH-2384:
         #
         # unless pe_2019_2_or_newer?
-        #   param_names.delete('puppet_enterprise::profile::orchestrator::jruby_max_requests_per_instance')
+        #   param_names.delete('puppet_enterprise::profile::orchestrator::jruby_max_active_instances')
         #   param_names.delete('puppet_enterprise::profile::orchestrator::reserved_code_cache')
         # end
         param_names

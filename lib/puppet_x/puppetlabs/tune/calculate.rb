@@ -102,8 +102,8 @@ module PuppetX
             end
           end
 
-          # ORCH-2384: Orchestrator in PE 2019.2 has jrubies, and requires (estimated) a processor and additional memory.
-          # Reallocate the processor and memory associated with a jruby from puppetserver to orchestrator.
+          # ORCH-2384: Orchestrator in PE 2019.2 has jrubies, and requires (estimated) one processor and additional memory.
+          # Reallocate the processor associated with one jruby from puppetserver to orchestrator.
 
           if node['classes']['orchestrator'] && node['type']['with_orchestrator_jruby']
             cpu_reserved += 1
@@ -153,15 +153,19 @@ module PuppetX
 
           if node['classes']['orchestrator']
             ram_orchestrator = (node['resources']['ram'] * percent_ram_orchestrator).to_i.clamp(minimum_ram_orchestrator, maximum_ram_orchestrator)
+            if node['type']['with_orchestrator_jruby']
+              # ORCH-2384: Orchestrator in PE 2019.2 has jrubies, and requires (estimated) one processor and additional memory.
+              # Reallocate the memory associated with one jruby from puppetserver to orchestrator.
+              ram_orchestrator += ram_per_jruby + ram_per_jruby_code_cache
+              # orchestrator_jruby_max_active_instances = 8
+              # ram_orchestrator_code_cache = orchestrator_jruby_max_active_instances * ram_per_jruby_code_cache
+              # settings['params']['puppet_enterprise::profile::orchestrator::jruby_max_active_instances'] = orchestrator_jruby_max_active_instances
+              # Note: orchestrator_jruby_max_active_instances is not a dedicated allocation, do not add it to settings['totals']['CPU']['used'].
+              # settings['params']['puppet_enterprise::profile::orchestrator::reserved_code_cache'] = ram_orchestrator_code_cache
+              # settings['totals']['RAM']['used'] += ram_orchestrator_code_cache
+            end
             settings['params']['puppet_enterprise::profile::orchestrator::java_args'] = { 'Xms' => "#{ram_orchestrator}m", 'Xmx' => "#{ram_orchestrator}m" }
             settings['totals']['RAM']['used'] += ram_orchestrator
-            if node['type']['with_orchestrator_jruby']
-              # ORCH-2384: Orchestrator in PE 2019.2 has jrubies, and requires (estimated) a processor and additional memory.
-              # Reallocate the processor and memory associated with a jruby from puppetserver to orchestrator.
-              ram_orchestrator += ram_per_jruby + ram_per_jruby_code_cache
-              settings['params']['puppet_enterprise::profile::orchestrator::java_args'] = { 'Xms' => "#{ram_orchestrator}m", 'Xmx' => "#{ram_orchestrator}m" }
-              settings['totals']['RAM']['used'] += ram_per_jruby + ram_per_jruby_code_cache
-            end
           end
 
           if node['classes']['console']
