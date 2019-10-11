@@ -349,6 +349,10 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       ram_orchestrator    = maximum_ram_orchestrator + ram_per_jruby + ram_per_jruby_code_cache
       ram_console         = maximum_ram_console
 
+      # ORCH-2384
+      cpu_orchestrator    = 2
+      # ram_orchestrator_cc = cpu_orchestrator * ram_per_jruby_code_cache
+
       params = {
         'puppet_enterprise::profile::database::shared_buffers'                => "#{ram_database}MB",
         'puppet_enterprise::puppetdb::command_processing_threads'             => cpu_puppetdb,
@@ -356,6 +360,8 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
         'puppet_enterprise::master::puppetserver::reserved_code_cache'        => "#{ram_puppetserver_cc}m",
         'puppet_enterprise::profile::puppetdb::java_args'                     => { 'Xms' => "#{ram_puppetdb}m",     'Xmx' => "#{ram_puppetdb}m" },
         'puppet_enterprise::profile::master::java_args'                       => { 'Xms' => "#{ram_puppetserver}m", 'Xmx' => "#{ram_puppetserver}m" },
+        'puppet_enterprise::profile::orchestrator::jruby_max_active_instances' => cpu_orchestrator,
+        # 'puppet_enterprise::profile::orchestrator::reserved_code_cache'        => "#{ram_orchestrator_cc}m",
         'puppet_enterprise::profile::orchestrator::java_args'                 => { 'Xms' => "#{ram_orchestrator}m", 'Xmx' => "#{ram_orchestrator}m" },
         'puppet_enterprise::profile::console::java_args'                      => { 'Xms' => "#{ram_console}m",      'Xmx' => "#{ram_console}m" },
       }

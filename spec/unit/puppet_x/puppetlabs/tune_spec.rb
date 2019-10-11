@@ -11,7 +11,8 @@ describe PuppetX::Puppetlabs::Tune do
   subject(:tune) { described_class.new(:local => true) }
 
   # Allows mergeups in the PE implementation of this class.
-  pe_2019_or_newer = Gem::Version.new(Puppet.version) >= Gem::Version.new('6.0.0')
+  pe_2019_or_newer   = Gem::Version.new(Puppet.version) >= Gem::Version.new('6.0.0')
+  pe_2019_2_or_newer = Gem::Version.new(Puppet.version) >= Gem::Version.new('6.9.0')
 
   before(:each) do
     suppress_standard_output
@@ -45,10 +46,16 @@ describe PuppetX::Puppetlabs::Tune do
         'puppet_enterprise::profile::database::shared_buffers',
         'puppet_enterprise::profile::master::java_args',
         'puppet_enterprise::profile::orchestrator::java_args',
+        'puppet_enterprise::profile::orchestrator::jruby_max_active_instances',
+        # 'puppet_enterprise::profile::orchestrator::reserved_code_cache',
         'puppet_enterprise::profile::puppetdb::java_args',
         'puppet_enterprise::puppetdb::command_processing_threads',
       ]
       param_names.delete('puppet_enterprise::profile::amq::broker::heap_mb') if pe_2019_or_newer
+      unless pe_2019_2_or_newer
+        param_names.delete('puppet_enterprise::profile::orchestrator::jruby_max_active_instances')
+        # param_names.delete('puppet_enterprise::profile::orchestrator::reserved_code_cache')
+      end
       expect(tune::tunable_param_names).to eq(param_names)
     end
   end
