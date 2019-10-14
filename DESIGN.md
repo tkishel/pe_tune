@@ -13,7 +13,7 @@ The default settings for Puppet Enterprise services are tuned, but not necessari
 
 ## Resource Allocation
 
-### Ratios, Minimums, and Maximumsw
+### Ratios, Minimums, and Maximums
 
 With some exceptions, the `tune` command calculates settings for each service based upon a ratio of system resources (processors and/or memory) limited by a minimum and maximum.
 
