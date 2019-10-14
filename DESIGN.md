@@ -82,7 +82,7 @@ minimum_ram_orchestrator = 512
 maximum_ram_orchestrator = 1024
 ```
 
-With PE 2019.2.x, the processor and memory associated with one jruby is reallocated from PuppetServer to Orchestrator, as Orchestrator has jrubies and requires (estimated) one processor and additional memory.
+With PE 2019.2.x, the processor and memory associated with one jruby is reallocated from Puppet Server to Orchestrator, as Orchestrator has jrubies and requires (estimated) one processor and additional memory.
 
 ###### ActiveMQ Service (pe-activemq)
 
@@ -94,9 +94,9 @@ maximum_ram_activemq = 1024
 
 ActiveMQ (used by MCollective) is deprecated in PE 2018.x and removed in PE 2019.x.
 
-###### PuppetServer Service (pe-puppetserver)
+###### Puppet Server Service (pe-puppetserver)
 
-Since PuppetServer is allocated up to the remainder of system resources, it does not have explicit ratios.
+Since Puppet Server is allocated up to the remainder of system resources, it does not have explicit ratios.
 
 ```
 minimum_cpu_puppetserver = 2
@@ -119,7 +119,7 @@ ram_per_jruby = (512, 768, 1024) if total memory (4-7 GB, 8-16 GB, 16 GB+)
 ram_per_jruby_code_cache = 128
 ```
 
-PuppetServer jrubies are constrained based on both how many jrubies fit into unallocated memory and unallocated processors (one jruby per processor).
+Puppet Server jrubies are constrained based on both how many jrubies fit into unallocated memory and unallocated processors (one jruby per processor).
 PuppetServer memory is then set to the amount of memory required for the total calculated number of jrubies.
 
 ```
