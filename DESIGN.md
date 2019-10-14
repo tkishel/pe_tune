@@ -33,6 +33,17 @@ A Standard Reference Architecture is a Master-only install.
 
 ##### <a name="Standard-Master">Master</a>
 
+###### Operating System and Other Services
+
+```
+cpu_reserved = 1
+```
+
+```
+ram_reserved = (256, 512, 1024) if total memory (4-7 GB, 8-16 GB, 16 GB+)
+```
+
+
 ###### <a name="Standard-Database">Database Service (pe-postgresql)</a>
 
 ```
@@ -118,15 +129,6 @@ puppetserver_ram = jrubies * ram_per_jruby
 code_cache_ram = jrubies * ram_per_jruby_code_cache
 ```
 
-###### Operating System and Other Services
-
-```
-cpu_reserved = 1
-```
-
-```
-ram_reserved = (256, 512, 1024) if total memory (4-7 GB, 8-16 GB, 16 GB+)
-```
 
 #### Large Reference Architecture
 
