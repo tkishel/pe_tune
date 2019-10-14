@@ -103,7 +103,7 @@ minimum_cpu_puppetserver = 2
 maximum_cpu_puppetserver = 24
 ```
 
-Since ReservedCodeCache is limited to a maximum of 2 GB, and each jruby requires an estimated 85 MB of ReservedCodeCache, the maximum number of jrubies is effectively limited to a maximum of 24. But note we allocate 96 MB of reserved code cache per jruby when possible.
+Since ReservedCodeCache is limited to a maximum of 2 GB, and each jruby requires an estimated 85 MB of ReservedCodeCache, the maximum number of jrubies is effectively limited to a maximum of 24. But note we allocate 96 MB of ReservedCodeCache per jruby when possible.
 
 ```
 minimum_ram_puppetserver = 512
@@ -176,8 +176,6 @@ Calculations for the Compilers in an Extra Large Reference Architecture use the 
 ##### PuppetDB Host
 
 Calculations for the PuppetDB Host use the same algorithm as for the Standard Reference Architecture.
-
-The below are the same settings for these two services as would be seen on a Standard Reference Architecture Master.
 
 ###### Database Service (pe-postgresql)
 
