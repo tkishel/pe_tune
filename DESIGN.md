@@ -57,7 +57,7 @@ maximum_ram_database = 16384
 ```
 percent_cpu_puppetdb = 0.25
 minimum_cpu_puppetdb = 1
-maximum_cpu_puppetdb = (CPU * 0.50)
+maximum_cpu_puppetdb = (processors.count * 0.50)
 ```
 
 ```
@@ -158,7 +158,7 @@ We lower each PuppetDB's allocation of CPU to create a limited number of connect
 In addition, PuppetDB garbage collection is disabled on Compilers, as garbage collection is/should only be performed by one PuppetDB (on the Master).
 
 ```
-maximum_cpu_puppetdb = 3 # was (CPU * 0.50)
+maximum_cpu_puppetdb = 3 # was (processors.count * 0.50)
 ```
 
 #### Extra Large Reference Architecture
@@ -218,7 +218,7 @@ maximum_ram_database = 16384
 ```
 percent_cpu_puppetdb = 0.50
 minimum_cpu_puppetdb = 1
-maximum_cpu_puppetdb = (CPU * 0.50)
+maximum_cpu_puppetdb = (processors.count * 0.50)
 ```
 
 ```
