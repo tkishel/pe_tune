@@ -9,23 +9,20 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
   # Allows mergeups in the PE implementation of this class.
   pe_2019_or_newer = Gem::Version.new(Puppet.version) >= Gem::Version.new('6.0.0')
 
-  ram_per_jruby_code_cache = 96
+  percent_cpu_puppetdb                = 0.25
+  percent_cpu_puppetdb_with_compilers = 0.50
 
-  percent_ram_database     = 0.25
-  percent_ram_puppetdb     = 0.10
-  percent_ram_console      = 0.08
-  percent_ram_orchestrator = 0.08
-  percent_ram_activemq     = 0.08
-
-  percent_ram_puppetdb_with_compilers = 0.15
-  percent_ram_puppetdb_split          = 0.25
-  percent_ram_puppetdb_split_external = 0.50
+  percent_ram_database                  = 0.25
+  percent_ram_puppetdb                  = 0.10
+  percent_ram_puppetdb_with_compilers   = 0.15
+  percent_ram_puppetdb_split            = 0.25
+  percent_ram_puppetdb_split_external   = 0.50
+  percent_ram_orchestrator              = 0.08
+  percent_ram_orchestrator_with_jrubies = 0.10
+  percent_ram_console                   = 0.08
+  percent_ram_activemq                  = 0.08
 
   minimum_ram_database     = 2048
-  # maximum_ram_database   = 16384
-
-  # minimum_ram_puppetdb   = 512
-  # maximum_ram_puppetdb   = 8192
 
   minimum_ram_puppetserver = 512
 
@@ -37,6 +34,8 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
 
   minimum_ram_activemq     = 256
   maximum_ram_activemq     = 512
+
+  ram_per_jruby_code_cache = 96
 
   context 'with a monolithic infrastructure' do
     it 'can calculate master host settings, in vmpooler' do
@@ -132,7 +131,7 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       }
       node = { 'resources' => resources, 'infrastructure' => infrastructure, 'type' => type, 'classes' => classes }
 
-      cpu_puppetdb     = 1
+      cpu_puppetdb     = (resources['cpu'] * percent_cpu_puppetdb).to_i
       cpu_puppetserver = 2
       ram_per_jruby    = 512
       ram_database     = minimum_ram_database
@@ -201,7 +200,7 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       }
       node = { 'resources' => resources, 'infrastructure' => infrastructure, 'type' => type, 'classes' => classes }
 
-      cpu_puppetdb     = 2
+      cpu_puppetdb     = (resources['cpu'] * percent_cpu_puppetdb).to_i
       cpu_puppetserver = 5
       ram_per_jruby    = 768
       ram_database     = (resources['ram'] * percent_ram_database).to_i
@@ -270,7 +269,7 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       }
       node = { 'resources' => resources, 'infrastructure' => infrastructure, 'type' => type, 'classes' => classes }
 
-      cpu_puppetdb     = 4
+      cpu_puppetdb     = (resources['cpu'] * percent_cpu_puppetdb).to_i
       cpu_puppetserver = 11
       ram_per_jruby    = 1024
       ram_database     = (resources['ram'] * percent_ram_database).to_i
@@ -339,18 +338,17 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       }
       node = { 'resources' => resources, 'infrastructure' => infrastructure, 'type' => type, 'classes' => classes }
 
-      cpu_puppetdb        = 4
-      cpu_puppetserver    = 10
+      cpu_puppetdb        = (resources['cpu'] * percent_cpu_puppetdb).to_i
+      cpu_puppetserver    = 9
       ram_per_jruby       = 1024
       ram_database        = (resources['ram'] * percent_ram_database).to_i
       ram_puppetdb        = (resources['ram'] * percent_ram_puppetdb).to_i
+      ram_orchestrator    = (resources['ram'] * percent_ram_orchestrator_with_jrubies).to_i
       ram_puppetserver    = cpu_puppetserver * ram_per_jruby
       ram_puppetserver_cc = cpu_puppetserver * ram_per_jruby_code_cache
-      ram_orchestrator    = maximum_ram_orchestrator + ram_per_jruby + ram_per_jruby_code_cache
       ram_console         = maximum_ram_console
 
-      # ORCH-2384
-      cpu_orchestrator    = 2
+      cpu_orchestrator    = 3
       # ram_orchestrator_cc = cpu_orchestrator * ram_per_jruby_code_cache
 
       params = {
@@ -404,7 +402,7 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       }
       node = { 'resources' => resources, 'infrastructure' => infrastructure, 'type' => type, 'classes' => classes }
 
-      cpu_puppetdb     = 2
+      cpu_puppetdb     = (resources['cpu'] * percent_cpu_puppetdb_with_compilers).to_i
       cpu_puppetserver = 2
       ram_per_jruby    = 512
       ram_database     = minimum_ram_database
@@ -473,7 +471,7 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       }
       node = { 'resources' => resources, 'infrastructure' => infrastructure, 'type' => type, 'classes' => classes }
 
-      cpu_puppetdb     = 2
+      cpu_puppetdb     = (resources['cpu'] * percent_cpu_puppetdb_with_compilers).to_i
       cpu_puppetserver = 2
       ram_per_jruby    = 512
       ram_database     = 0
@@ -524,7 +522,7 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       }
       infrastructure = {
         'is_monolithic'        => true,
-        'with_compile_masters' => false,
+        'with_compile_masters' => true,
         'compiler_connections' => 500,
       }
       type = {
@@ -542,11 +540,11 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       }
       node = { 'resources' => resources, 'infrastructure' => infrastructure, 'type' => type, 'classes' => classes }
 
-      cpu_puppetdb     = 1
+      cpu_puppetdb     = (resources['cpu'] * percent_cpu_puppetdb_with_compilers).to_i
       cpu_puppetserver = 2
       ram_per_jruby    = 512
       ram_database     = minimum_ram_database
-      ram_puppetdb     = (resources['ram'] * percent_ram_puppetdb).to_i
+      ram_puppetdb     = (resources['ram'] * percent_ram_puppetdb_with_compilers).to_i
       ram_puppetserver = cpu_puppetserver * ram_per_jruby
       ram_orchestrator = (resources['ram'] * percent_ram_orchestrator).to_i
       ram_console      = (resources['ram'] * percent_ram_console).to_i

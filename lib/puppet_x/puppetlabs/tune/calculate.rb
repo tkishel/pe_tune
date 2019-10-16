@@ -43,6 +43,9 @@ module PuppetX
           minimum_cpu_puppetdb     = 1
           maximum_cpu_puppetdb     = (node['resources']['cpu'] * 0.50).to_i
 
+          minimum_cpu_orchestrator = 1
+          maximum_cpu_orchestrator = 4
+
           minimum_cpu_puppetserver = 2
           maximum_cpu_puppetserver = 24
 
@@ -56,9 +59,6 @@ module PuppetX
 
           minimum_ram_code_cache   = 96
           maximum_ram_code_cache   = 2048
-
-          ram_per_jruby            = fit_to_memory(node['resources']['ram'], 512, 768, 1024)
-          ram_per_jruby_code_cache = 96
 
           minimum_ram_database     = 2048
           maximum_ram_database     = 16384
@@ -74,6 +74,9 @@ module PuppetX
 
           minimum_ram_activemq     = 256
           maximum_ram_activemq     = 512
+
+          ram_per_jruby            = fit_to_memory(node['resources']['ram'], 512, 768, 1024)
+          ram_per_jruby_code_cache = 96
 
           cpu_reserved             = 1
           ram_reserved             = select_reserved_memory(node['resources']['ram'])
@@ -102,13 +105,6 @@ module PuppetX
             end
           end
 
-          # ORCH-2384: Orchestrator in PE 2019.2 has jrubies, and requires (estimated) one processor and additional memory.
-          # Reallocate the processor associated with one jruby from puppetserver to orchestrator.
-
-          if node['classes']['orchestrator'] && node['type']['with_orchestrator_jruby']
-            cpu_reserved += 1
-          end
-
           # The Vegas Renormalization: allow for testing with vmpooler (2 CPU / 6 GB RAM) VMs.
 
           if node['resources']['cpu'] < 3
@@ -135,7 +131,6 @@ module PuppetX
 
           if node['classes']['puppetdb']
             # Reallocate resources between puppetserver and puppetdb, if this host is a compiler (puppetserver plus puppetdb).
-
             if node['type']['is_compile_master'] || node['type']['is_compiler']
               percent_cpu_puppetdb = 0.25
               minimum_cpu_puppetdb = 1
@@ -152,16 +147,22 @@ module PuppetX
           end
 
           if node['classes']['orchestrator']
-            ram_orchestrator = (node['resources']['ram'] * percent_ram_orchestrator).to_i.clamp(minimum_ram_orchestrator, maximum_ram_orchestrator)
             if node['type']['with_orchestrator_jruby']
-              # ORCH-2384
-              ram_orchestrator += ram_per_jruby + ram_per_jruby_code_cache
-              orchestrator_jruby_max_active_instances = 2
-              # ram_orchestrator_code_cache = orchestrator_jruby_max_active_instances * ram_per_jruby_code_cache
+              # Reallocate resources between orchestrator and puppetserver, if orchestrator has jrubies.
+              percent_ram_orchestrator = 0.10
+
+              # Note: orchestrator_jruby_max_active_instances is constrained based on how many jrubies fit into orchestrator memory.
+              ram_orchestrator = [(node['resources']['ram'] * percent_ram_orchestrator).to_i, minimum_ram_orchestrator].max
+              max_jrubies_in_ram_orchestrator = (ram_orchestrator / ram_per_jruby).to_i
+              orchestrator_jruby_max_active_instances = max_jrubies_in_ram_orchestrator.clamp(minimum_cpu_orchestrator, maximum_cpu_orchestrator)
               settings['params']['puppet_enterprise::profile::orchestrator::jruby_max_active_instances'] = orchestrator_jruby_max_active_instances
               # Note: orchestrator_jruby_max_active_instances is not a dedicated allocation, do not add it to settings['totals']['CPU']['used'].
+
+              # ram_orchestrator_code_cache = orchestrator_jruby_max_active_instances * ram_per_jruby_code_cache
               # settings['params']['puppet_enterprise::profile::orchestrator::reserved_code_cache'] = ram_orchestrator_code_cache
               # settings['totals']['RAM']['used'] += ram_orchestrator_code_cache
+            else
+              ram_orchestrator = (node['resources']['ram'] * percent_ram_orchestrator).to_i.clamp(minimum_ram_orchestrator, maximum_ram_orchestrator)
             end
             settings['params']['puppet_enterprise::profile::orchestrator::java_args'] = { 'Xms' => "#{ram_orchestrator}m", 'Xmx' => "#{ram_orchestrator}m" }
             settings['totals']['RAM']['used'] += ram_orchestrator
@@ -187,7 +188,7 @@ module PuppetX
             return
           end
 
-          # Note: jruby_max_active_instances is constrained based on both how many jrubies fit into unallocated memory and unallocated processors.
+          # Note: puppetserver_jruby_max_active_instances is constrained based on both how many jrubies fit into unallocated memory and unallocated processors.
 
           maximum_cpu_puppetserver = (node['resources']['cpu'] - cpu_reserved - settings['totals']['CPU']['used']).clamp(minimum_cpu_puppetserver, maximum_cpu_puppetserver)
           max_jrubies_in_ram_puppetserver = (ram_puppetserver / (ram_per_jruby + ram_per_jruby_code_cache)).to_i
