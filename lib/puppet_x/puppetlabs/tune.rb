@@ -137,7 +137,7 @@ module PuppetX
       def output_current_settings
         current_total_puppetserver_jrubies = collect_current_settings
 
-        @current_collected_nodes.each do |certname, node|
+        @current_collected_nodes.sort_by { |_k, node| [node['order'], node['certname']] }.each do |certname, node|
           next if @options[:node] && certname != @options[:node]
           output_current_settings_for_node(certname, node)
         end
@@ -151,7 +151,7 @@ module PuppetX
         optimized_total_puppetserver_jrubies = collect_optimized_settings
 
         collect_optimized_settings_common_to_all_nodes
-        @collected_nodes.each do |certname, node|
+        @collected_nodes.sort_by { |_k, node| [node['order'], node['certname']] }.each do |certname, node|
           next if @options[:node] && certname != @options[:node]
           output_optimized_settings_for_node(certname, node)
         end
@@ -169,7 +169,7 @@ module PuppetX
         collect_current_settings
         collect_optimized_settings
 
-        @current_collected_nodes.each do |certname, current_node|
+        @current_collected_nodes.sort_by { |_k, node| [node['order'], node['certname']] }.each do |certname, current_node|
           next if @options[:node] && certname != @options[:node]
           if current_node['settings']['params'].empty?
             output _('No currently defined settings to compare for %{role} %{certname}') % { role: current_node['role'], certname: certname }
@@ -386,8 +386,10 @@ module PuppetX
 
       def collect_current_node(certname, role, settings)
         properties = {
-          'role'      => role,
-          'settings'  => settings,
+          'certname' => certname,
+          'order'    => output_order(role),
+          'role'     => role,
+          'settings' => settings,
         }
         @current_collected_nodes[certname] = properties
       end
@@ -396,11 +398,32 @@ module PuppetX
 
       def collect_optimized_node(certname, role, node)
         properties = {
+          'certname'  => certname,
+          'order'     => output_order(role),
           'resources' => node['resources'],
           'role'      => role,
           'settings'  => node['settings'],
         }
         @collected_nodes[certname] = properties
+      end
+
+      # Establish an intuitive output order of hosts.
+
+      def output_order(role)
+        case role
+        when 'Primary Master'
+          1
+        when 'Replica Master'
+          2
+        when 'Console Host'
+          3
+        when 'PuppetDB Host'
+          4
+        when 'External Database Host'
+          5
+        else
+          9
+        end
       end
 
       # Extract optimized settings common to all PE Infrastructure nodes.
@@ -572,7 +595,7 @@ module PuppetX
         output_error_and_exit _("Unable to create output directory: %{directory}") % { directory: hiera_directory } unless File.directory?(hiera_directory)
         Dir.mkdir(hiera_subdirectory) unless File.directory?(hiera_subdirectory)
         output_error_and_exit _("Unable to create output subdirectory: %{directory}") % { directory: hiera_subdirectory } unless File.directory?(hiera_subdirectory)
-        @collected_nodes.each do |certname, properties|
+        @collected_nodes.sort_by { |_k, node| [node['order'], node['certname']] }.each do |certname, properties|
           next if @options[:node] && certname != @options[:node]
           next if properties['settings']['params'].empty?
           output_file = "#{@options[:hiera]}/nodes/#{certname}.yaml"
@@ -589,7 +612,7 @@ module PuppetX
 
       def output_settings_to_pe_conf
         return unless @options[:pe_conf]
-        @collected_nodes.each do |_certname, properties|
+        @collected_nodes.sort_by { |_k, node| [node['order'], node['certname']] }.each do |_certname, properties|
           next if @options[:node] && certname != @options[:node]
           next if properties['settings']['params'].empty?
           if @pe_conf::write(properties['settings']['params'])
