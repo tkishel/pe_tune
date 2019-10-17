@@ -84,7 +84,7 @@ module PuppetX
           # https://github.com/puppetlabs/puppet-enterprise-modules/blob/irving/modules/puppet_enterprise/manifests/profile/database.pp
           default_database_max_connections = 400
 
-          percent_databse_connections = 1.10
+          percent_database_connections = 1.10
 
           settings = initialize_settings(node)
 
@@ -223,7 +223,7 @@ module PuppetX
 
           if node['classes']['database'] && node['infrastructure']['compiler_connections']
             if node['infrastructure']['compiler_connections'] > default_database_max_connections
-              settings['params']['puppet_enterprise::profile::database::max_connections'] = (node['infrastructure']['compiler_connections'] * percent_databse_connections).to_i
+              settings['params']['puppet_enterprise::profile::database::max_connections'] = (node['infrastructure']['compiler_connections'] * percent_database_connections).to_i
             end
           end
 
@@ -302,7 +302,7 @@ module PuppetX
           # https://github.com/puppetlabs/puppet-enterprise-modules/blob/irving/modules/puppet_enterprise/manifests/profile/database.pp
           default_database_max_connections = 400
 
-          percent_databse_connections = 1.10
+          percent_database_connections = 1.10
 
           settings = initialize_settings(node)
 
@@ -314,7 +314,7 @@ module PuppetX
 
           if node['infrastructure']['compiler_connections']
             if node['infrastructure']['compiler_connections'] > default_database_max_connections
-              settings['params']['puppet_enterprise::profile::database::max_connections'] = (node['infrastructure']['compiler_connections'] * percent_databse_connections).to_i
+              settings['params']['puppet_enterprise::profile::database::max_connections'] = (node['infrastructure']['compiler_connections'] * percent_database_connections).to_i
             end
           end
 
