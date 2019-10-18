@@ -407,7 +407,7 @@ module PuppetX
         @collected_nodes[certname] = properties
       end
 
-      # Establish an intuitive output order of hosts.
+      # Establish an intuitive output (singletons, multiples) order of hosts.
 
       def output_order(role)
         case role
@@ -453,7 +453,7 @@ module PuppetX
       #
 
       # Interface to ::Inventory and ::Query classes.
-      # Identify PE Infrastructure nodes by role, based upon the classes of the node.
+      # Identify PE Infrastructure nodes by role, based upon the PE classes declared on the node.
 
       def collect_infrastructure_nodes
         if using_inventory?

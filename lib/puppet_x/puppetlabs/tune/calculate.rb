@@ -36,7 +36,7 @@ module PuppetX
 
         # Masters, Replicas, and Compilers, in Monolithic or Split Infrastructures
         # Services: pe-puppetserver and (optionally) all other services.
-        # Levels and ratios model https://puppet.com/docs/pe/latest/configuring/tuning_monolithic.html
+        # Ratios model https://puppet.com/docs/pe/latest/configuring/tuning_monolithic.html
 
         def calculate_master_settings(node)
           percent_cpu_puppetdb     = 0.25
@@ -219,7 +219,7 @@ module PuppetX
             settings['params']['puppet_enterprise::profile::puppetdb::gc_interval'] = 0
           end
 
-          # Increase max_connections when a large number of connections from compilers exceeds the default.
+          # Increase max_connections when the potential number of connections from compilers exceeds the default.
 
           if node['classes']['database'] && node['infrastructure']['compiler_connections']
             if node['infrastructure']['compiler_connections'] > default_database_max_connections
@@ -310,7 +310,7 @@ module PuppetX
           settings['params']['puppet_enterprise::profile::database::shared_buffers'] = "#{ram_database}MB"
           settings['totals']['RAM']['used'] += ram_database
 
-          # Increase max_connections when a large number of connections from compilers exceeds the default.
+          # Increase max_connections when the potential number of connections from compilers exceeds the default.
 
           if node['infrastructure']['compiler_connections']
             if node['infrastructure']['compiler_connections'] > default_database_max_connections
