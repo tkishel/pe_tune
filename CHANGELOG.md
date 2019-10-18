@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+# 3.0.2
+
+- Define an intuitive output order
+- Improve documentation
+
 # 3.0.1
 
 - Convert puppetserver from percent to remainder of unallocated processors
