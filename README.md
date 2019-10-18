@@ -12,10 +12,13 @@
 
 > The fault, dear Brutus, is not in our stars, but in our defaults, that we are under-allocating system resources.
 
-This module provides a Puppet subcommand `puppet pe tune` that outputs optimized settings for Puppet Enterprise services based upon available system resources.
+The default settings for Puppet Enterprise services are tuned, but not necessarily optimized for PE Infrastructure type and the combination of PE services competing for system resources on each PE Infrastructure host.
 
-Puppet Enterprise 2018.1.3 and newer includes the functionality of this module via the `puppet infrastructure tune` subcommand.
-To use this module with Puppet Enterprise 2018.1.3 and newer, refer to [Limitations](#limitations).
+This module provides a Puppet command `puppet pe tune` that outputs optimized settings for Puppet Enterprise services based upon available system resources.
+This command expects that you have provisioned the PE Infrastructure hosts with the system resources required to handle the workload, given agent count and code and environment complexity.
+
+Puppet Enterprise 2018.1.3 and newer includes this functionality via the `puppet infrastructure tune` command.
+To use this command instead of `puppet infrastructure tune` with Puppet Enterprise 2018.1.3 and newer, refer to [Limitations](#limitations).
 
 ## Setup
 
@@ -45,21 +48,21 @@ wget -q -O - https://api.github.com/repos/tkishel/pe_tune/releases/latest | grep
 
 ##### `--common`
 
-Extract common settings from node-specific settings.
+Extract common settings from node-specific settings when outputting optimized settings.
 
-A common setting is one with a value that is identical on multiple nodes.
-This option extracts and outputs common settings separately from node-specific settings, potentially reducing the number of node-specific settings.
+A common setting is one with a value that is identical on multiple hosts.
+This option extracts and outputs common settings separately from node-specific settings, for use in `common.yaml`.
 
 ##### `--compare`
 
-Output a comparison of currently-defined and optimized settings, and exit.
+Output a comparison of currently-defined and optimized settings.
 
 ##### `--current`
 
-Output currently-defined settings, in JSON format, and exit.
+Output currently-defined settings, in JSON format.
 
 Settings may be defined either in the Classifier (the Console) or in Hiera, with Classifier settings taking precedence over Hiera settings.
-This option also identifies duplicate settings found in both the Classifier and Hiera.
+This option also identifies duplicate settings defined in both the Classifier and Hiera.
 Best practice is to define settings in Hiera (preferred) or the Classifier, but not both.
 
 ##### `--debug`
@@ -68,9 +71,9 @@ Enable logging of debug information.
 
 ##### `--hiera DIRECTORY`
 
-Output optimized settings to the specified directory, as YAML files, for use in Hiera.
+Output optimized settings to the specified directory, as YAML files for use in Hiera.
 
-> Do not specify a directory in your Hiera hierarchy, which should be managed by Code Manager. Instead: specify a temporary directory, verify the settings in resulting files, and merge them into the control repository that contains your Hiera hierarchy.
+> Do not specify a directory in your Hiera hierarchy if that directory is managed by Code Manager. Instead: specify a temporary directory, verify the settings in resulting files, and merge them into the control repository that contains your Hiera data.
 
 ##### `--force`
 
@@ -78,37 +81,41 @@ Do not enforce minimum system requirements (4 CPU / 8 GB RAM) for PE Infrastruct
 
 ##### `--inventory FILE`
 
-Use the specified YAML file to define infrastructure nodes.
+Use the specified YAML file to define PE Infrastructure hosts.
 
-This eliminates a dependency upon PuppetDB to query node facts and classes.
-
+This eliminates a dependency upon PuppetDB to query facts and classes for PE Infrastructure hosts.
 Refer to the [examples](examples) directory of this module for details.
 
 ##### `--local`
 
 Use the local system to define a monolithic master host.
 
-This eliminates a dependency upon PuppetDB to query node facts and classes.
+This eliminates a dependency upon PuppetDB to query facts and classes for PE Infrastructure hosts, and is only useful after a clean install of a monolithic master host.
 
 ##### `--memory_per_jruby MB`
 
-Amount of RAM to allocate for each JRuby.
+Amount of RAM to allocate for each Puppet Server JRuby.
 
 ##### `--memory_reserved_for_os MB`
 
-Amount of RAM to reserve for the OS.
+Amount of RAM to reserve for the operating system and other services.
 
 ##### `--node CERTNAME`
 
-Limit output to a single node.
+Limit output to a single PE Infrastructure host.
 
 ##### `--use_current_memory_per_jruby`
 
-Use currently-defined settings to determine memory_per_jruby.
+Use currently-defined settings to determine `memory_per_jruby`.
 
 ## Reference
 
-This subcommand queries PuppetDB for node group membership to identify PE Infrastructure hosts, queries PuppetDB for facts for each of those hosts to identify system resources, and outputs optimized settings for PE services (in YAML format) use in Hiera.
+This command outputs optimized settings for PE services as follows.
+
+1. Query PuppetDB for PE Infrastructure hosts (query for declared PE classes)
+1. Identify PE Infrastructure type: Standard, Large, Extra Large (legacy: Split)
+1. Query PuppetDB for CPU and RAM facts for each PE Infrastructure host (query for processors, memory)
+1. Output settings for PE services for each PE Infrastructure host (as parameters for the declared PE classes)
 
 ### Output
 
@@ -146,7 +153,7 @@ puppet_enterprise::profile::orchestrator::java_args:
 # JVM Summary: Using 768 MB per Puppet Server JRuby for pe-master.puppetdebug.vlan
 ```
 
-By default, this subcommand outputs node-specific settings for use in node-specific YAML files in a node-specific hierarchy.
+By default, this command outputs node-specific settings for use in node-specific YAML files in a node-specific Hiera hierarchy.
 
 For example:
 
@@ -192,15 +199,15 @@ For more information, review:
 Support is limited to the following infrastructures:
 
 * Monolithic Master
-* Monolithic Master with Compile Masters
-* Monolithic Master with External PostgreSQL
-* Monolithic Master with Compile Masters with External PostgreSQL
 * Monolithic Master with HA
+* Monolithic Master with Compile Masters
 * Monolithic Master with Compile Masters with HA
+* Monolithic Master with Compile Masters with External PostgreSQL
+* Monolithic Master with External PostgreSQL
 * Split Infrastructure
 * Split Infrastructure with Compile Masters
-* Split Infrastructure with External PostgreSQL
 * Split Infrastructure with Compile Masters with External PostgreSQL
+* Split Infrastructure with External PostgreSQL
 
 ### Version Support
 
@@ -211,13 +218,13 @@ Support is limited to the following versions:
 * PE 2018.x.x
 * PE 2019.x.x
 
-\* In these versions, this module is unable to identify PE Database hosts or tune PE PostgreSQL services.
+\* In these versions, this command is unable to identify PE Database hosts or tune PE PostgreSQL services.
 
 #### Puppet Enterprise 2018.1.3 and Newer
 
-This module is the upstream version of the `puppet infrastructure tune` subcommand built into Puppet Enterprise 2018.1.3 and newer. Installing this module in Puppet Enterprise 2018.1.3 and newer will result in a conflict with the built-in `puppet infrastructure tune` subcommand.
-
-To avoid that conflict, install this module and run this subcommand outside the `modulepath`.
+This command is the upstream version of the `puppet infrastructure tune` command built into Puppet Enterprise 2018.1.3 and newer.
+Installing this module in Puppet Enterprise 2018.1.3 and newer will result in a conflict with the `puppet infrastructure tune` subcommand.
+To avoid that conflict, install this module and run this command outside the `modulepath`.
 
 For example:
 
@@ -234,7 +241,6 @@ puppet pe tune --modulepath /tmp/puppet_modules
 #### Puppet Enterprise 2018.1.2 and Older
 
 This module may not be able to query PuppetDB in older versions of Puppet Enterprise.
-
 To avoid that error, install this module and run the command outside the `modulepath`.
 
 ```shell
