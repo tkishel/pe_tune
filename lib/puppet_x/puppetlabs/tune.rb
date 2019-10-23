@@ -599,7 +599,11 @@ module PuppetX
           next if @options[:node] && certname != @options[:node]
           next if properties['settings']['params'].empty?
           output_file = "#{@options[:hiera]}/nodes/#{certname}.yaml"
-          File.write(output_file, properties['settings']['params'].to_yaml)
+          if ENV['SORT_KEYS']
+            File.write(output_file, properties['settings']['params'].sort.to_h.to_yaml)
+          else
+            File.write(output_file, properties['settings']['params'].to_yaml)
+          end
           output _("Wrote Hiera YAML file: %{output_file}") % { output_file: output_file }
           output_line
         end
@@ -688,7 +692,11 @@ module PuppetX
           output _("Specify the following optimized settings in Hiera in nodes/%{certname}.yaml") % { certname: certname }
           output_line
           # output_data(JSON.pretty_generate(node['settings']['params']))
-          output_data(node['settings']['params'].to_yaml)
+          if ENV['SORT_KEYS']
+            output_data(node['settings']['params'].sort.to_h.to_yaml)
+          else
+            output_data(node['settings']['params'].to_yaml)
+          end
         end
         unless node['settings']['totals'].empty?
           if node['settings']['totals']['CPU']
@@ -719,7 +727,11 @@ module PuppetX
         return if @collected_settings_common.empty?
         output _('Specify the following optimized settings in Hiera in common.yaml')
         output_line
-        output_data(@collected_settings_common.to_yaml)
+        if ENV['SORT_KEYS']
+          output_data(@collected_settings_common.sort.to_h.to_yaml)
+        else
+          output_data(@collected_settings_common.to_yaml)
+        end
         output_line
       end
 
