@@ -83,22 +83,64 @@ module PuppetX
               ]
           results = query_puppetdb(pql)
           return nil if results.nil?
+
           random_report_hash = results.sample['hash']
           Puppet.debug("Random report: #{random_report_hash}")
-          # run_times = results.map do |report|
-          #   Time.parse(report['end_time']) - Time.parse(report['start_time'])
-          # end
-          # avg_run_time = (run_times.inject(0.0) { |sum, element| sum + element } / run_times.size).ceil
-          # Filter out reports that do not contain metric data.
-          results.delete_if { |report| report['metrics']['data'].empty? }
-          # Collect config_retrieval time, or if absent (for a run with a catalog compilation error), total time.
-          config_retrieval_times = results.map do |report|
-            report['metrics']['data'].select { |md|
-              md['category'] == 'time' && (md['name'] == 'config_retrieval' || md['name'] == 'total')
-            }.first.fetch('value')
+
+          average_metric_time(results, 'config_retrieval', 'total')
+        end
+
+        # Query PuppetDB for average config_retrieval or time metrics for a given time range.
+        #
+        # @param [String] start_time  Value of start_time to query data for
+        # @param [String] end_time  Value of end_time to query data for
+        #
+        # @return [Integer]  Average time for config_retrieval or total time in data set
+
+        def average_compile_time_for_range(start_time, end_time)
+          start_time = Time.parse(start_time)
+          end_time = Time.parse(end_time)
+          # Ensure that start is less than end
+          start_time, end_time = [start_time, end_time].sort
+
+          # Ensure that time zone is not emitted in string sent to pdb endpoint
+          start_time = start_time.strftime "%Y-%m-%d %H:%M:%S"
+          end_time = end_time.strftime "%Y-%m-%d %H:%M:%S"
+
+          # Extract metrics from reports that only fall within the time fence
+          Puppet.debug('Querying PuppetDB for Average Compile Time')
+          pql = ['from', 'reports',
+                  ['extract', 'metrics',
+                    ["and", [">", "start_time", start_time],
+                      ["<", "end_time", end_time]]]]
+          results = query_puppetdb(pql)
+          return nil if results.nil?
+
+          average_metric_time(results, 'config_retrieval', 'total')
+        end
+
+        # Calculate average time for PuppetDB metric on a given data set.
+        #
+        # @param [Array<Hash>] data  Results from call to query_puppetdb(pql)
+        # @param [String] metric  Primary metric to find and average time values for
+        # @param [String] failover_metric  Secondary metric to use if primary is not found
+        #
+        # @return [Integer]  Average time for metric in data set
+
+        def average_metric_time(data, metric, failover_metric)
+          result = nil
+          begin
+            data.delete_if { |report| report['metrics']['data'].empty? }
+            config_retrieval_times = data.map do |report|
+              report['metrics']['data'].select { |md|
+                md['category'] == 'time' && (md['name'] == metric || md['name'] == failover_metric)
+              }.first.fetch('value')
+            end
+            avg_config_retrieval_time = config_retrieval_times.reduce(0.0, :+) / config_retrieval_times.size
+            result = avg_config_retrieval_time.ceil
+          rescue # rubocop:disable Lint/HandleExceptions
           end
-          avg_config_retrieval_time = config_retrieval_times.reduce(0.0) { |sum, element| sum + element } / config_retrieval_times.size
-          avg_config_retrieval_time.ceil
+          result
         end
 
         # Query PuppetDB for nodes with a PE Infrastructure class.
