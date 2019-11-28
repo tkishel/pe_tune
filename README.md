@@ -230,8 +230,9 @@ For example:
 
 ```shell
 mkdir -p /tmp/puppet_modules
-(which git > /dev/null 2>&1 && git clone --depth=1 --branch=master https://github.com/tkishel/pe_tune.git /tmp/puppet_modules/pe_tune) || \
-wget -q -O - https://api.github.com/repos/tkishel/pe_tune/releases/latest | grep -oP '"tarball_url": "\K(.*)(?=")' | wget -q -i - -O - | tar -xzf - && mv tkishel-pe_tune* /tmp/puppet_modules/pe_tune
+(which git > /dev/null 2>&1 && git clone --depth=1 --branch=master --quiet https://github.com/tkishel/pe_tune.git /tmp/puppet_modules/pe_tune) || \
+(wget -q -O - https://api.github.com/repos/tkishel/pe_tune/releases/latest | grep -oP '"tarball_url": "\K(.*)(?=")' | wget -q -i - -O - | tar -xzf - && mv tkishel-pe_tune* /tmp/puppet_modules/pe_tune)
+ls -l /tmp/puppet_modules
 ```
 
 ```
@@ -245,8 +246,9 @@ To avoid that error, install this module and run the command outside the `module
 
 ```shell
 mkdir -p /tmp/puppet_modules
-(which git > /dev/null 2>&1 && git clone --depth=1 --branch=master https://github.com/tkishel/pe_tune.git /tmp/puppet_modules/pe_tune) || \
-wget -q -O - https://api.github.com/repos/tkishel/pe_tune/releases/latest | grep -oP '"tarball_url": "\K(.*)(?=")' | wget -q -i - -O - | tar -xzf - && mv tkishel-pe_tune* /tmp/puppet_modules/pe_tune
+(which git > /dev/null 2>&1 && git clone --depth=1 --branch=master --quiet https://github.com/tkishel/pe_tune.git /tmp/puppet_modules/pe_tune) || \
+(wget -q -O - https://api.github.com/repos/tkishel/pe_tune/releases/latest | grep -oP '"tarball_url": "\K(.*)(?=")' | wget -q -i - -O - | tar -xzf - && mv tkishel-pe_tune* /tmp/puppet_modules/pe_tune)
+ls -l /tmp/puppet_modules
 ```
 
 ```shell
