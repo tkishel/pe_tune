@@ -38,7 +38,7 @@ wget -q -O - https://api.github.com/repos/tkishel/pe_tune/releases/latest | grep
 
 ## Usage
 
-1. Run the `puppet pe tune` subcommand as root on the Primary Master.
+1. Run the `puppet pe tune` command as root on the Primary Master.
 1. Verify the optimized settings.
 1. Add the optimized settings to Hiera.
 1. Remove any duplicate settings from the Console.
@@ -51,7 +51,7 @@ wget -q -O - https://api.github.com/repos/tkishel/pe_tune/releases/latest | grep
 Extract common settings from node-specific settings when outputting optimized settings.
 
 A common setting is one with a value that is identical on multiple hosts.
-This option extracts and outputs common settings separately from node-specific settings, for use in `common.yaml`.
+This option extracts and outputs common settings separately from node-specific settings, potentially reducing the number of node-specific settings.
 
 ##### `--compare`
 
