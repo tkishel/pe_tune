@@ -89,6 +89,11 @@ Puppet::Face.define(:pe, '1.0.0') do
       default_to { nil }
     end
 
+    option '--node CERTNAME' do
+      summary _('The node to tune')
+      default_to { nil }
+    end
+
     option '--pe_conf' do
       summary _('Output HOCON to pe.conf')
       default_to { false }
