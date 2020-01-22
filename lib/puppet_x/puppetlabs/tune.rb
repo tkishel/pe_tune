@@ -143,7 +143,7 @@ module PuppetX
         end
 
         output_estimated_capacity(current_total_puppetserver_jrubies)
-        output_pe_compiler_autotune
+        output_compilers_autotune
       end
 
       # Output optimized settings for each PE Infrastructure node.
@@ -159,7 +159,7 @@ module PuppetX
         output_common_settings
 
         output_estimated_capacity(optimized_total_puppetserver_jrubies)
-        output_pe_compiler_autotune
+        output_compilers_autotune
 
         output_settings_to_hiera
         output_settings_to_pe_conf
@@ -263,6 +263,10 @@ module PuppetX
           node = configuration_for_node(certname)
           unless meets_minimum_system_requirements?(node['resources'])
             output_minimum_system_requirements_warning(node)
+            next
+          end
+          if compiler?(certname) && autotunes_compilers?
+            output_autotune(node)
             next
           end
           node['current_memory_per_jruby'] = current_memory_per_jruby_for_node(certname)
@@ -798,16 +802,22 @@ module PuppetX
       end
 
       # PE-26994
-      #
-      # TODO: Identify individual PE Compilers, and possibly not output optimized settings.
-      #       This may require allowing calculate_master_settings to return empty results,
-      #       without that generating an error in the method calling calculate_master_settings.
-      #
 
-      def output_pe_compiler_autotune
-        if pe_2019_3_or_newer? && with_compilers?
-          output _('This version of Puppet Enterprise autotunes settings for PE Compilers (Compilers with PuppetServer and PuppetDB)')
-          output _('Remove tuning settings for PE Compilers defined in Hiera and/or the Classifier (Console) to use those settings.')
+      def autotunes_compilers?
+        pe_2019_4_or_newer?
+      end
+
+      def output_autotune(node)
+        return if @options[:node] && node['certname'] != @options[:node]
+        output_warning _("# Found %{cpu} CPU(s) / %{ram} MB RAM for %{certname}") % { cpu: node['resources']['cpu'], ram: node['resources']['ram'], certname: node['certname'] }
+        output_warning _("# This node is automatically tuned by Puppet Enterprise")
+        output_line
+      end
+
+      def output_compilers_autotune
+        if with_compilers? && autotunes_compilers?
+          output _('This version of Puppet Enterprise optimizes tuning settings for PE Compilers (Compilers with Puppet Server and PuppetDB) by default')
+          output _('Remove any tuning settings for PE Compilers defined in Hiera and/or the Classifier (Console) to use those default tuning settings.')
           output_line
         end
       end
@@ -866,6 +876,10 @@ module PuppetX
 
       def compile_master?(certname)
         @nodes_with_role['compile_masters'].include?(certname)
+      end
+
+      def compiler?(certname)
+        @nodes_with_role['compile_masters'].include?(certname) && @nodes_with_role['puppetdb'].include?(certname)
       end
 
       # Identify a class applied to a PE Infrastructure node.
@@ -970,8 +984,8 @@ module PuppetX
         Gem::Version.new(Puppet.version) >= Gem::Version.new('6.9.0')
       end
 
-      def pe_2019_3_or_newer?
-        Gem::Version.new(Puppet.version) >= Gem::Version.new('6.12.0')
+      def pe_2019_4_or_newer?
+        Gem::Version.new(Puppet.version) >= Gem::Version.new('6.14.0')
       end
 
       # Use to avoid querying PuppetDB.
