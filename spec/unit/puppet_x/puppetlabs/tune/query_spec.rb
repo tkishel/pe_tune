@@ -17,18 +17,14 @@ describe PuppetX::Puppetlabs::Tune::Query do
             { "name" => "foo", "value" => 75.181073364999975, "category" => "time" },
             { "name" => "bar", "value" => 28.589005453, "category" => "time" },
             { "name" => "config_retrieval", "value" => 50.181073364999975, "category" => "time" },
-          ]
-        }
-      },
+          ] } },
       { "metrics" =>
         { "data" =>
           [
             { "name" => "foo", "value" => 8.181073364999975, "category" => "time" },
             { "name" => "bar", "value" => 28.589005453, "category" => "time" },
             { "name" => "config_retrieval", "value" => 50.181073364999975, "category" => "time" },
-          ]
-        }
-      }
+          ] } }
     ]
   end
 
@@ -46,12 +42,12 @@ describe PuppetX::Puppetlabs::Tune::Query do
     end
   end
 
-  #describe '#average_compile_time_for_range' do
-  #  context 'when data contains values in the given time range' do
-  #    it 'returns the average of the config_retrieval data' do
-  #      pending("Cannot test without puppetdb installed")
-  #      expect(query.average_compile_time_for_range('2019-01-01', '2019-12-31')).to eq(50)
-  #    end
-  #  end
-  #end
+  # describe '#average_compile_time_for_range' do
+  #   context 'when data contains values in the given time range' do
+  #     it 'returns the average of the config_retrieval data' do
+  #       pending("Cannot test without puppetdb installed")
+  #       expect(query.average_compile_time_for_range('2019-01-01', '2019-12-31')).to eq(50)
+  #     end
+  #   end
+  # end
 end
