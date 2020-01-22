@@ -143,6 +143,7 @@ module PuppetX
         end
 
         output_estimated_capacity(current_total_puppetserver_jrubies)
+        output_pe_compiler_autotune
       end
 
       # Output optimized settings for each PE Infrastructure node.
@@ -158,6 +159,7 @@ module PuppetX
         output_common_settings
 
         output_estimated_capacity(optimized_total_puppetserver_jrubies)
+        output_pe_compiler_autotune
 
         output_settings_to_hiera
         output_settings_to_pe_conf
@@ -795,6 +797,21 @@ module PuppetX
         output_line
       end
 
+      # PE-26994
+      #
+      # TODO: Identify individual PE Compilers, and possibly not output optimized settings.
+      #       This may require allowing calculate_master_settings to return empty results,
+      #       without that generating an error in the method calling calculate_master_settings.
+      #
+
+      def output_pe_compiler_autotune
+        if pe_2019_3_or_newer? && with_compilers?
+          output _('This version of Puppet Enterprise autotunes settings for PE Compilers (Compilers with PuppetServer and PuppetDB)')
+          output _('Remove tuning settings for PE Compilers defined in Hiera and/or the Classifier (Console) to use those settings.')
+          output_line
+        end
+      end
+
       #
       # Identify
       #
@@ -951,6 +968,10 @@ module PuppetX
 
       def pe_2019_2_or_newer?
         Gem::Version.new(Puppet.version) >= Gem::Version.new('6.9.0')
+      end
+
+      def pe_2019_3_or_newer?
+        Gem::Version.new(Puppet.version) >= Gem::Version.new('6.12.0')
       end
 
       # Use to avoid querying PuppetDB.
