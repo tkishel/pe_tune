@@ -12,7 +12,7 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
   percent_cpu_puppetdb                = 0.25
   percent_cpu_puppetdb_with_compilers = 0.50
 
-  percent_ram_database                  = 0.25
+  percent_ram_database                  = 0.20
   percent_ram_puppetdb                  = 0.10
   percent_ram_puppetdb_with_compilers   = 0.15
   percent_ram_puppetdb_split            = 0.25
@@ -23,6 +23,7 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
   percent_ram_activemq                  = 0.08
 
   minimum_ram_database     = 2048
+  maximum_ram_database     = 16384
 
   minimum_ram_puppetserver = 512
 
@@ -674,7 +675,7 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       node = { 'resources' => resources, 'infrastructure' => infrastructure, 'type' => {}, 'classes' => classes }
 
       cpu_puppetdb = 2
-      ram_database = (resources['ram'] * percent_ram_database).to_i
+      ram_database = (resources['ram'] * percent_ram_database).to_i.clamp(minimum_ram_database, maximum_ram_database)
       ram_puppetdb = (resources['ram'] * percent_ram_puppetdb_split).to_i
 
       params = {
@@ -987,9 +988,9 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
     end
 
     it 'can calculate the default memory reserved for the operating system' do
-      expect((calculator.send :select_reserved_memory, 4096)).to eq(819)
-      expect((calculator.send :select_reserved_memory, 8192)).to eq(1638)
-      expect((calculator.send :select_reserved_memory, 16384)).to eq(3276)
+      expect((calculator.send :select_reserved_memory, 4096)).to eq(1024)
+      expect((calculator.send :select_reserved_memory, 8192)).to eq(2048)
+      expect((calculator.send :select_reserved_memory, 16384)).to eq(4096)
     end
 
     it 'can calculate the optional memory reserved for the operating system' do

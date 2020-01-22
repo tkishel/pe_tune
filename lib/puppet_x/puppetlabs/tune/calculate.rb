@@ -18,7 +18,7 @@ module PuppetX
           @defaults[:fit_to_memory_percentage] = 5
 
           # Memory reserved for the operating system (and other applications).
-          @defaults[:memory_reserved_for_os_percentage] = 0.20
+          @defaults[:memory_reserved_for_os_percentage] = 0.25
 
           @options = {}
 
@@ -49,7 +49,7 @@ module PuppetX
           minimum_cpu_puppetserver = 2
           maximum_cpu_puppetserver = 24
 
-          percent_ram_database     = 0.25
+          percent_ram_database     = 0.20
           percent_ram_puppetdb     = 0.10
           percent_ram_orchestrator = 0.08
           percent_ram_console      = 0.08
@@ -249,6 +249,9 @@ module PuppetX
           minimum_ram_console = 512
           maximum_ram_console = 4096
 
+          # Unused here, as this role is deprecated.
+          # ram_reserved = select_reserved_memory(node['resources']['ram'])
+
           settings = initialize_settings(node)
 
           ram_console = (node['resources']['ram'] * percent_ram_console).to_i.clamp(minimum_ram_console, maximum_ram_console)
@@ -269,6 +272,9 @@ module PuppetX
           percent_ram_puppetdb = 0.50
           minimum_ram_puppetdb = 512
           maximum_ram_puppetdb = 8192
+
+          # Unused here, as this role is deprecated.
+          # ram_reserved = select_reserved_memory(node['resources']['ram'])
 
           settings = initialize_settings(node)
 
@@ -295,9 +301,11 @@ module PuppetX
         # Services: pe-postgresql
 
         def calculate_database_settings(node)
-          percent_ram_database               = 0.25
+          percent_ram_database               = 0.20
           minimum_ram_database               = 2048
           maximum_ram_database               = 16384
+
+          ram_reserved                       = select_reserved_memory(node['resources']['ram'])
 
           # https://github.com/puppetlabs/puppet-enterprise-modules/blob/irving/modules/puppet_enterprise/manifests/profile/database.pp
           default_database_max_connections = 400
@@ -306,7 +314,7 @@ module PuppetX
 
           settings = initialize_settings(node)
 
-          ram_database = (node['resources']['ram'] * percent_ram_database).to_i.clamp(minimum_ram_database, maximum_ram_database)
+          ram_database = ((node['resources']['ram'] - ram_reserved) * percent_ram_database).to_i.clamp(minimum_ram_database, maximum_ram_database)
           settings['params']['puppet_enterprise::profile::database::shared_buffers'] = "#{ram_database}MB"
           settings['totals']['RAM']['used'] += ram_database
 
