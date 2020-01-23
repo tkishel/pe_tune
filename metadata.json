@@ -1,6 +1,6 @@
 {
   "name": "tkishel-pe_tune",
-  "version": "3.1.0",
+  "version": "3.1.1",
   "author": "Thomas Kishel",
   "summary": "Inspect infrastructure and suggest tuned settings for services.",
   "license": "Apache-2.0",
