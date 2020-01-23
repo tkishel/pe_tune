@@ -236,6 +236,9 @@ module PuppetX
         # Replica Master: Applicable to Monolithic Infrastructures.
         @nodes_with_role['replica_masters'].each do |certname|
           node = configuration_for_node(certname)
+          # The puppet_enterprise::profile::orchestrator class is not declared until the Replica is promoted.
+          # Add it here to ensure that the Master and Replica receive the same set of settings.
+          node['classes']['orchestrator'] = true
           node['settings'] = current_settings_for_node(certname, tunable_param_names)
           collect_current_node(certname, 'Replica Master', node)
         end
@@ -311,6 +314,9 @@ module PuppetX
         # Replica Master: Applicable to Monolithic Infrastructures.
         @nodes_with_role['replica_masters'].each do |certname|
           node = configuration_for_node(certname)
+          # The puppet_enterprise::profile::orchestrator class is not declared until the Replica is promoted.
+          # Add it here to ensure that the Master and Replica receive the same set of settings.
+          node['classes']['orchestrator'] = true
           node['infrastructure']['compiler_connections'] = total_puppetdb_connections
           unless meets_minimum_system_requirements?(node['resources'])
             output_minimum_system_requirements_warning(node)
