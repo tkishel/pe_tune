@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+# 3.1.0
+
+- Accommodates `pe_compilers`
+- Increases the amount of unallocated memory from 25% to 20%
+- Decreases the amount of memory allocated to PostgreSQL `shared_buffers` from 25% to 20%
+
 # 3.0.2
 
 - Define an intuitive output order
