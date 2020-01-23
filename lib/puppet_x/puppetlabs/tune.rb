@@ -9,7 +9,7 @@
 #   puppet_enterprise::profile::database::effective_cache_size
 #
 # It accepts the following overrides via ENV:
-#   export TEST_CPU=2; export TEST_RAM=6144;
+#   export TEST_CPU=8; export TEST_RAM=16384;
 # These are necessary to accomodate manual testing and pe_acceptance_tests/acceptance/tests/faces/infrastructure/tune.rb.
 
 module PuppetX
@@ -32,7 +32,6 @@ module PuppetX
           'puppet_enterprise::puppetdb::command_processing_threads',
         ]
         param_names.delete('puppet_enterprise::profile::amq::broker::heap_mb') if pe_2019_or_newer?
-        # ORCH-2384
         unless pe_2019_2_or_newer?
           param_names.delete('puppet_enterprise::profile::orchestrator::jruby_max_active_instances')
           # param_names.delete('puppet_enterprise::profile::orchestrator::reserved_code_cache')
@@ -98,6 +97,14 @@ module PuppetX
         # Nodes with each PE Infrastructure role (Master, Compiler, etc.).
         @nodes_with_role = {}
 
+        # Number of Puppet Server JRubies, used for optional estimate of capacity.
+        # Number of pe_compilers, used for autotune notification.
+        @infrastructure_totals = {
+          'current_puppetserver_jrubies'   => 0,
+          'optimized_puppetserver_jrubies' => 0,
+          'pe_compilers'                   => 0,
+        }
+
         # Options specific to this Tune class.
         @options = {}
         @options[:common]    = options[:common]
@@ -135,21 +142,21 @@ module PuppetX
       # Output the current settings for each PE Infrastructure node.
 
       def output_current_settings
-        current_total_puppetserver_jrubies = collect_current_settings
+        collect_current_settings
 
         @current_collected_nodes.sort_by { |_k, node| [node['order'], node['certname']] }.each do |certname, node|
           next if @options[:node] && certname != @options[:node]
           output_current_settings_for_node(certname, node)
         end
 
-        output_estimated_capacity(current_total_puppetserver_jrubies)
+        output_estimated_capacity(@infrastructure_totals['current_puppetserver_jrubies'])
         output_compilers_autotune
       end
 
       # Output optimized settings for each PE Infrastructure node.
 
       def output_optimized_settings
-        optimized_total_puppetserver_jrubies = collect_optimized_settings
+        collect_optimized_settings
 
         collect_optimized_settings_common_to_all_nodes
         @collected_nodes.sort_by { |_k, node| [node['order'], node['certname']] }.each do |certname, node|
@@ -158,7 +165,7 @@ module PuppetX
         end
         output_common_settings
 
-        output_estimated_capacity(optimized_total_puppetserver_jrubies)
+        output_estimated_capacity(@infrastructure_totals['optimized_puppetserver_jrubies'])
         output_compilers_autotune
 
         output_settings_to_hiera
@@ -207,55 +214,58 @@ module PuppetX
       # Based upon each node's set of services (aka PE Infrastructure role).
 
       def collect_current_settings
-        total_puppetserver_jrubies = 0
+        # Compile Masters: Applicable to Monolithic and Split Infrastructures.
+        @nodes_with_role['compile_masters'].each do |certname|
+          node = configuration_for_node(certname)
+          if pe_compiler(node)
+            @infrastructure_totals['pe_compilers'] = @infrastructure_totals['pe_compilers'] + 1
+          end
+          node['settings'] = current_settings_for_node(certname, tunable_param_names)
+          collect_current_node(certname, 'Compile Master', node)
+          @infrastructure_totals['current_puppetserver_jrubies'] += total_puppetserver_jrubies_for_node(certname, node['settings'])
+        end
 
         # Primary Master: Applicable to Monolithic and Split Infrastructures.
         @nodes_with_role['primary_masters'].each do |certname|
-          settings = current_settings_for_node(certname, tunable_param_names)
-          collect_current_node(certname, 'Primary Master', settings)
-          total_puppetserver_jrubies += total_puppetserver_jrubies_for_node(certname, settings) unless with_compile_masters?
+          node = configuration_for_node(certname)
+          node['settings'] = current_settings_for_node(certname, tunable_param_names)
+          collect_current_node(certname, 'Primary Master', node)
+          @infrastructure_totals['current_puppetserver_jrubies'] += total_puppetserver_jrubies_for_node(certname, node['settings']) unless with_compile_masters?
         end
 
         # Replica Master: Applicable to Monolithic Infrastructures.
         @nodes_with_role['replica_masters'].each do |certname|
-          settings = current_settings_for_node(certname, tunable_param_names)
-          collect_current_node(certname, 'Replica Master', settings)
+          node = configuration_for_node(certname)
+          node['settings'] = current_settings_for_node(certname, tunable_param_names)
+          collect_current_node(certname, 'Replica Master', node)
         end
 
         # Console Host: Specific to Split Infrastructures. By default, a list of one.
         @nodes_with_role['console_hosts'].each do |certname|
-          settings = current_settings_for_node(certname, tunable_param_names)
-          collect_current_node(certname, 'Console Host', settings)
+          node = configuration_for_node(certname)
+          node['settings'] = current_settings_for_node(certname, tunable_param_names)
+          collect_current_node(certname, 'Console Host', node)
         end
 
         # PuppetDB Host: Specific to Split Infrastructures. By default, a list of one.
         @nodes_with_role['puppetdb_hosts'].each do |certname|
-          settings = current_settings_for_node(certname, tunable_param_names)
-          collect_current_node(certname, 'PuppetDB Host', settings)
+          node = configuration_for_node(certname)
+          node['settings'] = current_settings_for_node(certname, tunable_param_names)
+          collect_current_node(certname, 'PuppetDB Host', node)
         end
 
         # External Database Host: Applicable to Monolithic and Split Infrastructures.
         @nodes_with_role['database_hosts'].each do |certname|
-          settings = current_settings_for_node(certname, tunable_param_names)
-          collect_current_node(certname, 'External Database Host', settings)
+          node = configuration_for_node(certname)
+          node['settings'] = current_settings_for_node(certname, tunable_param_names)
+          collect_current_node(certname, 'External Database Host', node)
         end
-
-        # Compile Masters: Applicable to Monolithic and Split Infrastructures.
-        @nodes_with_role['compile_masters'].each do |certname|
-          settings = current_settings_for_node(certname, tunable_param_names)
-          collect_current_node(certname, 'Compile Master', settings)
-          total_puppetserver_jrubies += total_puppetserver_jrubies_for_node(certname, settings)
-        end
-
-        # Return the total of all jrubies, for use when estimating capacity.
-        total_puppetserver_jrubies
       end
 
       # Collect optimized settings for each PE Infrastructure node.
       # Based upon each node's set of services (aka PE Infrastructure role).
 
       def collect_optimized_settings
-        total_puppetserver_jrubies = 0
         total_puppetdb_connections = 0
 
         # Compile Masters: Applicable to Monolithic and Split Infrastructures.
@@ -265,8 +275,8 @@ module PuppetX
             output_minimum_system_requirements_warning(node)
             next
           end
-          if compiler?(node)
-            output_autotune(node)
+          if pe_compiler(node)
+            @infrastructure_totals['pe_compilers'] = @infrastructure_totals['pe_compilers'] + 1
             next
           end
           node['current_memory_per_jruby'] = current_memory_per_jruby_for_node(certname)
@@ -276,7 +286,7 @@ module PuppetX
             next
           end
           collect_optimized_node(certname, 'Compile Master', node)
-          total_puppetserver_jrubies += total_puppetserver_jrubies_for_node(certname, node['settings'])
+          @infrastructure_totals['optimized_puppetserver_jrubies'] += total_puppetserver_jrubies_for_node(certname, node['settings'])
           total_puppetdb_connections += total_puppetdb_connections_for_node(certname, node['settings'])
         end
 
@@ -295,7 +305,7 @@ module PuppetX
             next
           end
           collect_optimized_node(certname, 'Primary Master', node)
-          total_puppetserver_jrubies += total_puppetserver_jrubies_for_node(certname, node['settings']) unless with_compile_masters?
+          @infrastructure_totals['optimized_puppetserver_jrubies'] += total_puppetserver_jrubies_for_node(certname, node['settings']) unless with_compile_masters?
         end
 
         # Replica Master: Applicable to Monolithic Infrastructures.
@@ -361,9 +371,6 @@ module PuppetX
           end
           collect_optimized_node(certname, 'External Database Host', node)
         end
-
-        # Return the total of all jrubies, for use when estimating capacity.
-        total_puppetserver_jrubies
       end
 
       # Configuration for a PE Infrastructure node, used to calculate its settings.
@@ -390,12 +397,13 @@ module PuppetX
 
       # Collect the current settings for a PE Infrastructure node into a structure for output.
 
-      def collect_current_node(certname, role, settings)
+      def collect_current_node(certname, role, node)
         properties = {
-          'certname' => certname,
-          'order'    => output_order(role),
-          'role'     => role,
-          'settings' => settings,
+          'certname'  => certname,
+          'order'     => output_order(role),
+          'resources' => node['resources'],
+          'role'      => role,
+          'settings'  => node['settings'],
         }
         @current_collected_nodes[certname] = properties
       end
@@ -514,7 +522,8 @@ module PuppetX
       end
 
       # Identify the system resources for a specific PE Infrastructure node.
-      # Override when testing with environment variables.
+      # Trusted facts are not really resources, but this is where we query PuppetDB for facts.
+      # Override some facts when testing with environment variables.
 
       def resources_for_node(certname)
         resources = {}
@@ -539,12 +548,11 @@ module PuppetX
           output_error_and_exit _("Cannot query resources for node: %{certname}") % { certname: certname } unless node_facts['processors'] && node_facts['memory']
           resources['cpu'] = node_facts['processors']['count'].to_i
           resources['ram'] = node_facts['memory']['system']['total_bytes'].to_i
-          # Trusted facts are not really resources, but this is where we query PuppetDB for facts.
-          if node_facts['trusted'] && node_facts['trusted']['extensions'] && node_facts['trusted']['extensions']['pp_auth_role']
-            resources['pp_auth_role'] = node_facts['trusted']['extensions']['pp_auth_role']
-          else
-            resources['pp_auth_role'] = ''
-          end
+          resources['pp_auth_role'] = if node_facts['trusted'] && node_facts['trusted']['extensions'] && node_facts['trusted']['extensions']['pp_auth_role']
+                                        node_facts['trusted']['extensions']['pp_auth_role']
+                                      else
+                                        ''
+                                      end
         end
         resources['ram'] = (resources['ram'] / 1024 / 1024).to_i
         if ENV['TEST_CPU']
@@ -769,6 +777,16 @@ module PuppetX
         output_line
       end
 
+      # Output a notice about autotuning when present.
+
+      def output_compilers_autotune
+        if @infrastructure_totals['pe_compilers'] > 0
+          output _('This version of Puppet Enterprise optimizes tuning settings for PE Compilers (Compilers with Puppet Server and PuppetDB) by default')
+          output _('Remove any tuning settings for PE Compilers defined in Hiera and/or the Classifier (Console) to use default tuning settings.')
+          output_line
+        end
+      end
+
       # Output an error and exit.
 
       def output_error_and_exit(message)
@@ -806,27 +824,6 @@ module PuppetX
         output_warning _("# Found %{cpu} CPU(s) / %{ram} MB RAM for %{certname}") % { cpu: node['resources']['cpu'], ram: node['resources']['ram'], certname: node['certname'] }
         output_warning _("# Unable to calculate its settings")
         output_line
-      end
-
-      # PE-26994
-
-      def autotunes_compilers?
-        pe_2019_4_or_newer?
-      end
-
-      def output_autotune(node)
-        return if @options[:node] && node['certname'] != @options[:node]
-        output_warning _("# Found %{cpu} CPU(s) / %{ram} MB RAM for %{certname}") % { cpu: node['resources']['cpu'], ram: node['resources']['ram'], certname: node['certname'] }
-        output_warning _("# This node is automatically tuned by Puppet Enterprise")
-        output_line
-      end
-
-      def output_compilers_autotune
-        if with_compilers? && autotunes_compilers?
-          output _('This version of Puppet Enterprise optimizes tuning settings for PE Compilers (Compilers with Puppet Server and PuppetDB) by default')
-          output _('Remove any tuning settings for PE Compilers defined in Hiera and/or the Classifier (Console) to use those default tuning settings.')
-          output_line
-        end
       end
 
       #
@@ -885,7 +882,7 @@ module PuppetX
         @nodes_with_role['compile_masters'].include?(certname)
       end
 
-      def compiler?(node)
+      def pe_compiler?(node)
         node['resources']['pp_auth_role'] == 'pe_compiler'
       end
 
@@ -989,10 +986,6 @@ module PuppetX
 
       def pe_2019_2_or_newer?
         Gem::Version.new(Puppet.version) >= Gem::Version.new('6.9.0')
-      end
-
-      def pe_2019_4_or_newer?
-        Gem::Version.new(Puppet.version) >= Gem::Version.new('6.14.0')
       end
 
       # Use to avoid querying PuppetDB.
