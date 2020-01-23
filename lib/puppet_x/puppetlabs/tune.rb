@@ -265,7 +265,7 @@ module PuppetX
             output_minimum_system_requirements_warning(node)
             next
           end
-          if compiler?(certname) && autotunes_compilers?
+          if compiler?(node)
             output_autotune(node)
             next
           end
@@ -525,6 +525,7 @@ module PuppetX
           output_error_and_exit _("Unable to parse inventory for node: %{certname}") % { certname: certname } unless node_facts['cpu'] && node_facts['ram']
           resources['cpu'] = node_facts['cpu'].to_i
           resources['ram'] = string_to_bytes(node_facts['ram']).to_i
+          resources['pp_auth_role'] = ''
         else
           Puppet.debug('Using PuppetDB for resources_for_node()')
           node_facts = @query::node_facts(certname)
@@ -538,6 +539,12 @@ module PuppetX
           output_error_and_exit _("Cannot query resources for node: %{certname}") % { certname: certname } unless node_facts['processors'] && node_facts['memory']
           resources['cpu'] = node_facts['processors']['count'].to_i
           resources['ram'] = node_facts['memory']['system']['total_bytes'].to_i
+          # Trusted facts are not really resources, but this is where we query PuppetDB for facts.
+          if node_facts['trusted'] && node_facts['trusted']['extensions'] && node_facts['trusted']['extensions']['pp_auth_role']
+            resources['pp_auth_role'] = node_facts['trusted']['extensions']['pp_auth_role']
+          else
+            resources['pp_auth_role'] = ''
+          end
         end
         resources['ram'] = (resources['ram'] / 1024 / 1024).to_i
         if ENV['TEST_CPU']
@@ -878,8 +885,8 @@ module PuppetX
         @nodes_with_role['compile_masters'].include?(certname)
       end
 
-      def compiler?(certname)
-        @nodes_with_role['compile_masters'].include?(certname) && @nodes_with_role['puppetdb'].include?(certname)
+      def compiler?(node)
+        node['resources']['pp_auth_role'] == 'pe_compiler'
       end
 
       # Identify a class applied to a PE Infrastructure node.
