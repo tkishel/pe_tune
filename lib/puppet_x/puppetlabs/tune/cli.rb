@@ -1,5 +1,6 @@
 require 'optparse'
 require 'puppet'
+require 'json'
 require 'yaml'
 
 # Load puppet enterprise modules.

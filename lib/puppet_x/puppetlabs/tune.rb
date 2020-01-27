@@ -622,14 +622,15 @@ module PuppetX
         output_error_and_exit _("Unable to create output directory: %{directory}") % { directory: hiera_directory } unless File.directory?(hiera_directory)
         Dir.mkdir(hiera_subdirectory) unless File.directory?(hiera_subdirectory)
         output_error_and_exit _("Unable to create output subdirectory: %{directory}") % { directory: hiera_subdirectory } unless File.directory?(hiera_subdirectory)
-        @collected_nodes.sort_by { |_k, node| [node['order'], node['certname']] }.each do |certname, properties|
+        @collected_nodes.sort_by { |_k, node| [node['order'], node['certname']] }.each do |certname, node|
           next if @options[:node] && certname != @options[:node]
-          next if properties['settings']['params'].empty?
+          next if node['settings']['params'].empty?
           output_file = "#{@options[:hiera]}/nodes/#{certname}.yaml"
+          node['settings']['params']['puppet_infrastructure_tune::metadata'] = metadata
           if ENV['SORT_KEYS']
-            File.write(output_file, properties['settings']['params'].sort.to_h.to_yaml)
+            File.write(output_file, node['settings']['params'].sort.to_h.to_yaml)
           else
-            File.write(output_file, properties['settings']['params'].to_yaml)
+            File.write(output_file, node['settings']['params'].to_yaml)
           end
           output _("Wrote Hiera YAML file: %{output_file}") % { output_file: output_file }
           output_line
@@ -643,10 +644,10 @@ module PuppetX
 
       def output_settings_to_pe_conf
         return unless @options[:pe_conf]
-        @collected_nodes.sort_by { |_k, node| [node['order'], node['certname']] }.each do |_certname, properties|
+        @collected_nodes.sort_by { |_k, node| [node['order'], node['certname']] }.each do |_certname, node|
           next if @options[:node] && certname != @options[:node]
-          next if properties['settings']['params'].empty?
-          if @pe_conf::write(properties['settings']['params'])
+          next if node['settings']['params'].empty?
+          if @pe_conf::write(node['settings']['params'])
             output _("Merged optimized settings to: %{output_file}") % { output_file: @pe_conf::file }
           else
             output _("Unable to output optimized settings to: %{output_file}: conflicting settings found.") % { output_file: @pe_conf::file }
@@ -691,10 +692,11 @@ module PuppetX
 
       def output_current_settings_for_node(certname, node)
         return if @options[:quiet]
+        output _("Found %{cpu} CPU(s) / %{ram} MB RAM for %{role} %{certname}") % { cpu: node['resources']['cpu'], ram: node['resources']['ram'], role: node['role'], certname: certname }
         if node['settings']['params'].empty?
-          output _("Found default settings for %{role} %{certname}") % { role: node['role'], certname: certname }
+          output _("Found default settings for %{certname}") % { certname: certname }
         else
-          output _("Found defined settings for %{role} %{certname}") % { role: node['role'], certname: certname }
+          output _("Found defined settings for %{certname}") % { certname: certname }
           output_line
           output_data(JSON.pretty_generate(node['settings']['params']))
           # output_data(node['settings']['params'].to_yaml)
@@ -719,6 +721,7 @@ module PuppetX
           output _("Specify the following optimized settings in Hiera in nodes/%{certname}.yaml") % { certname: certname }
           output_line
           # output_data(JSON.pretty_generate(node['settings']['params']))
+          node['settings']['params']['puppet_infrastructure_tune::metadata'] = metadata
           if ENV['SORT_KEYS']
             output_data(node['settings']['params'].sort.to_h.to_yaml)
           else
@@ -754,6 +757,7 @@ module PuppetX
         return if @collected_settings_common.empty?
         output _('Specify the following optimized settings in Hiera in common.yaml')
         output_line
+        @collected_settings_common['puppet_infrastructure_tune::metadata'] = metadata
         if ENV['SORT_KEYS']
           output_data(@collected_settings_common.sort.to_h.to_yaml)
         else
@@ -835,6 +839,28 @@ module PuppetX
       #
       # Identify
       #
+
+      # Identify the version and the date of tuning.
+      # Optionally returns the version of pe_tune, if executed as pe_tune.
+
+      def metadata
+        pe_tune_metadata_directory = File.dirname(File.dirname(File.dirname(File.dirname(File.expand_path($PROGRAM_NAME)))))
+        pe_tune_metadata_file = "#{pe_tune_metadata_directory}/metadata.json"
+        pe_tune_metadata = {}
+        if File.file?(pe_tune_metadata_file) && File.readable?(pe_tune_metadata_file)
+          begin
+            pe_tune_metadata = JSON.parse(File.read(pe_tune_metadata_file))
+            pe_tune_metadata = {} if pe_tune_metadata['name'] == 'puppetlabs-pe_manager'
+          rescue JSON::ParserError
+            pe_tune_metadata = {}
+          end
+        end
+        result = {}
+        result['pe_version'] = Facter.value(:pe_server_version)
+        result['pe_tune_version'] = pe_tune_metadata['version'] if pe_tune_metadata['version']
+        result['tune_date'] = Time.now.strftime('%F')
+        result
+      end
 
       # Identify PE Infrastructure.
 
