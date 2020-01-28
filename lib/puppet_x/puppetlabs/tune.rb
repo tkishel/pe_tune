@@ -523,7 +523,7 @@ module PuppetX
           # Key names are capitalized in PuppetDB.
           class_name_in_puppetdb = classname.split('::').map(&:capitalize).join('::')
           @nodes_with_class[classname] = @query::infra_nodes_with_class(class_name_in_puppetdb)
-          output_error_and_exit _('Unable to connect to PuppetDB to query infra_nodes_with_class()') if @nodes_with_class[classname].nil?
+          output_error_and_exit _('Unable to query infra_nodes_with_class()') if @nodes_with_class[classname].nil?
         end
       end
 
@@ -550,7 +550,7 @@ module PuppetX
           #   node_facts = node_facts_from_yaml_facts(certname)
           #   Puppet.debug('Unable to use puppetserver/yaml/facts') if node_facts.nil?
           # end
-          output_error_and_exit _('Unable to connect to PuppetDB to query node_facts()') if node_facts.nil?
+          output_error_and_exit _('Unable to query node_facts()') if node_facts.nil?
           output_error_and_exit _("Cannot query resources for node: %{certname}") % { certname: certname } unless node_facts['processors'] && node_facts['memory']
           resources['cpu'] = node_facts['processors']['count'].to_i
           resources['ram'] = node_facts['memory']['system']['total_bytes'].to_i
@@ -588,7 +588,7 @@ module PuppetX
 
       def current_settings_for_node(certname, setting_names)
         result = @query::hiera_classifier_settings(certname, setting_names)
-        output_error_and_exit _('Unable to connect to PuppetDB to query current_settings_for_node()') if result.nil?
+        output_error_and_exit _('Unable to query current_settings_for_node()') if result.nil?
         result
       end
 
@@ -596,7 +596,7 @@ module PuppetX
 
       def active_node_count
         result = @query::active_node_count
-        output_error_and_exit _('Unable to connect to PuppetDB to query active_node_count()') if result.nil?
+        output_error_and_exit _('Unable to query active_node_count()') if result.nil?
         result
       end
 
@@ -604,7 +604,7 @@ module PuppetX
 
       def average_compile_time(report_limit)
         result = @query::average_compile_time(report_limit)
-        output_error_and_exit _('Unable to connect to PuppetDB to query average_compile_time()') if result.nil?
+        output_error_and_exit _('Unable to query average_compile_time()') if result.nil?
         result
       end
 

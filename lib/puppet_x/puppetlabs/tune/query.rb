@@ -42,8 +42,17 @@ module PuppetX
                 ]
               ]
           results = query_puppetdb(pql)
-          return nil if results.nil?
+          if results.nil?
+            Puppet.debug('No result for PuppetDB Query')
+            return nil
+          end
+          if results.empty?
+            Puppet.debug('No results for PuppetDB Query')
+            return nil
+          end
+          Puppet.debug('Begin Query Results')
           Puppet.debug(results)
+          Puppet.debug('End Query Results')
           results[0]['catalog_environment']
         end
 
@@ -52,13 +61,23 @@ module PuppetX
         def active_node_count
           Puppet.debug('Querying PuppetDB for Active Nodes')
           pql = ['from', 'nodes',
-                ['and',
-                  ['=', ['node', 'active'], true],
+                ['extract', ['certname'],
+                  ['and',
+                    ['=', ['node', 'active'], true],
+                  ]
                 ]
               ]
           results = query_puppetdb(pql)
-          return nil if results.nil?
+          if results.nil?
+            Puppet.debug('No result for PuppetDB Query')
+            return nil
+          end
+          if results.empty?
+            Puppet.debug('No results for PuppetDB Query')
+          end
+          Puppet.debug('Begin Query Results')
           Puppet.debug(results)
+          Puppet.debug('End Query Results')
           results.count
         end
 
@@ -82,11 +101,16 @@ module PuppetX
                 ['limit', query_limit]
               ]
           results = query_puppetdb(pql)
-          return nil if results.nil?
-
+          if results.nil?
+            Puppet.debug('No result for PuppetDB Query')
+            return nil
+          end
+          if results.empty?
+            Puppet.debug('No results for PuppetDB Query')
+            return nil
+          end
           random_report_hash = results.sample['hash']
           Puppet.debug("Random report: #{random_report_hash}")
-
           average_metric_time(results, 'config_retrieval', 'total')
         end
 
@@ -108,14 +132,24 @@ module PuppetX
           end_time = end_time.strftime "%Y-%m-%d %H:%M:%S"
 
           # Extract metrics from reports that only fall within the time fence
-          Puppet.debug('Querying PuppetDB for Average Compile Time')
+          Puppet.debug('Querying PuppetDB for Average Compile Time for Range')
           pql = ['from', 'reports',
                   ['extract', 'metrics',
-                    ["and", [">", "start_time", start_time],
-                      ["<", "end_time", end_time]]]]
+                    ['and',
+                      ['>', 'start_time', start_time],
+                      ['<', 'end_time', end_time]
+                    ]
+                  ]
+                ]
           results = query_puppetdb(pql)
-          return nil if results.nil?
-
+          if results.nil?
+            Puppet.debug('No result for PuppetDB Query')
+            return nil
+          end
+          if results.empty?
+            Puppet.debug('No results for PuppetDB Query')
+            return nil
+          end
           average_metric_time(results, 'config_retrieval', 'total')
         end
 
@@ -158,8 +192,16 @@ module PuppetX
                 ]
               ]
           results = query_puppetdb(pql)
-          return nil if results.nil?
+          if results.nil?
+            Puppet.debug('No result for PuppetDB Query')
+            return nil
+          end
+          if results.empty?
+            Puppet.debug('No results for PuppetDB Query')
+          end
+          Puppet.debug('Begin Query Results')
           Puppet.debug(results)
+          Puppet.debug('End Query Results')
           results.map { |resource| resource.fetch('certname') }
         end
 
@@ -176,8 +218,16 @@ module PuppetX
                 ]
               ]
           results = query_puppetdb(pql)
-          return nil if results.nil?
+          if results.nil?
+            Puppet.debug('No result for PuppetDB Query')
+            return nil
+          end
+          if results.empty?
+            Puppet.debug('No results for PuppetDB Query')
+          end
+          Puppet.debug('Begin Query Results')
           Puppet.debug(results)
+          Puppet.debug('End Query Results')
           facts = {}
           results.each do |fact, _nil|
             facts[fact['name']] = fact['value']
@@ -227,19 +277,19 @@ module PuppetX
         def hiera_classifier_overrides(certname, settings)
           if recover_with_instance_method?
             recover = Puppet::Util::Pe_conf::Recover.new
-            node_facts = recover.facts_for_node(certname, @environment)
+            recover_node_facts = recover.facts_for_node(certname, @environment)
             node_terminus = recover.get_node_terminus
-            overrides_hiera = recover.find_hiera_overrides(certname, settings, node_facts, @environment, node_terminus)
-            overrides_classifier = recover.classifier_overrides_for_node(certname, node_facts, node_facts['::trusted'])
+            overrides_hiera = recover.find_hiera_overrides(certname, settings, recover_node_facts, @environment, node_terminus)
+            overrides_classifier = recover.classifier_overrides_for_node(certname, recover_node_facts, recover_node_facts['::trusted'])
           else
-            node_facts = Puppet::Util::Pe_conf::Recover.facts_for_node(certname, @environment)
+            recover_node_facts = Puppet::Util::Pe_conf::Recover.facts_for_node(certname, @environment)
             if recover_with_node_terminus_method?
               node_terminus = Puppet::Util::Pe_conf::Recover.get_node_terminus
-              overrides_hiera = Puppet::Util::Pe_conf::Recover.find_hiera_overrides(certname, settings, node_facts, @environment, node_terminus)
+              overrides_hiera = Puppet::Util::Pe_conf::Recover.find_hiera_overrides(certname, settings, recover_node_facts, @environment, node_terminus)
             else
-              overrides_hiera = Puppet::Util::Pe_conf::Recover.find_hiera_overrides(settings, node_facts, @environment)
+              overrides_hiera = Puppet::Util::Pe_conf::Recover.find_hiera_overrides(settings, recover_node_facts, @environment)
             end
-            overrides_classifier = Puppet::Util::Pe_conf::Recover.classifier_overrides_for_node(certname, node_facts, node_facts['::trusted'])
+            overrides_classifier = Puppet::Util::Pe_conf::Recover.classifier_overrides_for_node(certname, recover_node_facts, recover_node_facts['::trusted'])
           end
           [overrides_hiera, overrides_classifier]
         end
