@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+# 3.1.2
+
+- Improve debug data
+
 # 3.1.1
 
 - Manually add the Orchestrator class to the Replica class list
