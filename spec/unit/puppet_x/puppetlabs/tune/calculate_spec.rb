@@ -22,8 +22,9 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
   percent_ram_console                   = 0.08
   percent_ram_activemq                  = 0.08
 
-  minimum_ram_database     = 2048
-  maximum_ram_database     = 16384
+  minimum_ram_database       = 1024
+  minimum_ram_database_split = 2048
+  maximum_ram_database       = 16384
 
   minimum_ram_puppetserver = 512
 
@@ -66,7 +67,7 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       cpu_puppetdb     = 1
       cpu_puppetserver = 1
       ram_per_jruby    = 512
-      ram_database     = minimum_ram_database
+      ram_database     = (resources['ram'] * percent_ram_database).to_i
       ram_puppetdb     = (resources['ram'] * percent_ram_puppetdb).to_i
       ram_puppetserver = minimum_ram_puppetserver
       ram_orchestrator = minimum_ram_orchestrator
@@ -135,7 +136,7 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       cpu_puppetdb     = (resources['cpu'] * percent_cpu_puppetdb).to_i
       cpu_puppetserver = 2
       ram_per_jruby    = 512
-      ram_database     = minimum_ram_database
+      ram_database     = (resources['ram'] * percent_ram_database).to_i
       ram_puppetdb     = (resources['ram'] * percent_ram_puppetdb).to_i
       ram_puppetserver = cpu_puppetserver * ram_per_jruby
       ram_orchestrator = (resources['ram'] * percent_ram_orchestrator).to_i
@@ -406,7 +407,7 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       cpu_puppetdb     = (resources['cpu'] * percent_cpu_puppetdb_with_compilers).to_i
       cpu_puppetserver = 2
       ram_per_jruby    = 512
-      ram_database     = minimum_ram_database
+      ram_database     = (resources['ram'] * percent_ram_database).to_i
       ram_puppetdb     = (resources['ram'] * percent_ram_puppetdb_with_compilers).to_i
       ram_puppetserver = cpu_puppetserver * ram_per_jruby
       ram_orchestrator = (resources['ram'] * percent_ram_orchestrator).to_i
@@ -544,7 +545,7 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       cpu_puppetdb     = (resources['cpu'] * percent_cpu_puppetdb_with_compilers).to_i
       cpu_puppetserver = 2
       ram_per_jruby    = 512
-      ram_database     = minimum_ram_database
+      ram_database     = (resources['ram'] * percent_ram_database).to_i
       ram_puppetdb     = (resources['ram'] * percent_ram_puppetdb_with_compilers).to_i
       ram_puppetserver = cpu_puppetserver * ram_per_jruby
       ram_orchestrator = (resources['ram'] * percent_ram_orchestrator).to_i
@@ -675,7 +676,7 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
       node = { 'resources' => resources, 'infrastructure' => infrastructure, 'type' => {}, 'classes' => classes }
 
       cpu_puppetdb = 2
-      ram_database = (resources['ram'] * percent_ram_database).to_i.clamp(minimum_ram_database, maximum_ram_database)
+      ram_database = (resources['ram'] * percent_ram_database).to_i.clamp(minimum_ram_database_split, maximum_ram_database)
       ram_puppetdb = (resources['ram'] * percent_ram_puppetdb_split).to_i
 
       params = {

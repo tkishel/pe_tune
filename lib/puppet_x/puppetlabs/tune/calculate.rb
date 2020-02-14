@@ -60,7 +60,7 @@ module PuppetX
           minimum_ram_code_cache   = 96
           maximum_ram_code_cache   = 2048
 
-          minimum_ram_database     = 2048
+          minimum_ram_database     = 1024
           maximum_ram_database     = 16384
 
           minimum_ram_puppetdb     = 512
@@ -234,7 +234,7 @@ module PuppetX
             return
           end
           if (settings['totals']['RAM']['used'] + ram_reserved) > settings['totals']['RAM']['total']
-            Puppet.debug("Error: calculations overallocated memory: #{settings}")
+            Puppet.debug("Error: calculations overallocated memory: reserved: #{ram_reserved} settings: #{settings}")
             return
           end
 
