@@ -217,7 +217,7 @@ module PuppetX
         # Compile Masters: Applicable to Monolithic and Split Infrastructures.
         @nodes_with_role['compile_masters'].each do |certname|
           node = configuration_for_node(certname)
-          if pe_compiler(node)
+          if pe_compiler?(node)
             @infrastructure_totals['pe_compilers'] = @infrastructure_totals['pe_compilers'] + 1
           end
           node['settings'] = current_settings_for_node(certname, tunable_param_names)
@@ -278,7 +278,7 @@ module PuppetX
             output_minimum_system_requirements_warning(node)
             next
           end
-          if pe_compiler(node)
+          if pe_compiler?(node)
             @infrastructure_totals['pe_compilers'] = @infrastructure_totals['pe_compilers'] + 1
             next
           end
@@ -644,7 +644,7 @@ module PuppetX
 
       def output_settings_to_pe_conf
         return unless @options[:pe_conf]
-        @collected_nodes.sort_by { |_k, node| [node['order'], node['certname']] }.each do |_certname, node|
+        @collected_nodes.sort_by { |_k, node| [node['order'], node['certname']] }.each do |certname, node|
           next if @options[:node] && certname != @options[:node]
           next if node['settings']['params'].empty?
           if @pe_conf::write(node['settings']['params'])
