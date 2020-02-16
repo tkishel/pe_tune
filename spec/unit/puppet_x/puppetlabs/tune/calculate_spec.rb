@@ -22,7 +22,7 @@ describe PuppetX::Puppetlabs::Tune::Calculate do
   percent_ram_console                   = 0.08
   percent_ram_activemq                  = 0.08
 
-  minimum_ram_database       = 1024
+  minimum_ram_database       = 1
   minimum_ram_database_split = 2048
   maximum_ram_database       = 16384
 
