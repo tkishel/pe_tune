@@ -60,7 +60,6 @@ module PuppetX
           minimum_ram_code_cache   = 96
           maximum_ram_code_cache   = 2048
 
-          minimum_ram_database     = 1
           maximum_ram_database     = 16384
 
           minimum_ram_puppetdb     = 512
@@ -124,7 +123,7 @@ module PuppetX
           # Allocate processors and memory for PE Infrastructure services ...
 
           if node['classes']['database']
-            ram_database = (node['resources']['ram'] * percent_ram_database).to_i.clamp(minimum_ram_database, maximum_ram_database)
+            ram_database = [(node['resources']['ram'] * percent_ram_database).to_i, maximum_ram_database].min
             settings['params']['puppet_enterprise::profile::database::shared_buffers'] = "#{ram_database}MB"
             settings['totals']['RAM']['used'] += ram_database
           end
