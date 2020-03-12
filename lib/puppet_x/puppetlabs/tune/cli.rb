@@ -82,6 +82,9 @@ parser = OptionParser.new do |opts|
   opts.on('--pe_conf', 'Output HOCON to pe.conf') do
     options[:pe_conf] = true
   end
+  opts.on('--setting PARAMETER', 'The setting to query, requires --node and --current') do |s|
+    options[:setting] = s
+  end
   options[:use_current_memory_per_jruby] = false
   opts.on('--use_current_memory_per_jruby', 'Use currently-defined settings to determine memory_per_jruby') do
     options[:use_current_memory_per_jruby] = true
@@ -100,6 +103,13 @@ Puppet.debug = options[:debug]
 Puppet.debug("Command Options: #{options}")
 Tune = PuppetX::Puppetlabs::Tune.new(options)
 Puppet.warning "Unable to identify Database Hosts or tune PostgreSQL services in PE 2017.x and older\n" unless Tune.pe_2018_or_newer?
+
+# Experimental!
+
+if options[:current] && options[:node] && options[:setting]
+  Tune.output_current_setting(options[:node], options[:setting])
+  exit 0
+end
 
 Tune.collect_infrastructure_nodes
 Tune.output_infrastructure

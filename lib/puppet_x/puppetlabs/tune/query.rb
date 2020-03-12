@@ -237,22 +237,12 @@ module PuppetX
 
         # Return settings configured in Hiera and the Classifier, identifying duplicates and merging the results.
 
-        def hiera_classifier_settings(certname, settings)
-          duplicates = []
-          overrides_hiera, overrides_classifier = hiera_classifier_overrides(certname, settings)
+        def hiera_classifier_settings(certname, setting_names)
+          overrides_hiera, overrides_classifier = hiera_classifier_overrides(certname, setting_names)
+          Puppet.debug("Settings: #{setting_names}")
           Puppet.debug("Settings from Hiera for: #{certname}: #{overrides_hiera}")
           Puppet.debug("Settings from Classifier for: #{certname}: #{overrides_classifier}")
-          overrides = overrides_hiera
-          overrides_classifier.each do |classifier_k, classifier_v|
-            next unless settings.include?(classifier_k)
-            if overrides.key?(classifier_k)
-              duplicates.push("#{classifier_k} ... Hiera: #{overrides_hiera[classifier_k]} ... Classifier: #{classifier_v} ")
-            end
-            # Classifer settings take precedence over Hiera settings.
-            # Hiera settings include pe.conf.
-            overrides[classifier_k] = classifier_v
-          end
-          return { 'params' => overrides, 'duplicates' => duplicates }
+          return { 'hiera' => overrides_hiera, 'classifier' => overrides_classifier }
         rescue Puppet::Error
           return nil
         end
