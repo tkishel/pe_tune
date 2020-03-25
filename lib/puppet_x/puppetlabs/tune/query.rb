@@ -1,6 +1,3 @@
-require 'puppet/util/pe_conf'
-require 'puppet/util/pe_conf/recover'
-
 module PuppetX
   module Puppetlabs
     # Query infrastructure and show current, or calculate optimized settings.
@@ -235,7 +232,7 @@ module PuppetX
           facts
         end
 
-        # Return settings configured in Hiera and the Classifier, identifying duplicates and merging the results.
+        # Return settings configured in Hiera and the Classifier.
 
         def hiera_classifier_settings(certname, setting_names)
           overrides_hiera, overrides_classifier = hiera_classifier_overrides(certname, setting_names)
@@ -265,6 +262,9 @@ module PuppetX
         # Extract the beating heart of a puppet compiler for lookup purposes.
 
         def hiera_classifier_overrides(certname, settings)
+          require 'puppet/util/pe_conf'
+          require 'puppet/util/pe_conf/recover'
+
           if recover_with_instance_method?
             recover = Puppet::Util::Pe_conf::Recover.new
             recover_node_facts = recover.facts_for_node(certname, @environment)
