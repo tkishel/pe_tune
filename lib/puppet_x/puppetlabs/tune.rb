@@ -158,8 +158,9 @@ module PuppetX
       def output_current_setting(certname, setting_name)
         current_settings = @query::hiera_classifier_settings(certname, [setting_name])
         output_error_and_exit _('Unable to query hiera_classifier_settings()') if current_settings.nil?
-        current_settings['hiera'] = current_settings['hiera'].slice(setting_name)
-        current_settings['classifier'] = current_settings['classifier'].slice(setting_name)
+        # Use select instead of slice for compatibility with Ruby 2.4.
+        current_settings['hiera'] = current_settings['hiera'].select { |k, _v| k == setting_name }
+        current_settings['classifier'] = current_settings['classifier'].select { |k, _v| k == setting_name }
         output _("Node: %{certname}") % { certname: certname }
         output _("Setting: %{setting_name}") % { setting_name: setting_name }
         output_line
