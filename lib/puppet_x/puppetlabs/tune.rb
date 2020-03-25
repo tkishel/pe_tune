@@ -153,35 +153,6 @@ module PuppetX
         output_compilers_autotune
       end
 
-      # Experimental!
-
-      def output_current_setting(certname, setting_name)
-        current_settings = @query::hiera_classifier_settings(certname, [setting_name])
-        output_error_and_exit _('Unable to query hiera_classifier_settings()') if current_settings.nil?
-        # Use select instead of slice for compatibility with Ruby 2.4.
-        current_settings['hiera'] = current_settings['hiera'].select { |k, _v| k == setting_name }
-        current_settings['classifier'] = current_settings['classifier'].select { |k, _v| k == setting_name }
-        output _("Node: %{certname}") % { certname: certname }
-        output _("Setting: %{setting_name}") % { setting_name: setting_name }
-        output_line
-        if current_settings['hiera'].key?(setting_name)
-          output _("Setting found in Hiera:")
-          output_line
-          output_data(current_settings['hiera'].to_yaml)
-        else
-          output _("Nothing found in Hiera")
-        end
-        output_line
-        if current_settings['classifier'].key?(setting_name)
-          output _("Setting found in the Classifier:")
-          output_line
-          output_data(JSON.pretty_generate(current_settings['classifier']))
-        else
-          output _("Nothing found in the Classifier")
-        end
-        output_line
-      end
-
       # Output optimized settings for each PE Infrastructure node.
 
       def output_optimized_settings
