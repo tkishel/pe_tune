@@ -14,15 +14,6 @@ module PuppetX
         end
 
         def write(settings)
-          # For now, do not merge existing and optimized settings.
-          settings.each do |key, _optimized|
-            previous = @meep_meep::get_in_pe_conf(key)
-            if previous
-              Puppet.debug("Existing value found in pe.conf for #{key}: #{previous}")
-              return false
-            end
-          end
-
           settings.each do |key, optimized|
             previous = @meep_meep::get_in_pe_conf(key)
             Puppet.debug("Previous value in pe.conf for #{key}: #{previous}")
@@ -33,7 +24,7 @@ module PuppetX
               @meep_meep::set_in_pe_conf(key, optimized)
             end
             updated = @meep_meep::get_in_pe_conf(key)
-            Puppet.debug("Updated value in pe.conf for  #{key}: #{updated}")
+            Puppet.debug("Updated value in pe.conf for #{key}: #{updated}")
           end
           true
         end
